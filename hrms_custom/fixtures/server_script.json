@@ -1,0 +1,40 @@
+[
+ {
+  "allow_guest": 1,
+  "api_method": "get_published_events",
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "Before Insert",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-04-13 12:30:24.572653",
+  "module": "",
+  "name": "Get Published Events",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": null,
+  "script": "events = frappe.get_all(\r\n    \"Buzz Event\",\r\n    filters={\"is_published\": 1},\r\n    fields=[\r\n        \"name\",\r\n        \"route\",\r\n        \"title\",\r\n        \"banner_image\",\r\n        \"start_date\",\r\n        \"venue\"\r\n    ]\r\n)\r\n\r\nfrappe.response[\"message\"] = events",
+  "script_type": "API"
+ },
+ {
+  "allow_guest": 1,
+  "api_method": "get_event_by_route",
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "Before Insert",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-04-13 13:36:36.129648",
+  "module": null,
+  "name": "Get Event By Route",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": null,
+  "script": "route = frappe.form_dict.get(\"route\")\r\n\r\nevent = frappe.get_all(\r\n    \"Buzz Event\",\r\n    filters={\"route\": route},\r\n    fields=[\r\n        \"name\",\r\n        \"title\",\r\n        \"banner_image\",\r\n        \"start_date\",\r\n        \"venue\"\r\n    ]\r\n)\r\n\r\nfrappe.response[\"message\"] = event[0] if event else None",
+  "script_type": "API"
+ }
+]
