@@ -250,11 +250,28 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 fixtures = [
-    "Custom Field",
-    "Property Setter",
-    "Workflow",
-    "Workflow State",
-    "Workflow Action Master",
-    "Client Script",
-    "Server Script"
+    {
+        "dt": "Custom Field",
+        "filters": [["module", "=", "HRMS Custom"]]
+    },
+    {
+        "dt": "Property Setter",
+        "filters": [["module", "=", "HRMS Custom"]]
+    },
+    {
+        "dt": "Client Script",
+        "filters": [["module", "=", "HRMS Custom"]]
+    },
+    {
+        "dt": "Server Script",
+        "filters": [["module", "=", "HRMS Custom"]]
+    },
+    {
+        "dt": "Workflow",
+        "filters": [["workflow_name", "like", "HRMS%"]]
+    },
+    {
+        "dt": "Workspace",
+        "filters": [["name", "in", ["Recruitment", "Frappe HR"]]]
+    },
 ]
