@@ -267,11 +267,7 @@ fixtures = [
         "filters": [["module", "=", "HRMS Custom"]]
     },
     {
-        "dt": "Workflow",
-        "filters": [["workflow_name", "like", "HRMS%"]]
-    },
-    {
-        "dt": "Workspace",
-        "filters": [["name", "in", ["Recruitment", "Frappe HR"]]]
+    "dt": "Workflow",
+    "filters": [["is_active", "=", 1]]
     },
 ]
