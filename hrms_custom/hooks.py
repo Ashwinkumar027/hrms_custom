@@ -270,4 +270,8 @@ fixtures = [
     "dt": "Workflow",
     "filters": [["is_active", "=", 1]]
     },
+     {
+    "dt": "Web Form",
+    "filters": [["name", "in", ["job-application"]]]
+    },
 ]
