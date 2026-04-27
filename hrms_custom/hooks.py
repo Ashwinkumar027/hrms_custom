@@ -280,5 +280,9 @@ fixtures = [
         "job-application",
         "candidate-pre-offer-form"
     ]]]
-},
+    },
+    {
+    "dt": "DocType",
+    "filters": [["name", "in", ["New Joiner Asset Request"]]]
+    },
 ]
