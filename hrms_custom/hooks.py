@@ -274,4 +274,11 @@ fixtures = [
     "dt": "Web Form",
     "filters": [["name", "in", ["job-application"]]]
     },
+    {
+    "dt": "Web Form",
+    "filters": [["name", "in", [
+        "job-application",
+        "candidate-pre-offer-form"
+    ]]]
+},
 ]

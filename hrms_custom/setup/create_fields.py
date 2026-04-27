@@ -402,3 +402,267 @@ def create_job_applicant_fields():
 
     frappe.db.commit()
     print("\n✅ All Job Applicant fields created successfully!")
+def create_pre_offer_fields():
+    print("\n--- Creating Pre-Offer Custom Fields in Job Applicant ---")
+
+    fields = [
+        # ── Section: KYC / Personal Info ───────────
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_section_kyc",
+            "fieldtype": "Section Break",
+            "label": "KYC & Personal Information",
+            "insert_after": "custom_declaration_agreement",
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_father_spouse_name",
+            "fieldtype": "Data",
+            "label": "Father / Spouse Name",
+            "insert_after": "custom_section_kyc",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_permanent_address",
+            "fieldtype": "Text",
+            "label": "Permanent Address",
+            "insert_after": "custom_father_spouse_name",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_current_address",
+            "fieldtype": "Text",
+            "label": "Current Address",
+            "insert_after": "custom_permanent_address",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_aadhar_number",
+            "fieldtype": "Data",
+            "label": "Aadhar Number",
+            "insert_after": "custom_current_address",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_pan_number",
+            "fieldtype": "Data",
+            "label": "PAN Number",
+            "insert_after": "custom_aadhar_number",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_bank_account_number",
+            "fieldtype": "Data",
+            "label": "Bank Account Number",
+            "insert_after": "custom_pan_number",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_bank_name",
+            "fieldtype": "Data",
+            "label": "Bank Name",
+            "insert_after": "custom_bank_account_number",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_ifsc_code",
+            "fieldtype": "Data",
+            "label": "IFSC Code",
+            "insert_after": "custom_bank_name",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+
+        # ── Section: CTC Details ────────────────────
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_section_ctc",
+            "fieldtype": "Section Break",
+            "label": "CTC & Employment Details",
+            "insert_after": "custom_ifsc_code",
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_current_employer",
+            "fieldtype": "Data",
+            "label": "Current Employer Name",
+            "insert_after": "custom_section_ctc",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_current_designation",
+            "fieldtype": "Data",
+            "label": "Current Designation",
+            "insert_after": "custom_current_employer",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_current_ctc",
+            "fieldtype": "Data",
+            "label": "Current CTC (Per Annum)",
+            "insert_after": "custom_current_designation",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_expected_ctc",
+            "fieldtype": "Data",
+            "label": "Expected CTC (Per Annum)",
+            "insert_after": "custom_current_ctc",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_notice_period",
+            "fieldtype": "Select",
+            "label": "Notice Period",
+            "options": "\nImmediate\n15 Days\n30 Days\n45 Days\n60 Days\n90 Days",
+            "insert_after": "custom_expected_ctc",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_last_working_day",
+            "fieldtype": "Date",
+            "label": "Last Working Day (if already resigned)",
+            "insert_after": "custom_notice_period",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+
+        # ── Section: Documents ──────────────────────
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_section_documents",
+            "fieldtype": "Section Break",
+            "label": "Document Uploads",
+            "insert_after": "custom_last_working_day",
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_aadhar_upload",
+            "fieldtype": "Attach",
+            "label": "Aadhar Card",
+            "insert_after": "custom_section_documents",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_pan_upload",
+            "fieldtype": "Attach",
+            "label": "PAN Card",
+            "insert_after": "custom_aadhar_upload",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_10th_marksheet",
+            "fieldtype": "Attach",
+            "label": "10th Marksheet",
+            "insert_after": "custom_pan_upload",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_12th_marksheet",
+            "fieldtype": "Attach",
+            "label": "12th Marksheet",
+            "insert_after": "custom_10th_marksheet",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_sem_marksheet",
+            "fieldtype": "Attach",
+            "label": "Semester Marksheet",
+            "insert_after": "custom_12th_marksheet",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_degree_certificate",
+            "fieldtype": "Attach",
+            "label": "Degree Certificate",
+            "insert_after": "custom_sem_marksheet",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_experience_certificate",
+            "fieldtype": "Attach",
+            "label": "Experience Certificate",
+            "insert_after": "custom_degree_certificate",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_last_salary_slip",
+            "fieldtype": "Attach",
+            "label": "Last Salary Slip",
+            "insert_after": "custom_experience_certificate",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_bank_passbook",
+            "fieldtype": "Attach",
+            "label": "Bank Passbook / Cancelled Cheque",
+            "insert_after": "custom_last_salary_slip",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Applicant",
+            "fieldname": "custom_other_documents",
+            "fieldtype": "Attach",
+            "label": "Other Documents (if any)",
+            "insert_after": "custom_bank_passbook",
+            "reqd": 0,
+            "module": "HRMS Custom"
+        },
+    ]
+
+    for field in fields:
+        name = f"{field['dt']}-{field['fieldname']}"
+        if not frappe.db.exists("Custom Field", name):
+            cf = frappe.new_doc("Custom Field")
+            cf.update(field)
+            cf.insert(ignore_permissions=True)
+            print(f"  ✅ Created: {field.get('label', field['fieldname'])}")
+        else:
+            print(f"  ⚠️  Already exists: {field.get('label', field['fieldname'])}")
+
+    frappe.db.commit()
+    print("\n✅ Pre-Offer fields created successfully!")
