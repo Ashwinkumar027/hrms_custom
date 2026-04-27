@@ -17,5 +17,43 @@
   "reference_doctype": "Interview",
   "script": "\njob_applicant_data = frappe.db.get_value(\n    \"Job Applicant\",\n    doc.job_applicant,\n    [\"applicant_name\", \"email_id\"],\n    as_dict=True\n)\n\nif doc.status == \"Cleared\" and job_applicant_data and job_applicant_data.email_id:\n    from frappe.utils import get_url\n    form_url = get_url(\"/candidate-pre-offer?name=\" + doc.job_applicant)\n\n    subject = \"Congratulations! Please Fill Your Pre-Offer Form - Aionion Capital\"\n\n    message = (\n        \"<p>Dear \" + job_applicant_data.applicant_name + \",</p>\"\n        \"<p>Congratulations! You have successfully cleared the interview at <b>Aionion Capital</b>.</p>\"\n        \"<p>Please fill in the Pre-Offer Form with your details and upload all required documents.</p>\"\n        \"<p><a href='\" + form_url + \"' style='background:#1B4F8A;color:white;padding:12px 24px;text-decoration:none;border-radius:4px;'>\"\n        \"Click Here to Fill Pre-Offer Form</a></p>\"\n        \"<p><b>Documents Required:</b></p>\"\n        \"<ul>\"\n        \"<li>Aadhar Card</li>\"\n        \"<li>PAN Card</li>\"\n        \"<li>Bank Passbook / Cancelled Cheque</li>\"\n        \"<li>10th Marksheet</li>\"\n        \"<li>12th Marksheet</li>\"\n        \"<li>Semester Marksheet</li>\"\n        \"<li>Degree Certificate</li>\"\n        \"<li>Experience Certificate (if applicable)</li>\"\n        \"<li>Last Salary Slip (if applicable)</li>\"\n        \"<li>Resume / CV</li>\"\n        \"</ul>\"\n        \"<p>Regards,<br><b>HR Team</b><br>Aionion Capital</p>\"\n    )\n\n    frappe.sendmail(\n        recipients=[job_applicant_data.email_id],\n        subject=subject,\n        message=message,\n        reference_doctype=doc.doctype,\n        reference_name=doc.name,\n    )\n\n    frappe.msgprint(\n        \"Pre-Offer Form link sent to \" + job_applicant_data.applicant_name,\n        indicator=\"green\",\n        title=\"Email Sent!\"\n    )\n",
   "script_type": "DocType Event"
+ },
+ {
+  "allow_guest": 0,
+  "api_method": null,
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "After Save",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-04-27 07:58:43.395432",
+  "module": "HRMS custom",
+  "name": "Notify BH - Job Offer Pending Approval",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "Job Offer",
+  "script": "\n# Get BH users with Branch Head role\nbh_users = frappe.get_all(\n    \"Has Role\",\n    filters={\"role\": \"Branch Head\", \"parenttype\": \"User\"},\n    fields=[\"parent\"]\n)\n\nbh_emails = []\nfor u in bh_users:\n    email = frappe.db.get_value(\"User\", u.parent, \"email\")\n    if email:\n        bh_emails.append(email)\n\nif bh_emails:\n    applicant_name = frappe.db.get_value(\n        \"Job Applicant\", doc.job_applicant, \"applicant_name\"\n    )\n    form_url = frappe.utils.get_url_to_form(doc.doctype, doc.name)\n\n    frappe.sendmail(\n        recipients=bh_emails,\n        subject=\"Job Offer Approval Required - \" + (applicant_name or doc.job_applicant),\n        message=(\n            \"<p>Dear Branch Head,</p>\"\n            \"<p>A Job Offer requires your approval.</p>\"\n            \"<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>\"\n            \"<tr><td><b>Candidate</b></td><td>\" + (applicant_name or \"\") + \"</td></tr>\"\n            \"<tr><td><b>Designation</b></td><td>\" + (doc.designation or \"\") + \"</td></tr>\"\n            \"<tr><td><b>Proposed CTC</b></td><td>\" + str(doc.custom_proposed_ctc or \"\") + \"</td></tr>\"\n            \"<tr><td><b>Joining Date</b></td><td>\" + str(doc.custom_tentative_joining_date or \"\") + \"</td></tr>\"\n            \"<tr><td><b>Budget Code</b></td><td>\" + (doc.custom_budget_code or \"\") + \"</td></tr>\"\n            \"</table>\"\n            \"<br><p><a href='\" + form_url + \"' style='background:#1B4F8A;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;'>\"\n            \"Review & Approve</a></p>\"\n            \"<p>Regards,<br><b>HR Team</b><br>Aionion Capital</p>\"\n        ),\n        reference_doctype=doc.doctype,\n        reference_name=doc.name,\n    )\n    frappe.msgprint(\n        \"Approval request sent to Branch Head!\",\n        indicator=\"green\",\n        title=\"Email Sent\"\n    )\n",
+  "script_type": "DocType Event"
+ },
+ {
+  "allow_guest": 0,
+  "api_method": null,
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "After Submit",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-04-27 07:58:43.456284",
+  "module": "HRMS custom",
+  "name": "Notify HR - Job Offer Approved by BH",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "Job Offer",
+  "script": "\napplicant_name = frappe.db.get_value(\n    \"Job Applicant\", doc.job_applicant, \"applicant_name\"\n)\n\nhr_users = frappe.get_all(\n    \"Has Role\",\n    filters={\"role\": \"HR User\", \"parenttype\": \"User\"},\n    fields=[\"parent\"]\n)\n\nhr_emails = []\nfor u in hr_users:\n    email = frappe.db.get_value(\"User\", u.parent, \"email\")\n    if email:\n        hr_emails.append(email)\n\nif hr_emails:\n    form_url = frappe.utils.get_url_to_form(doc.doctype, doc.name)\n    frappe.sendmail(\n        recipients=hr_emails,\n        subject=\"Job Offer Approved - \" + (applicant_name or doc.job_applicant),\n        message=(\n            \"<p>Dear HR Team,</p>\"\n            \"<p>The Job Offer for <b>\" + (applicant_name or \"\") + \"</b> has been <b>Approved</b> by the Branch Head.</p>\"\n            \"<p>Please proceed with sending the offer letter to the candidate.</p>\"\n            \"<p><a href='\" + form_url + \"'>View Job Offer</a></p>\"\n            \"<p>Regards,<br><b>System</b></p>\"\n        ),\n        reference_doctype=doc.doctype,\n        reference_name=doc.name,\n    )\n",
+  "script_type": "DocType Event"
  }
 ]
