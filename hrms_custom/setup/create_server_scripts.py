@@ -13,21 +13,32 @@ def create_interview_cleared_script():
 job_applicant_data = frappe.db.get_value(
     "Job Applicant",
     doc.job_applicant,
-    ["applicant_name", "email_id"],
+    ["applicant_name", "email_id", "phone_number"],
     as_dict=True
 )
 
 if doc.status == "Cleared" and job_applicant_data and job_applicant_data.email_id:
     from frappe.utils import get_url
-    form_url = get_url("/candidate-pre-offer?name=" + doc.job_applicant)
+    import urllib.parse
+
+    # Build URL with pre-filled data
+    params = urllib.parse.urlencode({
+        "applicant_name": job_applicant_data.applicant_name or "",
+        "email": job_applicant_data.email_id or "",
+        "phone": job_applicant_data.phone_number or "",
+        "job_applicant": doc.job_applicant
+    })
+
+    form_url = get_url("/candidate-pre-offer/new?" + params)
 
     subject = "Congratulations! Please Fill Your Pre-Offer Form - Aionion Capital"
 
     message = (
-        "<p>Dear " + job_applicant_data.applicant_name + ",</p>"
+        "<p>Dear " + (job_applicant_data.applicant_name or "Candidate") + ",</p>"
         "<p>Congratulations! You have successfully cleared the interview at <b>Aionion Capital</b>.</p>"
         "<p>Please fill in the Pre-Offer Form with your details and upload all required documents.</p>"
-        "<p><a href='" + form_url + "' style='background:#1B4F8A;color:white;padding:12px 24px;text-decoration:none;border-radius:4px;'>"
+        "<p style='margin:20px 0;'>"
+        "<a href='" + form_url + "' style='background:#1B4F8A;color:white;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold;'>"
         "Click Here to Fill Pre-Offer Form</a></p>"
         "<p><b>Documents Required:</b></p>"
         "<ul>"
@@ -54,7 +65,7 @@ if doc.status == "Cleared" and job_applicant_data and job_applicant_data.email_i
     )
 
     frappe.msgprint(
-        "Pre-Offer Form link sent to " + job_applicant_data.applicant_name,
+        "Pre-Offer Form link sent to " + (job_applicant_data.applicant_name or ""),
         indicator="green",
         title="Email Sent!"
     )

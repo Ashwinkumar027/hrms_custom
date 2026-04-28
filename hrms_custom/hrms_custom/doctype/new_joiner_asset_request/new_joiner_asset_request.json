@@ -29,7 +29,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "New Joiner Name",
-   "options": "Employee",
+   "options": "Job Applicant",
    "reqd": 1
   },
   {
@@ -129,7 +129,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-27 08:10:23.867978",
+ "modified": "2026-04-27 15:15:24.553748",
  "modified_by": "Administrator",
  "module": "HRMS custom",
  "name": "New Joiner Asset Request",

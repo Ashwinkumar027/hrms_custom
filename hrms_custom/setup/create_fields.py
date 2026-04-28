@@ -1,14 +1,87 @@
 import frappe
 
 def create_job_requisition_fields():
+
+    # Step 1 — Delete ALL old Job Requisition custom fields first
+    fields_to_delete = [
+        "Job Requisition-custom_hiring_manager_name",
+        "Job Requisition-custom_hiring_manager_designation",
+        "Job Requisition-custom_section_job_description",
+        "Job Requisition-custom_key_roles",
+        "Job Requisition-custom_section_top",
+        "Job Requisition-custom_section_position",
+        "Job Requisition-custom_company",
+        "Job Requisition-custom_col_break_top",
+        "Job Requisition-custom_requested_by",
+        "Job Requisition-custom_col_break_position",
+        "Job Requisition-custom_type_of_requirement",
+        "Job Requisition-custom_section_approval",
+        "Job Requisition-custom_position_approval_status",
+        "Job Requisition-custom_col_break_approval",
+        "Job Requisition-custom_position_approval_mail",
+        "Job Requisition-custom_section_reporting",
+        "Job Requisition-custom_position_reporting_to",
+        "Job Requisition-custom_col_break_reporting",
+        "Job Requisition-custom_proposed_salary",
+        "Job Requisition-custom_section_requirements",
+        "Job Requisition-custom_required_experience",
+        "Job Requisition-custom_col_break_requirements",
+        "Job Requisition-custom_preferred_industry",
+        "Job Requisition-custom_urgency_level",
+        "Job Requisition-custom_section_skills",
+        "Job Requisition-custom_required_qualifications",
+        "Job Requisition-custom_required_skills",
+        "Job Requisition-custom_hiring_location",
+    ]
+
+    print("--- Deleting old fields ---")
+    for f in fields_to_delete:
+        if frappe.db.exists("Custom Field", f):
+            frappe.delete_doc("Custom Field", f, force=True)
+            print(f"  Deleted: {f}")
+
+    frappe.db.commit()
+    print("--- Old fields deleted ---\n")
+
+    # Step 2 — Recreate fields fresh
     fields = [
+
+        # ── Top: Company and Requested By (near department) ──
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_company",
+            "fieldtype": "Link",
+            "label": "Company",
+            "options": "Company",
+            "insert_after": "department",
+            "reqd": 1,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_col_break_top",
+            "fieldtype": "Column Break",
+            "insert_after": "custom_company",
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_requested_by",
+            "fieldtype": "Link",
+            "label": "Requested By",
+            "options": "Employee",
+            "insert_after": "custom_col_break_top",
+            "reqd": 1,
+            "module": "HRMS Custom"
+        },
+
         # ── Section: Position Details ──────────────────
         {
             "dt": "Job Requisition",
             "fieldname": "custom_section_position",
             "fieldtype": "Section Break",
             "label": "Position Details",
-            "insert_after": "department",
+            "insert_after": "custom_requested_by",
             "module": "HRMS Custom"
         },
         {
@@ -22,20 +95,9 @@ def create_job_requisition_fields():
         },
         {
             "dt": "Job Requisition",
-            "fieldname": "custom_hiring_manager_name",
-            "fieldtype": "Data",
-            "label": "Hiring Manager Name",
+            "fieldname": "custom_col_break_position",
+            "fieldtype": "Column Break",
             "insert_after": "custom_hiring_location",
-            "reqd": 1,
-            "module": "HRMS Custom"
-        },
-        {
-            "dt": "Job Requisition",
-            "fieldname": "custom_hiring_manager_designation",
-            "fieldtype": "Data",
-            "label": "Hiring Manager Designation",
-            "insert_after": "custom_hiring_manager_name",
-            "reqd": 1,
             "module": "HRMS Custom"
         },
         {
@@ -44,8 +106,18 @@ def create_job_requisition_fields():
             "fieldtype": "Select",
             "label": "Type of Requirement",
             "options": "\nNew Position\nReplacement",
-            "insert_after": "custom_hiring_manager_designation",
+            "insert_after": "custom_col_break_position",
             "reqd": 1,
+            "module": "HRMS Custom"
+        },
+
+        # ── Section: Approval ──────────────────────────
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_section_approval",
+            "fieldtype": "Section Break",
+            "label": "Approval Details",
+            "insert_after": "custom_type_of_requirement",
             "module": "HRMS Custom"
         },
         {
@@ -54,8 +126,15 @@ def create_job_requisition_fields():
             "fieldtype": "Select",
             "label": "Position Approval Status",
             "options": "\nYes\nNo",
-            "insert_after": "custom_type_of_requirement",
+            "insert_after": "custom_section_approval",
             "reqd": 1,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_col_break_approval",
+            "fieldtype": "Column Break",
+            "insert_after": "custom_position_approval_status",
             "module": "HRMS Custom"
         },
         {
@@ -64,8 +143,18 @@ def create_job_requisition_fields():
             "fieldtype": "Attach",
             "label": "Position Approval Mail",
             "description": "If Position Approval Status is Yes, Please attach approval mail.",
-            "insert_after": "custom_position_approval_status",
+            "insert_after": "custom_col_break_approval",
             "depends_on": "eval:doc.custom_position_approval_status=='Yes'",
+            "module": "HRMS Custom"
+        },
+
+        # ── Section: Reporting & Salary ────────────────
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_section_reporting",
+            "fieldtype": "Section Break",
+            "label": "Reporting & Compensation",
+            "insert_after": "custom_position_approval_mail",
             "module": "HRMS Custom"
         },
         {
@@ -73,36 +162,34 @@ def create_job_requisition_fields():
             "fieldname": "custom_position_reporting_to",
             "fieldtype": "Data",
             "label": "Position Reporting To",
-            "insert_after": "custom_position_approval_mail",
+            "insert_after": "custom_section_reporting",
             "reqd": 1,
             "module": "HRMS Custom"
         },
-
-        # ── Section: Job Description ───────────────────
         {
             "dt": "Job Requisition",
-            "fieldname": "custom_section_job_description",
-            "fieldtype": "Section Break",
-            "label": "Job Description Details",
+            "fieldname": "custom_col_break_reporting",
+            "fieldtype": "Column Break",
             "insert_after": "custom_position_reporting_to",
             "module": "HRMS Custom"
         },
         {
             "dt": "Job Requisition",
-            "fieldname": "custom_key_roles",
-            "fieldtype": "Text Editor",
-            "label": "Key Roles & Responsibilities",
-            "insert_after": "custom_section_job_description",
+            "fieldname": "custom_proposed_salary",
+            "fieldtype": "Data",
+            "label": "Proposed Salary / Budget Range (CTC)",
+            "insert_after": "custom_col_break_reporting",
             "reqd": 1,
             "module": "HRMS Custom"
         },
+
+        # ── Section: Requirements ──────────────────────
         {
             "dt": "Job Requisition",
-            "fieldname": "custom_required_qualifications",
-            "fieldtype": "Text Editor",
-            "label": "Required Qualifications",
-            "insert_after": "custom_key_roles",
-            "reqd": 1,
+            "fieldname": "custom_section_requirements",
+            "fieldtype": "Section Break",
+            "label": "Requirements",
+            "insert_after": "custom_proposed_salary",
             "module": "HRMS Custom"
         },
         {
@@ -110,7 +197,51 @@ def create_job_requisition_fields():
             "fieldname": "custom_required_experience",
             "fieldtype": "Data",
             "label": "Required Experience",
-            "insert_after": "custom_required_qualifications",
+            "insert_after": "custom_section_requirements",
+            "reqd": 1,
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_col_break_requirements",
+            "fieldtype": "Column Break",
+            "insert_after": "custom_required_experience",
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_preferred_industry",
+            "fieldtype": "Data",
+            "label": "Preferred Industry (e.g., BFSI, IT, Sales)",
+            "insert_after": "custom_col_break_requirements",
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_urgency_level",
+            "fieldtype": "Select",
+            "label": "Urgency Level",
+            "options": "\nHigh - Immediate hiring required\nMedium - Within 30 days\nLow - Can wait 60 days",
+            "insert_after": "custom_preferred_industry",
+            "reqd": 1,
+            "module": "HRMS Custom"
+        },
+
+        # ── Section: Skills & Qualifications ──────────
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_section_skills",
+            "fieldtype": "Section Break",
+            "label": "Skills & Qualifications",
+            "insert_after": "custom_urgency_level",
+            "module": "HRMS Custom"
+        },
+        {
+            "dt": "Job Requisition",
+            "fieldname": "custom_required_qualifications",
+            "fieldtype": "Text Editor",
+            "label": "Required Qualifications",
+            "insert_after": "custom_section_skills",
             "reqd": 1,
             "module": "HRMS Custom"
         },
@@ -119,51 +250,21 @@ def create_job_requisition_fields():
             "fieldname": "custom_required_skills",
             "fieldtype": "Text Editor",
             "label": "Required Skills / Technical Skills",
-            "insert_after": "custom_required_experience",
-            "reqd": 1,
-            "module": "HRMS Custom"
-        },
-        {
-            "dt": "Job Requisition",
-            "fieldname": "custom_preferred_industry",
-            "fieldtype": "Data",
-            "label": "Preferred Industry (e.g., BFSI, IT, Sales)",
-            "insert_after": "custom_required_skills",
-            "module": "HRMS Custom"
-        },
-        {
-            "dt": "Job Requisition",
-            "fieldname": "custom_proposed_salary",
-            "fieldtype": "Data",
-            "label": "Proposed Salary / Budget Range (CTC)",
-            "insert_after": "custom_preferred_industry",
-            "reqd": 1,
-            "module": "HRMS Custom"
-        },
-        {
-            "dt": "Job Requisition",
-            "fieldname": "custom_urgency_level",
-            "fieldtype": "Select",
-            "label": "Urgency Level",
-            "options": "\nHigh — Immediate hiring required\nMedium — Within 30 days\nLow — Can wait 60 days",
-            "insert_after": "custom_proposed_salary",
+            "insert_after": "custom_required_qualifications",
             "reqd": 1,
             "module": "HRMS Custom"
         },
     ]
 
+    print("--- Creating new fields ---")
     for field in fields:
-        name = f"{field['dt']}-{field['fieldname']}"
-        if not frappe.db.exists("Custom Field", name):
-            cf = frappe.new_doc("Custom Field")
-            cf.update(field)
-            cf.insert(ignore_permissions=True)
-            print(f"✅ Created: {field['label']}")
-        else:
-            print(f"⚠️  Already exists: {field['label']}")
+        cf = frappe.new_doc("Custom Field")
+        cf.update(field)
+        cf.insert(ignore_permissions=True)
+        print(f"  Created: {field.get('label', field['fieldtype'])}")
 
     frappe.db.commit()
-    print("\n✅ All Job Requisition fields created successfully!")
+    print("\nAll Job Requisition fields created successfully!")
 
 
 def create_job_applicant_fields():

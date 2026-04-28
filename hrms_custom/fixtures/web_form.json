@@ -29,7 +29,7 @@
   "meta_description": null,
   "meta_image": null,
   "meta_title": null,
-  "modified": "2026-04-26 23:18:27.397615",
+  "modified": "2026-04-27 12:12:03.768416",
   "module": "HR",
   "name": "job-application",
   "print_format": null,
@@ -175,12 +175,12 @@
     "mandatory_depends_on": null,
     "max_length": 0,
     "max_value": 0,
-    "options": null,
+    "options": "Male\nFemale\nOthers",
     "placeholder": null,
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
@@ -195,12 +195,12 @@
     "mandatory_depends_on": null,
     "max_length": 0,
     "max_value": 0,
-    "options": null,
+    "options": "Married\nUnmarried\nDivorced\nWidowed",
     "placeholder": null,
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
@@ -255,7 +255,7 @@
     "mandatory_depends_on": null,
     "max_length": 0,
     "max_value": 0,
-    "options": null,
+    "options": "Yes\nNo",
     "placeholder": null,
     "precision": "",
     "read_only": 0,
@@ -315,7 +315,7 @@
     "mandatory_depends_on": null,
     "max_length": 0,
     "max_value": 0,
-    "options": null,
+    "options": "Sales - Relationship Manager\nSales - Branch Manager\nInsurance Executive\nInsurance Manager\nHuman Resource Executive\nClient Care Executive\nClient Care Manager\nMIS Executive\nMIS Manager\nSales - Business Analyst\nSales - Corporate Trainer\nSoft Skill - Corporate Trainer\nInsurance SME Executive\nInsurance SME Manager\nBond Operations Executive\nMutual Fund Operations\nSoftware Developer (Frontend / Backend / Full Stack / Mobile App / QA / Data Engineer / DevOps)\nIT Manager\nIT Engineer\nIT Executive\nDigital Marketing & Graphic Designer\nVideo Editor\nContent Writer\nCameraman\nAnchor\nProcess Manager\nOthers",
     "placeholder": null,
     "precision": "",
     "read_only": 0,
@@ -335,7 +335,7 @@
     "mandatory_depends_on": null,
     "max_length": 0,
     "max_value": 0,
-    "options": null,
+    "options": "Fresher\nExperienced",
     "placeholder": null,
     "precision": "",
     "read_only": 0,
@@ -360,7 +360,7 @@
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
@@ -619,8 +619,8 @@
   "banner_image": null,
   "breadcrumbs": null,
   "button_label": "Save",
-  "client_script": null,
-  "condition_json": null,
+  "client_script": "\nfrappe.ready(function() {\n    var params = new URLSearchParams(window.location.search);\n    var applicant_name = params.get('applicant_name');\n    var email = params.get('email');\n    var phone = params.get('phone');\n    var job_applicant = params.get('job_applicant');\n\n    // Set the name field to link to existing Job Applicant\n    if (job_applicant) {\n        frappe.web_form.doc.name = decodeURIComponent(job_applicant);\n    }\n\n    function fill_fields() {\n        if (applicant_name) {\n            frappe.web_form.set_value('applicant_name', decodeURIComponent(applicant_name));\n        }\n        if (email) {\n            frappe.web_form.set_value('email_id', decodeURIComponent(email));\n        }\n        if (phone) {\n            frappe.web_form.set_value('phone_number', decodeURIComponent(phone));\n        }\n    }\n\n    setTimeout(fill_fields, 500);\n    setTimeout(fill_fields, 1500);\n});\n",
+  "condition_json": "[]",
   "custom_css": null,
   "doc_type": "Job Applicant",
   "docstatus": 0,
@@ -636,7 +636,7 @@
   "meta_description": null,
   "meta_image": null,
   "meta_title": null,
-  "modified": "2026-04-27 07:45:39.408481",
+  "modified": "2026-04-27 13:22:05.893074",
   "module": "HRMS custom",
   "name": "candidate-pre-offer-form",
   "print_format": null,
@@ -665,7 +665,7 @@
     "options": null,
     "placeholder": null,
     "precision": "",
-    "read_only": 1,
+    "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 1,
     "show_in_filter": 0
@@ -685,7 +685,7 @@
     "options": null,
     "placeholder": null,
     "precision": "",
-    "read_only": 1,
+    "read_only": 0,
     "read_only_depends_on": null,
     "reqd": 1,
     "show_in_filter": 0
@@ -1022,7 +1022,7 @@
     "mandatory_depends_on": null,
     "max_length": 0,
     "max_value": 0,
-    "options": null,
+    "options": "Immediate\n15 Days\n30 Days\n45 Days\n60 Days\n90 Days",
     "placeholder": null,
     "precision": "",
     "read_only": 0,
@@ -1107,7 +1107,7 @@
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
@@ -1127,7 +1127,7 @@
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
@@ -1147,7 +1147,7 @@
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
@@ -1167,7 +1167,7 @@
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
@@ -1187,7 +1187,7 @@
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
@@ -1227,7 +1227,7 @@
     "precision": "",
     "read_only": 0,
     "read_only_depends_on": null,
-    "reqd": 1,
+    "reqd": 0,
     "show_in_filter": 0
    },
    {
