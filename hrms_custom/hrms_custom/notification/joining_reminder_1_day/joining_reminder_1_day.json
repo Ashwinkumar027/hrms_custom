@@ -16,7 +16,7 @@
  "message": "<p>Dear {{ doc.employee_name }},</p>\n\n<p>This is a reminder that your joining date is\n<strong>TOMORROW</strong> - {{ doc.date_of_joining }}.</p>\n\n<p>Please carry the following on Day 1:</p>\n<ul>\n<li>Government ID proof (Original + photocopy)</li>\n<li>Relieving letter from previous employer</li>\n<li>Educational certificates</li>\n<li>Passport size photographs</li>\n</ul>\n\n<p>Report at 9:30 AM and ask for the HR team.</p>\n\n<p>See you tomorrow!<br>HR Team</p>",
  "message_type": "Markdown",
  "minutes_offset": 0,
- "modified": "2026-04-27 22:03:30.541719",
+ "modified": "2026-04-28 15:46:58.540481",
  "modified_by": "Administrator",
  "module": "HRMS custom",
  "name": "Joining Reminder 1 Day",

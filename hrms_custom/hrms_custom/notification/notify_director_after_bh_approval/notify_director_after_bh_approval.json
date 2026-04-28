@@ -1,0 +1,36 @@
+{
+ "attach_files": "",
+ "attach_print": 0,
+ "channel": "Email",
+ "condition": "doc.workflow_state == \"Pending Final Approval\"",
+ "condition_type": "Python",
+ "creation": "2026-04-27 11:13:57.661496",
+ "days_in_advance": 0,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "Job Requisition",
+ "enabled": 1,
+ "event": "Value Change",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "<p>Dear Sir,</p>\r\n\r\n<p>A Job Requisition has been approved by the Business Head.</p>\r\n\r\n<p>Please review before final approval.</p>\r\n\r\n<p><b>Requisition:</b> {{ doc.name }}</p>\r\n<p><b>Designation:</b> {{ doc.designation }}</p>\r\n\r\n<p>\r\n<a href=\"{{ doc.get_url() }}\">\r\nClick here to view the requisition\r\n</a>\r\n</p>\r\n\r\n<br>\r\n<p>Thanks,<br>System</p>",
+ "message_type": "Markdown",
+ "minutes_offset": 0,
+ "modified": "2026-04-28 15:47:27.742853",
+ "modified_by": "Administrator",
+ "module": "HRMS custom",
+ "name": "Notify Director After BH Approval",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "receiver_by_document_field": "",
+   "receiver_by_role": "Director"
+  }
+ ],
+ "send_system_notification": 0,
+ "send_to_all_assignees": 0,
+ "sender": "HR",
+ "sender_email": "ashwinkumark59@gmail.com",
+ "subject": "Requisition {{ doc.name }} Approved by BH \u2013 Review Required",
+ "value_changed": "workflow_state"
+}
