@@ -148,13 +148,13 @@
   "document_type": "Job Offer",
   "enable_action_confirmation": 0,
   "is_active": 1,
-  "modified": "2026-04-27 15:05:50.062111",
+  "modified": "2026-04-28 07:19:59.651027",
   "name": "Job Offer Approval Workflow",
   "override_status": 0,
   "send_email_alert": 0,
   "states": [
    {
-    "allow_edit": "HR User",
+    "allow_edit": "HR Manager",
     "avoid_status_override": 0,
     "doc_status": "0",
     "evaluate_as_expression": 0,
@@ -182,7 +182,7 @@
     "workflow_builder_id": null
    },
    {
-    "allow_edit": "HR User",
+    "allow_edit": "HR Manager",
     "avoid_status_override": 0,
     "doc_status": "1",
     "evaluate_as_expression": 0,
@@ -196,7 +196,7 @@
     "workflow_builder_id": null
    },
    {
-    "allow_edit": "HR User",
+    "allow_edit": "HR Manager",
     "avoid_status_override": 0,
     "doc_status": "0",
     "evaluate_as_expression": 0,
@@ -214,7 +214,7 @@
    {
     "action": "Send for BH Approval",
     "allow_self_approval": 1,
-    "allowed": "HR User",
+    "allowed": "HR Manager",
     "condition": null,
     "next_state": "Pending BH Approval",
     "send_email_to_creator": 0,
@@ -255,13 +255,13 @@
   "document_type": "Employee Onboarding",
   "enable_action_confirmation": 0,
   "is_active": 1,
-  "modified": "2026-04-27 09:54:30.661593",
+  "modified": "2026-04-28 07:47:51.382166",
   "name": "ID Card Approval",
   "override_status": 0,
   "send_email_alert": 1,
   "states": [
    {
-    "allow_edit": "All",
+    "allow_edit": "HR Manager",
     "avoid_status_override": 0,
     "doc_status": "0",
     "evaluate_as_expression": 0,
@@ -275,7 +275,7 @@
     "workflow_builder_id": null
    },
    {
-    "allow_edit": "All",
+    "allow_edit": "HR Manager",
     "avoid_status_override": 0,
     "doc_status": "0",
     "evaluate_as_expression": 0,
@@ -289,7 +289,7 @@
     "workflow_builder_id": null
    },
    {
-    "allow_edit": "All",
+    "allow_edit": "HR Manager",
     "avoid_status_override": 0,
     "doc_status": "1",
     "evaluate_as_expression": 0,
@@ -303,7 +303,7 @@
     "workflow_builder_id": null
    },
    {
-    "allow_edit": "All",
+    "allow_edit": "ID Card Operator",
     "avoid_status_override": 0,
     "doc_status": "0",
     "evaluate_as_expression": 0,
@@ -321,7 +321,7 @@
    {
     "action": "Submit for ID Card Approval",
     "allow_self_approval": 1,
-    "allowed": "All",
+    "allowed": "ID Card Operator",
     "condition": null,
     "next_state": "ID Card Submitted",
     "send_email_to_creator": 0,
@@ -354,7 +354,7 @@
    {
     "action": "Resubmit ID Card",
     "allow_self_approval": 1,
-    "allowed": "All",
+    "allowed": "ID Card Operator",
     "condition": null,
     "next_state": "ID Card Submitted",
     "send_email_to_creator": 0,
