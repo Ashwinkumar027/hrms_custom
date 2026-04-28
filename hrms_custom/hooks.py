@@ -281,4 +281,17 @@ fixtures = [
         "candidate-pre-offer-form"
     ]]]
     },
+     {
+    "dt": "Notification",
+    "filters": [["name", "in", [
+        "Joining Reminder 1 Day",
+        "Joining Reminder 10 Days",
+        "Joining Reminder 45 Days",
+        "Notify Director After BH Approval",
+        "Notify BH and HR - Job Requisition Submitted",
+        "Notify Final Approver - Job Requisition BH Approved",
+        "Notify HR Manager - Job Requisition Approved",
+        "Notify Hiring Manager - Job Requisition Rejected"
+    ]]]
+    },
 ]
