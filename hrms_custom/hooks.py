@@ -1,5 +1,5 @@
 app_name = "hrms_custom"
-app_title = "HRMS custom"
+app_title = "HRMS Custom"
 app_publisher = "ASHWIN"
 app_description = "Customizations for HRMS"
 app_email = "ashwinkumark59@gmail.com"
