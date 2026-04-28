@@ -12,7 +12,7 @@ def create_new_joiner_asset_request():
     dt = frappe.new_doc("DocType")
     dt.name = "New Joiner Asset Request"
     dt.module = "HRMS Custom"
-    dt.custom = 0
+    dt.custom = 1
     dt.is_submittable = 1
     dt.track_changes = 1
     dt.autoname = "HR-ASSET-.YYYY.-.#####"
