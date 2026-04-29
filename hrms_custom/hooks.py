@@ -267,31 +267,50 @@ fixtures = [
         "filters": [["module", "=", "HRMS Custom"]]
     },
     {
-    "dt": "Workflow",
-    "filters": [["is_active", "=", 1]]
-    },
-     {
-    "dt": "Web Form",
-    "filters": [["name", "in", ["job-application"]]]
+        "dt": "Workflow",
+        "filters": [["is_active", "=", 1]]
     },
     {
-    "dt": "Web Form",
-    "filters": [["name", "in", [
-        "job-application",
-        "candidate-pre-offer-form"
-    ]]]
+        "dt": "Workflow State",
+        "filters": [["name", "in", [
+            "Draft",
+            "Pending BH Approval",
+            "Approved by BH",
+            "Rejected",
+            "Pending",
+            "ID Card Submitted",
+            "ID Card Approved",
+            "ID Card Rejected",
+            "Pending Final Approval",
+            "Approved"
+        ]]]
     },
-     {
-    "dt": "Notification",
-    "filters": [["name", "in", [
-        "Joining Reminder 1 Day",
-        "Joining Reminder 10 Days",
-        "Joining Reminder 45 Days",
-        "Notify Director After BH Approval",
-        "Notify BH and HR - Job Requisition Submitted",
-        "Notify Final Approver - Job Requisition BH Approved",
-        "Notify HR Manager - Job Requisition Approved",
-        "Notify Hiring Manager - Job Requisition Rejected"
-    ]]]
+    {
+        "dt": "Workflow Action Master",
+        "filters": [["name", "in", [
+            "Send for BH Approval",
+            "BH Approve",
+            "BH Reject",
+            "Submit for ID Card Approval",
+            "ID Card Approved",
+            "ID Card Rejected",
+            "Resubmit ID Card"
+        ]]]
+    },
+    {
+        "dt": "Notification",
+        "filters": [["name", "in", [
+            "Joining Reminder 1 Day",
+            "Joining Reminder 10 Days",
+            "Joining Reminder 45 Days",
+            "Notify Director After BH Approval"
+        ]]]
+    },
+    {
+        "dt": "Web Form",
+        "filters": [["name", "in", [
+            "job-application",
+            "candidate-pre-offer-form"
+        ]]]
     },
 ]

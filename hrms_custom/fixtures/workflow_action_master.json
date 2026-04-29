@@ -1,0 +1,51 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-04-27 07:58:41.451550",
+  "name": "BH Approve",
+  "workflow_action_name": "BH Approve"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-04-27 07:58:41.455329",
+  "name": "BH Reject",
+  "workflow_action_name": "BH Reject"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-04-27 09:52:01.888351",
+  "name": "Submit for ID Card Approval",
+  "workflow_action_name": "Submit for ID Card Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-04-27 09:52:01.912255",
+  "name": "ID Card Approved",
+  "workflow_action_name": "ID Card Approved"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-04-27 09:52:01.915998",
+  "name": "ID Card Rejected",
+  "workflow_action_name": "ID Card Rejected"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-04-27 09:52:01.920179",
+  "name": "Resubmit ID Card",
+  "workflow_action_name": "Resubmit ID Card"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-04-27 07:58:41.432421",
+  "name": "Send for BH Approval",
+  "workflow_action_name": "Send for BH Approval"
+ }
+]

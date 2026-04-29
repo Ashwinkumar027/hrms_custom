@@ -1,0 +1,92 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-20 15:58:24.325750",
+  "name": "Draft",
+  "style": "",
+  "workflow_state_name": "Draft"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-20 15:59:14.650142",
+  "name": "Pending Final Approval",
+  "style": "",
+  "workflow_state_name": "Pending Final Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "question-sign",
+  "modified": "2026-02-26 11:18:34.164819",
+  "name": "Pending",
+  "style": "",
+  "workflow_state_name": "Pending"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "ok-sign",
+  "modified": "2026-02-26 11:18:34.168025",
+  "name": "Approved",
+  "style": "Success",
+  "workflow_state_name": "Approved"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "remove",
+  "modified": "2026-02-26 11:18:34.169759",
+  "name": "Rejected",
+  "style": "Danger",
+  "workflow_state_name": "Rejected"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-20 15:58:57.497448",
+  "name": "Pending BH Approval",
+  "style": "",
+  "workflow_state_name": "Pending BH Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-27 09:52:01.353287",
+  "name": "ID Card Submitted",
+  "style": "Primary",
+  "workflow_state_name": "ID Card Submitted"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-27 09:52:01.865993",
+  "name": "ID Card Rejected",
+  "style": "Danger",
+  "workflow_state_name": "ID Card Rejected"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-27 07:58:40.970019",
+  "name": "Approved by BH",
+  "style": "Success",
+  "workflow_state_name": "Approved by BH"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-27 09:52:01.861347",
+  "name": "ID Card Approved",
+  "style": "Success",
+  "workflow_state_name": "ID Card Approved"
+ }
+]
