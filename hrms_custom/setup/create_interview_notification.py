@@ -1,7 +1,7 @@
 import frappe
 
 def create_interview_notification():
-    print("\n--- Creating Interview Notification Script ---")
+    print("\n--- Fixing Interview Notification Script ---")
 
     name = "Notify Candidate - Interview Scheduled"
 
@@ -10,39 +10,30 @@ def create_interview_notification():
         print("  Deleted existing script")
 
     script_code = """
-# Get candidate email
 candidate_email = frappe.db.get_value(
-    "Job Applicant",
-    doc.job_applicant,
-    "email_id"
+    "Job Applicant", doc.job_applicant, "email_id"
 )
-
 candidate_name = frappe.db.get_value(
-    "Job Applicant",
-    doc.job_applicant,
-    "applicant_name"
+    "Job Applicant", doc.job_applicant, "applicant_name"
 )
 
 if candidate_email and not doc.custom_notification_sent:
-    from frappe.utils import format_date, format_time
 
-    # Get interviewer names
+    # Format date without import
+    interview_date = frappe.utils.formatdate(doc.scheduled_on) if doc.scheduled_on else ""
+    from_time = str(doc.from_time)[:5] if doc.from_time else ""
+    to_time = str(doc.to_time)[:5] if doc.to_time else ""
+
+    mode = doc.custom_interview_mode or "Face to Face"
+    location = doc.custom_interview_location or "Will be informed shortly"
+    instructions = doc.custom_interview_instructions or ""
+
     interviewers = []
     for i in doc.interviewers:
         interviewers.append(i.interviewer)
     interviewer_str = ", ".join(interviewers) if interviewers else "Will be informed shortly"
 
-    # Format date and time
-    interview_date = format_date(doc.scheduled_on) if doc.scheduled_on else ""
-    from_time = str(doc.from_time)[:5] if doc.from_time else ""
-    to_time = str(doc.to_time)[:5] if doc.to_time else ""
-
-    # Interview mode details
-    mode = doc.custom_interview_mode or "Face to Face"
-    location = doc.custom_interview_location or "Will be informed shortly"
-    instructions = doc.custom_interview_instructions or ""
-
-    subject = "Interview Scheduled - " + (doc.job_opening or doc.designation or "Position") + " - Aionion Capital"
+    subject = "Interview Scheduled - " + (doc.designation or "Position") + " - Aionion Capital"
 
     message = (
         "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
@@ -52,8 +43,7 @@ if candidate_email and not doc.custom_notification_sent:
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + (candidate_name or "Candidate") + "</b>,</p>"
-        "<p>Congratulations! Your resume has been shortlisted and we are pleased to invite you for an interview.</p>"
-
+        "<p>Congratulations! Your resume has been shortlisted. You are invited for an interview.</p>"
         "<div style='background:white;border-left:4px solid #1B4F8A;padding:20px;margin:20px 0;border-radius:4px;'>"
         "<h3 style='color:#1B4F8A;margin-top:0;'>Interview Details</h3>"
         "<table style='width:100%;border-collapse:collapse;'>"
@@ -63,11 +53,11 @@ if candidate_email and not doc.custom_notification_sent:
         "</tr>"
         "<tr style='border-bottom:1px solid #eee;'>"
         "<td style='padding:8px 0;color:#666;'><b>Date</b></td>"
-        "<td style='padding:8px 0;'><b style='color:#1B4F8A;'>" + interview_date + "</b></td>"
+        "<td style='padding:8px 0;color:#1B4F8A;'><b>" + interview_date + "</b></td>"
         "</tr>"
         "<tr style='border-bottom:1px solid #eee;'>"
         "<td style='padding:8px 0;color:#666;'><b>Time</b></td>"
-        "<td style='padding:8px 0;'><b style='color:#1B4F8A;'>" + from_time + " - " + to_time + "</b></td>"
+        "<td style='padding:8px 0;color:#1B4F8A;'><b>" + from_time + " - " + to_time + "</b></td>"
         "</tr>"
         "<tr style='border-bottom:1px solid #eee;'>"
         "<td style='padding:8px 0;color:#666;'><b>Mode</b></td>"
@@ -83,13 +73,11 @@ if candidate_email and not doc.custom_notification_sent:
         "</tr>"
         "</table>"
         "</div>"
-
         + (
             "<div style='background:#fff8e1;padding:15px;border-radius:4px;margin:15px 0;'>"
             "<b>Special Instructions:</b><br>" + instructions + "</div>"
             if instructions else ""
         ) +
-
         "<div style='background:#e8f5e9;padding:15px;border-radius:4px;margin:15px 0;'>"
         "<b>Please bring the following documents:</b>"
         "<ul style='margin:10px 0;'>"
@@ -100,15 +88,13 @@ if candidate_email and not doc.custom_notification_sent:
         "<li>Last 3 months salary slips (if applicable)</li>"
         "</ul>"
         "</div>"
-
-        "<p>Please confirm your attendance by replying to this email or contact HR at "
+        "<p>Please confirm attendance by replying to this email or contact HR at "
         "<a href='mailto:hr@aionioncapital.com'>hr@aionioncapital.com</a></p>"
-
         "<p>We look forward to meeting you!</p>"
         "<p>Warm Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
-        "<p style='color:#cce0ff;margin:0;font-size:12px;'>This is an automated email from Aionion Capital HRMS</p>"
+        "<p style='color:#cce0ff;margin:0;font-size:12px;'>Aionion Capital HRMS</p>"
         "</div>"
         "</div>"
     )
@@ -121,7 +107,6 @@ if candidate_email and not doc.custom_notification_sent:
         reference_name=doc.name,
     )
 
-    # Mark as notified
     frappe.db.set_value("Interview", doc.name, "custom_notification_sent", 1)
 
     frappe.msgprint(
@@ -142,4 +127,4 @@ if candidate_email and not doc.custom_notification_sent:
     ss.insert(ignore_permissions=True)
     frappe.db.commit()
     print("  Created: " + name)
-    print("Interview notification script created!")
+    print("Interview notification script fixed!")
