@@ -133,50 +133,5 @@
   "slack_webhook_url": null,
   "subject": "Your Joining Date is Tomorrow - {{ doc.employee_name }}",
   "value_changed": null
- },
- {
-  "attach_files": "",
-  "attach_print": 0,
-  "channel": "Email",
-  "condition": "doc.workflow_state == \"Pending Final Approval\"",
-  "condition_type": "Python",
-  "date_changed": null,
-  "datetime_changed": null,
-  "datetime_last_run": null,
-  "days_in_advance": 0,
-  "docstatus": 0,
-  "doctype": "Notification",
-  "document_type": "Job Requisition",
-  "enabled": 1,
-  "event": "Value Change",
-  "filters": null,
-  "from_attach_field": null,
-  "is_standard": 0,
-  "message": "<p>Dear Sir,</p>\n\n<p>A Job Requisition has been approved by the Business Head.</p>\n\n<p>Please review before final approval.</p>\n\n<p><b>Requisition:</b> {{ doc.name }}</p>\n\n<p><b>Designation:</b> {{ doc.designation }}</p>\n\n<p>\n<a href=\"{{ doc.get_url() }}\">\nClick here to view the requisition\n</a>\n</p>\n\n<p><br></p>\n\n<p>Thanks,<br>System</p>\n",
-  "message_type": "Markdown",
-  "method": null,
-  "minutes_offset": 0,
-  "modified": "2026-04-28 15:55:22.235096",
-  "module": null,
-  "name": "Notify Director After BH Approval",
-  "print_format": null,
-  "property_value": null,
-  "recipients": [
-   {
-    "bcc": null,
-    "cc": null,
-    "condition": null,
-    "receiver_by_document_field": "",
-    "receiver_by_role": "Director"
-   }
-  ],
-  "send_system_notification": 0,
-  "send_to_all_assignees": 0,
-  "sender": "HR",
-  "sender_email": "ashwinkumark59@gmail.com",
-  "set_property_after_alert": null,
-  "slack_webhook_url": null,
-  "subject": "Requisition {{ doc.name }} Approved by BH – Review Required",
-  "value_changed": "workflow_state"
  }
 ]
