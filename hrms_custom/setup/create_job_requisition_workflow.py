@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import frappe
 
 def create_job_requisition_workflow():

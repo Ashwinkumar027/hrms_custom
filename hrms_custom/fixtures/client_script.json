@@ -1,1 +1,46 @@
-[]
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Job Requisition",
+  "enabled": 1,
+  "modified": "2026-05-09 12:20:01.232198",
+  "module": "HRMS custom",
+  "name": "user login",
+  "script": "frappe.ui.form.on('Job Requisition', {\r\n    onload: function(frm) {\r\n        if (frm.is_new()) {\r\n            frm.set_value('custom_login_user', frappe.session.user);\r\n        }\r\n    }\r\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Job Opening",
+  "enabled": 1,
+  "modified": "2026-05-09 13:33:08.119141",
+  "module": "HRMS custom",
+  "name": "requisation fetch in opening",
+  "script": "frappe.ui.form.on('Job Opening', {\r\n\r\n    custom_requisition_reference: function(frm) {\r\n\r\n        if (frm.doc.custom_requisition_reference) {\r\n\r\n            frappe.db.get_doc(\r\n                'Job Requisition',\r\n                frm.doc.custom_requisition_reference\r\n            ).then(doc => {\r\n\r\n                frm.set_value('job_title', doc.designation || '');\r\n                frm.set_value('designation', doc.designation || '');\r\n                frm.set_value('department', doc.department || '');\r\n                frm.set_value('company', doc.company || '');\r\n                frm.set_value('employment_type', doc.employment_type || '');\r\n                frm.set_value('location', doc.hiring_location || '');\r\n\r\n            });\r\n\r\n        }\r\n    }\r\n\r\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Staffing Plan",
+  "enabled": 1,
+  "modified": "2026-05-10 18:32:38.867950",
+  "module": "HRMS custom",
+  "name": "Staffing plan totalamouth",
+  "script": "// Client Script for Staffing Plan\n// Handles: Vacancies × Estimated Cost = Total Estimated Cost\n// Sums all rows → Total Estimated Budget\n\n// ── Helper: calculate one row ─────────────────────────\nfunction calculate_row(frm, cdt, cdn) {\n    var row = locals[cdt][cdn];\n    var vacancies = row.number_of_positions || 0;\n    var cost_per_position = row.estimated_cost_per_position || 0;\n    var total = vacancies * cost_per_position;\n\n    frappe.model.set_value(cdt, cdn, \"total_estimated_cost\", total);\n    calculate_total_budget(frm);\n}\n\n// ── Helper: sum all rows → parent field ──────────────\nfunction calculate_total_budget(frm) {\n    var total_budget = 0;\n\n    (frm.doc.staffing_details || []).forEach(function(row) {\n        total_budget += (row.total_estimated_cost || 0);\n    });\n\n    frm.set_value(\"total_estimated_budget\", total_budget);\n    frm.refresh_field(\"total_estimated_budget\");\n}\n\n// ── Recalculate all rows (called after Get Job Requisitions) ──\nfunction recalculate_all(frm) {\n    (frm.doc.staffing_details || []).forEach(function(row) {\n        var vacancies = row.number_of_positions || 0;\n        var cost = row.estimated_cost_per_position || 0;\n        row.total_estimated_cost = vacancies * cost;\n    });\n\n    frm.refresh_field(\"staffing_details\");\n    calculate_total_budget(frm);\n}\n\n// ── Parent form events ────────────────────────────────\nfrappe.ui.form.on(\"Staffing Plan\", {\n\n    // Recalculate when form loads\n    onload: function(frm) {\n        recalculate_all(frm);\n    },\n\n    // Recalculate after refresh\n    refresh: function(frm) {\n        recalculate_all(frm);\n\n        // Override \"Get Job Requisitions\" button to recalculate after fetch\n        frm.page.btn_primary && frm.page.btn_primary.off(\"click\");\n\n        // Hook into after_save to recalculate\n        frm.trigger(\"recalculate_all_rows\");\n    },\n\n    recalculate_all_rows: function(frm) {\n        recalculate_all(frm);\n    },\n\n    // Also recalculate after any child table change\n    staffing_details_add: function(frm) {\n        calculate_total_budget(frm);\n    },\n\n    staffing_details_remove: function(frm) {\n        calculate_total_budget(frm);\n    },\n});\n\n// ── Child table events ────────────────────────────────\nfrappe.ui.form.on(\"Staffing Plan Detail\", {\n\n    // Vacancies changed\n    number_of_positions: function(frm, cdt, cdn) {\n        calculate_row(frm, cdt, cdn);\n    },\n\n    // Estimated Cost Per Position changed\n    estimated_cost_per_position: function(frm, cdt, cdn) {\n        calculate_row(frm, cdt, cdn);\n    },\n\n    // Row added\n    staffing_details_add: function(frm, cdt, cdn) {\n        calculate_total_budget(frm);\n    },\n\n    // Row removed\n    staffing_details_remove: function(frm, cdt, cdn) {\n        calculate_total_budget(frm);\n    },\n\n    // Total Estimated Cost changed (if manually edited)\n    total_estimated_cost: function(frm, cdt, cdn) {\n        calculate_total_budget(frm);\n    },\n});\n\nfrappe.ui.form.on('Staffing Plan Detail', {\n\trefresh(frm) {\n\t\t// your code here\n\t}\n})\n\nfrappe.ui.form.on('Staffing Plan Detail', {\n\trefresh(frm) {\n\t\t// your code here\n\t}\n})",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Staffing Plan",
+  "enabled": 1,
+  "modified": "2026-05-10 18:34:07.167141",
+  "module": "HRMS custom",
+  "name": "Staffing Plan - Calculate Budget",
+  "script": "// Client Script for Staffing Plan\n\nfunction calculate_row(frm, cdt, cdn) {\n    var row = locals[cdt][cdn];\n    var vacancies = row.number_of_positions || 0;\n    var cost_per_position = row.estimated_cost_per_position || 0;\n    var total = vacancies * cost_per_position;\n    frappe.model.set_value(cdt, cdn, \"total_estimated_cost\", total);\n    calculate_total_budget(frm);\n}\n\nfunction calculate_total_budget(frm) {\n    var total_budget = 0;\n    (frm.doc.staffing_details || []).forEach(function(row) {\n        total_budget += (row.total_estimated_cost || 0);\n    });\n    frm.set_value(\"total_estimated_budget\", total_budget);\n    frm.refresh_field(\"total_estimated_budget\");\n}\n\nfunction recalculate_all(frm) {\n    (frm.doc.staffing_details || []).forEach(function(row) {\n        var vacancies = row.number_of_positions || 0;\n        var cost = row.estimated_cost_per_position || 0;\n        row.total_estimated_cost = vacancies * cost;\n    });\n    frm.refresh_field(\"staffing_details\");\n    calculate_total_budget(frm);\n}\n\nfrappe.ui.form.on(\"Staffing Plan\", {\n    onload: function(frm) { recalculate_all(frm); },\n    refresh: function(frm) { recalculate_all(frm); },\n    staffing_details_add: function(frm) { calculate_total_budget(frm); },\n    staffing_details_remove: function(frm) { calculate_total_budget(frm); },\n});\n\nfrappe.ui.form.on(\"Staffing Plan Detail\", {\n    number_of_positions: function(frm, cdt, cdn) { calculate_row(frm, cdt, cdn); },\n    estimated_cost_per_position: function(frm, cdt, cdn) { calculate_row(frm, cdt, cdn); },\n    total_estimated_cost: function(frm, cdt, cdn) { calculate_total_budget(frm); },\n    staffing_details_add: function(frm, cdt, cdn) { calculate_total_budget(frm); },\n    staffing_details_remove: function(frm, cdt, cdn) { calculate_total_budget(frm); },\n});",
+  "view": "Form"
+ }
+]
