@@ -2,6 +2,17 @@
  {
   "docstatus": 0,
   "doctype": "Client Script",
+  "dt": "Job Offer",
+  "enabled": 1,
+  "modified": "2026-05-11 12:46:04.398458",
+  "module": "HRMS custom",
+  "name": "Job Offer - Auto Fetch CTC",
+  "script": "frappe.ui.form.on(\"Job Offer\", {\n    job_applicant: function(frm) {\n        if (frm.doc.job_applicant) {\n            frappe.db.get_value(\"Job Applicant\", frm.doc.job_applicant, \n                [\"custom_expected_ctc\", \"custom_current_ctc\", \"custom_current_employer\", \n                 \"custom_current_designation\", \"custom_notice_period\", \n                 \"custom_current_location\", \"custom_preferred_location\"],\n                function(data) {\n                    if (data) {\n                        if (data.custom_expected_ctc) {\n                            frm.set_value(\"custom_proposed_ctc\", flt(data.custom_expected_ctc));\n                        }\n                        frm.refresh_field(\"custom_proposed_ctc\");\n                    }\n                }\n            );\n        }\n    }\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
   "dt": "Job Requisition",
   "enabled": 1,
   "modified": "2026-05-09 12:20:01.232198",
