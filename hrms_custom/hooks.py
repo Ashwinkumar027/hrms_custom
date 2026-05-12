@@ -277,6 +277,10 @@ fixtures = [
         "dt": "Workflow Action Master"
     },
     {
+        "dt": "Print Format",
+        "filters": [["module", "=", "HRMS custom"]]
+    },
+    {
         "dt": "Notification",
         "filters": [["name", "in", [
             "Joining Reminder 1 Day",
