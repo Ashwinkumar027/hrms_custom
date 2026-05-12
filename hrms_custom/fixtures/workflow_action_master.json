@@ -2,6 +2,76 @@
  {
   "docstatus": 0,
   "doctype": "Workflow Action Master",
+  "modified": "2026-04-27 07:58:41.459590",
+  "name": "Cancel",
+  "workflow_action_name": "Cancel"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-04-20 16:00:30.168233",
+  "name": "Submit",
+  "workflow_action_name": "Submit"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-02-26 11:18:34.183374",
+  "name": "Approve",
+  "workflow_action_name": "Approve"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-02-26 11:18:34.185482",
+  "name": "Reject",
+  "workflow_action_name": "Reject"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-02-26 11:18:34.186503",
+  "name": "Review",
+  "workflow_action_name": "Review"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:46:53.584768",
+  "name": "Submit for HR Approval",
+  "workflow_action_name": "Submit for HR Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:47:11.636904",
+  "name": "HR Approve",
+  "workflow_action_name": "HR Approve"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:47:11.641351",
+  "name": "HR Reject",
+  "workflow_action_name": "HR Reject"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:47:11.647840",
+  "name": "Final Approve",
+  "workflow_action_name": "Final Approve"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:47:11.653928",
+  "name": "Final Reject",
+  "workflow_action_name": "Final Reject"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
   "modified": "2026-04-27 07:58:41.451550",
   "name": "BH Approve",
   "workflow_action_name": "BH Approve"
@@ -47,5 +117,33 @@
   "modified": "2026-04-27 07:58:41.432421",
   "name": "Send for BH Approval",
   "workflow_action_name": "Send for BH Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-12 07:29:58.069378",
+  "name": "Assign to Manager",
+  "workflow_action_name": "Assign to Manager"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-12 07:29:58.094722",
+  "name": "Submit Activities",
+  "workflow_action_name": "Submit Activities"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-12 07:29:58.098727",
+  "name": "HR Approve & Start",
+  "workflow_action_name": "HR Approve & Start"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-12 07:29:58.104633",
+  "name": "Complete",
+  "workflow_action_name": "Complete"
  }
 ]

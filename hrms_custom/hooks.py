@@ -270,32 +270,11 @@ fixtures = [
         "dt": "Workflow",
         "filters": [["is_active", "=", 1]]
     },
-    {
-        "dt": "Workflow State",
-        "filters": [["name", "in", [
-            "Draft",
-            "Pending BH Approval",
-            "Approved by BH",
-            "Rejected",
-            "Pending",
-            "ID Card Submitted",
-            "ID Card Approved",
-            "ID Card Rejected",
-            "Pending Final Approval",
-            "Approved"
-        ]]]
+     {
+        "dt": "Workflow State"
     },
     {
-        "dt": "Workflow Action Master",
-        "filters": [["name", "in", [
-            "Send for BH Approval",
-            "BH Approve",
-            "BH Reject",
-            "Submit for ID Card Approval",
-            "ID Card Approved",
-            "ID Card Rejected",
-            "Resubmit ID Card"
-        ]]]
+        "dt": "Workflow Action Master"
     },
     {
         "dt": "Notification",

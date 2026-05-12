@@ -84,9 +84,63 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
+  "modified": "2026-05-11 22:29:01.832360",
+  "name": "Pending Manager Review",
+  "style": "",
+  "workflow_state_name": "Pending Manager Review"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:57.574386",
+  "name": "Pending Manager Input",
+  "style": "Warning",
+  "workflow_state_name": "Pending Manager Input"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:58.055424",
+  "name": "Onboarding In Progress",
+  "style": "Primary",
+  "workflow_state_name": "Onboarding In Progress"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:58.059902",
+  "name": "Completed",
+  "style": "Success",
+  "workflow_state_name": "Completed"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-05 16:10:49.238843",
+  "name": "Pending Hr Approval",
+  "style": "",
+  "workflow_state_name": "Pending Hr Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
   "modified": "2026-04-20 15:58:24.325750",
   "name": "Draft",
   "style": "",
   "workflow_state_name": "Draft"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:58.049331",
+  "name": "Pending HR Review",
+  "style": "Warning",
+  "workflow_state_name": "Pending HR Review"
  }
 ]
