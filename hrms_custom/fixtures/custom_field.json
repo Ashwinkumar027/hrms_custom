@@ -6526,7 +6526,7 @@
   "link_filters": null,
   "mandatory_depends_on": null,
   "modified": "2026-06-04 00:00:00.000000",
-  "module": "HRMS Custom",
+  "module": "HRMS custom",
   "name": "Employee Checkin-custom_validated_shift_location",
   "no_copy": 0,
   "non_negative": 0,
