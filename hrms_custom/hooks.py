@@ -1,5 +1,5 @@
 app_name = "hrms_custom"
-app_title = "HRMS Custom"
+app_title = "HRMS custom"
 app_publisher = "ASHWIN"
 app_description = "Customizations for HRMS"
 app_email = "ashwinkumark59@gmail.com"
@@ -252,19 +252,19 @@ app_license = "mit"
 fixtures = [
     {
         "dt": "Custom Field",
-        "filters": [["module", "=", "HRMS Custom"]]
+        "filters": [["module", "=", "HRMS custom"]]
     },
     {
         "dt": "Property Setter",
-        "filters": [["module", "=", "HRMS Custom"]]
+        "filters": [["module", "=", "HRMS custom"]]
     },
     {
         "dt": "Client Script",
-        "filters": [["module", "=", "HRMS Custom"]]
+        "filters": [["module", "=", "HRMS custom"]]
     },
     {
         "dt": "Server Script",
-        "filters": [["module", "=", "HRMS Custom"]]
+        "filters": [["module", "=", "HRMS custom"]]
     },
     {
         "dt": "Workflow",
