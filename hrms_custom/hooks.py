@@ -297,3 +297,7 @@ fixtures = [
         ]]]
     },
 ]
+
+override_doctype_class = {
+    "Employee Checkin": "hrms_custom.overrides.employee_checkin.MultiLocationEmployeeCheckin"
+}
