@@ -1,6 +1,8 @@
 import frappe
-from frappe.utils import now, get_url
+from frappe.utils import now, get_url, add_months, today, getdate
 import urllib.parse
+import hashlib
+
 
 @frappe.whitelist()
 def send_preoffer_form(job_applicant):
@@ -9,7 +11,6 @@ def send_preoffer_form(job_applicant):
     if not doc.email_id:
         frappe.throw("No email address found for this applicant!")
 
-    # Build pre-filled form URL
     params = urllib.parse.urlencode({
         "applicant_name": doc.applicant_name or "",
         "email": doc.email_id or "",
@@ -70,7 +71,6 @@ def send_preoffer_form(job_applicant):
         reference_name=doc.name,
     )
 
-    # Update sent status
     frappe.db.set_value("Job Applicant", doc.name, {
         "custom_preoffer_form_sent": 1,
         "custom_preoffer_sent_on": now(),
@@ -85,7 +85,6 @@ def send_preoffer_form(job_applicant):
 def send_offer_letter(job_offer):
     doc = frappe.get_doc("Job Offer", job_offer)
 
-    # Get candidate email
     candidate_email = frappe.db.get_value(
         "Job Applicant", doc.job_applicant, "email_id"
     )
@@ -96,28 +95,23 @@ def send_offer_letter(job_offer):
     if not candidate_email:
         frappe.throw("No email found for this candidate!")
 
-    # Generate accept/reject token
-    import hashlib
     token = hashlib.md5(
         (doc.name + candidate_email + "aionion_secret_2026").encode()
     ).hexdigest()
 
-    # Store token
     frappe.db.set_value("Job Offer", doc.name, {
         "custom_offer_token": token,
         "custom_offer_sent": 1,
-        "custom_offer_sent_on": frappe.utils.now(),
+        "custom_offer_sent_on": now(),
         "custom_offer_sent_by": frappe.session.user,
         "custom_offer_response": "Awaiting Response"
     })
     frappe.db.commit()
 
-    # Accept/Reject URLs
-    base_url = frappe.utils.get_url()
+    base_url = get_url()
     accept_url = base_url + "/api/method/hrms_custom.api.respond_to_offer?token=" + token + "&response=Accepted&offer=" + doc.name
     reject_url = base_url + "/api/method/hrms_custom.api.respond_to_offer?token=" + token + "&response=Rejected&offer=" + doc.name
 
-    # Get appointment letter PDF if exists
     attachments = []
     appointment_letters = frappe.get_all(
         "Appointment Letter",
@@ -152,7 +146,6 @@ def send_offer_letter(job_offer):
         "<b>" + (doc.designation or "") + "</b> at <b>Aionion Capital</b>.</p>"
         "<p>Please find your offer letter attached to this email.</p>"
         "<p>Kindly respond within <b>48 hours</b> by clicking one of the buttons below:</p>"
-
         "<div style='text-align:center;margin:30px 0;'>"
         "<a href='" + accept_url + "' style='background:#0F6E56;color:white;"
         "padding:14px 30px;text-decoration:none;border-radius:4px;"
@@ -162,11 +155,9 @@ def send_offer_letter(job_offer):
         "padding:14px 30px;text-decoration:none;border-radius:4px;"
         "font-weight:bold;font-size:16px;'>✗ Decline Offer</a>"
         "</div>"
-
         "<p style='color:#666;font-size:13px;'>Please be advised that the offer will be deemed revoked "
         "if we do not receive your acceptance within 48 hours or if there are any inconsistencies "
         "between the information provided during the interview and the details in the offer letter.</p>"
-
         "<p>We look forward to welcoming you to our team!</p>"
         "<p>Warm Regards,<br><b>HR Department</b><br>Aionion Capital</p>"
         "</div>"
@@ -194,13 +185,11 @@ def send_offer_letter(job_offer):
 
 @frappe.whitelist(allow_guest=True)
 def respond_to_offer(token, response, offer):
-    # Validate token
     job_offer = frappe.get_doc("Job Offer", offer)
     candidate_email = frappe.db.get_value(
         "Job Applicant", job_offer.job_applicant, "email_id"
     )
 
-    import hashlib
     expected_token = hashlib.md5(
         (offer + candidate_email + "aionion_secret_2026").encode()
     ).hexdigest()
@@ -216,15 +205,13 @@ def respond_to_offer(token, response, offer):
             "</div>"
         )
 
-    # Update response
     frappe.db.set_value("Job Offer", offer, {
         "custom_offer_response": response,
-        "custom_offer_responded_on": frappe.utils.now(),
+        "custom_offer_responded_on": now(),
         "status": response
     })
     frappe.db.commit()
 
-    # Notify HR
     hr_users = frappe.get_all("Has Role",
         filters={"role": "HR User", "parenttype": "User"},
         fields=["parent"])
@@ -249,12 +236,11 @@ def respond_to_offer(token, response, offer):
                 "<p>Candidate <b>" + (candidate_name or "") + "</b> has "
                 "<b style='color:" + color + ";'>" + response + "</b> the offer.</p>"
                 "<p><b>Position:</b> " + (job_offer.designation or "") + "</p>"
-                "<p><b>Response Time:</b> " + frappe.utils.now() + "</p>"
+                "<p><b>Response Time:</b> " + now() + "</p>"
                 "</div>"
             ),
         )
 
-    # Return response page
     if response == "Accepted":
         return (
             "<div style='font-family:Arial,sans-serif;text-align:center;padding:50px;"
@@ -275,4 +261,100 @@ def respond_to_offer(token, response, offer):
             "<p>Thank you for letting us know, <b>" + (candidate_name or "") + "</b>.</p>"
             "<p>We appreciate your time and wish you all the best.</p>"
             "</div>"
+        )
+
+
+@frappe.whitelist(allow_guest=False)
+def probation_action(employee, action):
+    emp = frappe.get_doc("Employee", employee)
+
+    manager_email = None
+    manager_name = "Manager"
+    if emp.reports_to:
+        manager = frappe.db.get_value(
+            "Employee", emp.reports_to,
+            ["company_email", "employee_name"], as_dict=True
+        )
+        if manager:
+            manager_email = manager.company_email
+            manager_name = manager.employee_name
+
+    hr_managers = frappe.db.sql("""
+        SELECT DISTINCT u.email
+        FROM `tabUser` u
+        JOIN `tabHas Role` hr ON hr.parent = u.name
+        WHERE hr.role = 'HR Manager'
+        AND u.enabled = 1
+        AND u.email != ''
+    """, as_dict=True)
+    cc_emails = [r.email for r in hr_managers if r.email]
+
+    if action == "confirm":
+        emp.final_confirmation_date = today()
+        emp.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        if manager_email:
+            frappe.sendmail(
+                recipients=[manager_email],
+                cc=cc_emails,
+                subject=f"Employee Confirmed: {emp.employee_name}",
+                message=f"""
+                <p>Dear {manager_name},</p>
+                <p>This is to confirm that <strong>{emp.employee_name}</strong>
+                (ID: {emp.name}) has been <strong>confirmed</strong> as a
+                permanent employee effective <strong>{today()}</strong>.</p>
+                <p>Regards,<br>HR System</p>
+                """
+            )
+
+        frappe.respond_as_web_page(
+            title="Confirmed",
+            html=f"""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2 style="color:#28a745;">✅ Employee Confirmed Successfully</h2>
+                <p><strong>{emp.employee_name}</strong> has been confirmed
+                as a permanent employee.</p>
+                <p>HR team has been notified.</p>
+            </div>
+            """
+        )
+
+    elif action == "extend":
+        current_end = getdate(emp.custom_probation_end_date)
+        new_end = add_months(current_end, 2)
+        emp.custom_probation_end_date = new_end
+        emp.custom_probation_notified = 0
+        emp.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        if manager_email:
+            frappe.sendmail(
+                recipients=[manager_email],
+                cc=cc_emails,
+                subject=f"Probation Extended: {emp.employee_name}",
+                message=f"""
+                <p>Dear {manager_name},</p>
+                <p>The probation period of <strong>{emp.employee_name}</strong>
+                (ID: {emp.name}) has been <strong>extended by 2 months</strong>.</p>
+                <p>New probation end date:
+                <strong>{new_end.strftime('%d-%m-%Y')}</strong></p>
+                <p>You will receive another reminder 15 days before
+                the new probation end date.</p>
+                <p>Regards,<br>HR System</p>
+                """
+            )
+
+        frappe.respond_as_web_page(
+            title="Extended",
+            html=f"""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2 style="color:#ffc107;">⏳ Probation Extended</h2>
+                <p>Probation for <strong>{emp.employee_name}</strong>
+                has been extended by 2 months.</p>
+                <p>New end date:
+                <strong>{new_end.strftime('%d-%m-%Y')}</strong></p>
+                <p>You will receive a reminder 15 days before the new end date.</p>
+            </div>
+            """
         )

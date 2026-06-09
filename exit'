@@ -1,0 +1,384 @@
+[1mdiff --git a/hrms_custom/api.py b/hrms_custom/api.py[m
+[1mindex c530da1..770f883 100644[m
+[1m--- a/hrms_custom/api.py[m
+[1m+++ b/hrms_custom/api.py[m
+[36m@@ -1,278 +1,102 @@[m
+ import frappe[m
+[31m-from frappe.utils import now, get_url[m
+[31m-import urllib.parse[m
+[31m-[m
+[31m-@frappe.whitelist()[m
+[31m-def send_preoffer_form(job_applicant):[m
+[31m-    doc = frappe.get_doc("Job Applicant", job_applicant)[m
+[31m-[m
+[31m-    if not doc.email_id:[m
+[31m-        frappe.throw("No email address found for this applicant!")[m
+[31m-[m
+[31m-    # Build pre-filled form URL[m
+[31m-    params = urllib.parse.urlencode({[m
+[31m-        "applicant_name": doc.applicant_name or "",[m
+[31m-        "email": doc.email_id or "",[m
+[31m-        "phone": doc.phone_number or "",[m
+[31m-        "job_applicant": doc.name[m
+[31m-    })[m
+[31m-[m
+[31m-    form_url = get_url("/candidate-pre-offer/new?" + params)[m
+[31m-[m
+[31m-    subject = "Action Required: Pre-Offer Form - Aionion Capital"[m
+[31m-[m
+[31m-    message = ([m
+[31m-        "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"[m
+[31m-        "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"[m
+[31m-        "<h2 style='color:white;margin:0;'>Pre-Offer Form</h2>"[m
+[31m-        "<p style='color:#cce0ff;margin:5px 0;'>Aionion Capital</p>"[m
+[31m-        "</div>"[m
+[31m-        "<div style='padding:30px;background:#f9f9f9;'>"[m
+[31m-        "<p>Dear <b>" + (doc.applicant_name or "Candidate") + "</b>,</p>"[m
+[31m-        "<p>Congratulations! You have successfully cleared the interview process at "[m
+[31m-        "<b>Aionion Capital</b>.</p>"[m
+[31m-        "<p>As the next step towards your offer letter, please fill in the "[m
+[31m-        "<b>Pre-Offer Form</b> with your personal details, KYC information, "[m
+[31m-        "CTC expectations, and upload all required documents.</p>"[m
+[31m-        "<p style='margin:25px 0;text-align:center;'>"[m
+[31m-        "<a href='" + form_url + "' style='background:#1B4F8A;color:white;"[m
+[31m-        "padding:14px 28px;text-decoration:none;border-radius:4px;"[m
+[31m-        "font-weight:bold;font-size:16px;'>Fill Pre-Offer Form</a>"[m
+[31m-        "</p>"[m
+[31m-        "<p><b>Documents Required:</b></p>"[m
+[31m-        "<ul>"[m
+[31m-        "<li>Aadhar Card</li>"[m
+[31m-        "<li>PAN Card</li>"[m
+[31m-        "<li>Bank Passbook / Cancelled Cheque</li>"[m
+[31m-        "<li>10th &amp; 12th Marksheet</li>"[m
+[31m-        "<li>Degree Certificate</li>"[m
+[31m-        "<li>Experience Certificate (if applicable)</li>"[m
+[31m-        "<li>Last Salary Slip (if applicable)</li>"[m
+[31m-        "<li>Resume / CV</li>"[m
+[31m-        "</ul>"[m
+[31m-        "<p>Please complete the form at the earliest to proceed with your offer letter.</p>"[m
+[31m-        "<p>For any queries contact: "[m
+[31m-        "<a href='mailto:hr@aionioncapital.com'>hr@aionioncapital.com</a></p>"[m
+[31m-        "<p>Warm Regards,<br><b>HR Team</b><br>Aionion Capital</p>"[m
+[31m-        "</div>"[m
+[31m-        "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"[m
+[31m-        "<p style='color:#cce0ff;margin:0;font-size:12px;'>"[m
+[31m-        "Aionion Capital HRMS</p>"[m
+[31m-        "</div>"[m
+[31m-        "</div>"[m
+[31m-    )[m
+[31m-[m
+[31m-    frappe.sendmail([m
+[31m-        recipients=[doc.email_id],[m
+[31m-        subject=subject,[m
+[31m-        message=message,[m
+[31m-        reference_doctype="Job Applicant",[m
+[31m-        reference_name=doc.name,[m
+[31m-    )[m
+[31m-[m
+[31m-    # Update sent status[m
+[31m-    frappe.db.set_value("Job Applicant", doc.name, {[m
+[31m-        "custom_preoffer_form_sent": 1,[m
+[31m-        "custom_preoffer_sent_on": now(),[m
+[31m-        "custom_preoffer_sent_by": frappe.session.user[m
+[31m-    })[m
+[31m-[m
+[31m-    frappe.db.commit()[m
+[31m-    return {"success": True, "message": "Pre-Offer Form sent successfully!"}[m
+[31m-[m
+[31m-[m
+[31m-@frappe.whitelist()[m
+[31m-def send_offer_letter(job_offer):[m
+[31m-    doc = frappe.get_doc("Job Offer", job_offer)[m
+[31m-[m
+[31m-    # Get candidate email[m
+[31m-    candidate_email = frappe.db.get_value([m
+[31m-        "Job Applicant", doc.job_applicant, "email_id"[m
+[31m-    )[m
+[31m-    candidate_name = frappe.db.get_value([m
+[31m-        "Job Applicant", doc.job_applicant, "applicant_name"[m
+[31m-    )[m
+[31m-[m
+[31m-    if not candidate_email:[m
+[31m-        frappe.throw("No email found for this candidate!")[m
+[31m-[m
+[31m-    # Generate accept/reject token[m
+[31m-    import hashlib[m
+[31m-    token = hashlib.md5([m
+[31m-        (doc.name + candidate_email + "aionion_secret_2026").encode()[m
+[31m-    ).hexdigest()[m
+[31m-[m
+[31m-    # Store token[m
+[31m-    frappe.db.set_value("Job Offer", doc.name, {[m
+[31m-        "custom_offer_token": token,[m
+[31m-        "custom_offer_sent": 1,[m
+[31m-        "custom_offer_sent_on": frappe.utils.now(),[m
+[31m-        "custom_offer_sent_by": frappe.session.user,[m
+[31m-        "custom_offer_response": "Awaiting Response"[m
+[31m-    })[m
+[31m-    frappe.db.commit()[m
+[31m-[m
+[31m-    # Accept/Reject URLs[m
+[31m-    base_url = frappe.utils.get_url()[m
+[31m-    accept_url = base_url + "/api/method/hrms_custom.api.respond_to_offer?token=" + token + "&response=Accepted&offer=" + doc.name[m
+[31m-    reject_url = base_url + "/api/method/hrms_custom.api.respond_to_offer?token=" + token + "&response=Rejected&offer=" + doc.name[m
+[31m-[m
+[31m-    # Get appointment letter PDF if exists[m
+[31m-    attachments = [][m
+[31m-    appointment_letters = frappe.get_all([m
+[31m-        "Appointment Letter",[m
+[31m-        filters={"job_applicant": doc.job_applicant},[m
+[31m-        fields=["name"],[m
+[31m-        limit=1[m
+[31m-    )[m
+[31m-[m
+[31m-    if appointment_letters:[m
+[31m-        try:[m
+[31m-            pdf_content = frappe.get_print([m
+[31m-                "Appointment Letter",[m
+[31m-                appointment_letters[0].name,[m
+[31m-                as_pdf=True[m
+[31m-            )[m
+[31m-            attachments = [{[m
+[31m-                "fname": "Offer_Letter_" + (candidate_name or "Candidate").replace(" ", "_") + ".pdf",[m
+[31m-                "fcontent": pdf_content[m
+[31m-            }][m
+[31m-        except Exception:[m
+[31m-            pass[m
+[31m-[m
+[31m-    message = ([m
+[31m-        "<div style='font-family:Arial,sans-serif;max-width:650px;margin:0 auto;'>"[m
+[31m-        "<div style='background:#1B4F8A;padding:25px;text-align:center;'>"[m
+[31m-        "<h2 style='color:white;margin:0;'>Offer Letter</h2>"[m
+[31m-        "<p style='color:#cce0ff;margin:5px 0;'>Aionion Capital</p>"[m
+[31m-        "</div>"[m
+[31m-        "<div style='padding:30px;background:#f9f9f9;'>"[m
+[31m-        "<p>Dear <b>" + (candidate_name or "Candidate") + "</b>,</p>"[m
+[31m-        "<p>Congratulations! We are delighted to inform you that you have been selected for the position of "[m
+[31m-        "<b>" + (doc.designation or "") + "</b> at <b>Aionion Capital</b>.</p>"[m
+[31m-        "<p>Please find your offer letter attached to this email.</p>"[m
+[31m-        "<p>Kindly respond within <b>48 hours</b> by clicking one of the buttons below:</p>"[m
+[31m-[m
+[31m-        "<div style='text-align:center;margin:30px 0;'>"[m
+[31m-        "<a href='" + accept_url + "' style='background:#0F6E56;color:white;"[m
+[31m-        "padding:14px 30px;text-decoration:none;border-radius:4px;"[m
+[31m-        "font-weight:bold;font-size:16px;margin-right:15px;'>✓ Accept Offer</a>"[m
+[31m-        "&nbsp;&nbsp;&nbsp;"[m
+[31m-        "<a href='" + reject_url + "' style='background:#A32D2D;color:white;"[m
+[31m-        "padding:14px 30px;text-decoration:none;border-radius:4px;"[m
+[31m-        "font-weight:bold;font-size:16px;'>✗ Decline Offer</a>"[m
+[31m-        "</div>"[m
+[31m-[m
+[31m-        "<p style='color:#666;font-size:13px;'>Please be advised that the offer will be deemed revoked "[m
+[31m-        "if we do not receive your acceptance within 48 hours or if there are any inconsistencies "[m
+[31m-        "between the information provided during the interview and the details in the offer letter.</p>"[m
+[31m-[m
+[31m-        "<p>We look forward to welcoming you to our team!</p>"[m
+[31m-        "<p>Warm Regards,<br><b>HR Department</b><br>Aionion Capital</p>"[m
+[31m-        "</div>"[m
+[31m-        "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"[m
+[31m-        "<p style='color:#cce0ff;margin:0;font-size:11px;'>"[m
+[31m-        "CONFIDENTIAL: This email is intended solely for the named recipient.</p>"[m
+[31m-        "</div>"[m
+[31m-        "</div>"[m
+[31m-    )[m
+[31m-[m
+[31m-    frappe.sendmail([m
+[31m-        recipients=[candidate_email],[m
+[31m-        subject="Offer Letter - " + (doc.designation or "") + " - Aionion Capital",[m
+[31m-        message=message,[m
+[31m-        attachments=attachments,[m
+[31m-        reference_doctype="Job Offer",[m
+[31m-        reference_name=doc.name,[m
+[31m-    )[m
+[31m-[m
+[31m-    return {[m
+[31m-        "success": True,[m
+[31m-        "message": "Offer Letter sent to " + (candidate_name or candidate_email)[m
+[31m-    }[m
+[31m-[m
+[31m-[m
+[31m-@frappe.whitelist(allow_guest=True)[m
+[31m-def respond_to_offer(token, response, offer):[m
+[31m-    # Validate token[m
+[31m-    job_offer = frappe.get_doc("Job Offer", offer)[m
+[31m-    candidate_email = frappe.db.get_value([m
+[31m-        "Job Applicant", job_offer.job_applicant, "email_id"[m
+[31m-    )[m
+[31m-[m
+[31m-    import hashlib[m
+[31m-    expected_token = hashlib.md5([m
+[31m-        (offer + candidate_email + "aionion_secret_2026").encode()[m
+[31m-    ).hexdigest()[m
+[31m-[m
+[31m-    if token != expected_token:[m
+[31m-        return "<h2 style='color:red;text-align:center;'>Invalid or expired link!</h2>"[m
+[31m-[m
+[31m-    if job_offer.custom_offer_response in ["Accepted", "Rejected"]:[m
+[31m-        return ([m
+[31m-            "<div style='font-family:Arial;text-align:center;padding:50px;'>"[m
+[31m-            "<h2>You have already responded to this offer.</h2>"[m
+[31m-            "<p>Response: <b>" + job_offer.custom_offer_response + "</b></p>"[m
+[31m-            "</div>"[m
+[31m-        )[m
+[31m-[m
+[31m-    # Update response[m
+[31m-    frappe.db.set_value("Job Offer", offer, {[m
+[31m-        "custom_offer_response": response,[m
+[31m-        "custom_offer_responded_on": frappe.utils.now(),[m
+[31m-        "status": response[m
+[31m-    })[m
+[31m-    frappe.db.commit()[m
+[31m-[m
+[31m-    # Notify HR[m
+[31m-    hr_users = frappe.get_all("Has Role",[m
+[31m-        filters={"role": "HR User", "parenttype": "User"},[m
+[31m-        fields=["parent"])[m
+[31m-    hr_emails = [][m
+[31m-    for u in hr_users:[m
+[31m-        email = frappe.db.get_value("User", u.parent, "email")[m
+[31m-        if email:[m
+[31m-            hr_emails.append(email)[m
+[31m-[m
+[31m-    candidate_name = frappe.db.get_value([m
+[31m-        "Job Applicant", job_offer.job_applicant, "applicant_name"[m
+[31m-    )[m
+[31m-[m
+[31m-    if hr_emails:[m
+[31m-        color = "#0F6E56" if response == "Accepted" else "#A32D2D"[m
+[31m-        frappe.sendmail([m
+[31m-            recipients=hr_emails,[m
+[31m-            subject="Offer " + response + " - " + (candidate_name or offer),[m
+[31m-            message=([m
+[31m-                "<div style='font-family:Arial;padding:20px;'>"[m
+[31m-                "<h2 style='color:" + color + ";'>Offer " + response + "!</h2>"[m
+[31m-                "<p>Candidate <b>" + (candidate_name or "") + "</b> has "[m
+[31m-                "<b style='color:" + color + ";'>" + response + "</b> the offer.</p>"[m
+[31m-                "<p><b>Position:</b> " + (job_offer.designation or "") + "</p>"[m
+[31m-                "<p><b>Response Time:</b> " + frappe.utils.now() + "</p>"[m
+[31m-                "</div>"[m
+[31m-            ),[m
+[31m-        )[m
+[31m-[m
+[31m-    # Return response page[m
+[31m-    if response == "Accepted":[m
+[31m-        return ([m
+[31m-            "<div style='font-family:Arial,sans-serif;text-align:center;padding:50px;"[m
+[31m-            "max-width:500px;margin:0 auto;'>"[m
+[31m-            "<div style='color:#0F6E56;font-size:60px;'>✓</div>"[m
+[31m-            "<h2 style='color:#0F6E56;'>Offer Accepted!</h2>"[m
+[31m-            "<p>Thank you for accepting our offer, <b>" + (candidate_name or "") + "</b>!</p>"[m
+[31m-            "<p>Our HR team will contact you shortly with further details.</p>"[m
+[31m-            "<p>We look forward to welcoming you to <b>Aionion Capital</b>!</p>"[m
+[31m-            "</div>"[m
+[31m-        )[m
+[31m-    else:[m
+[31m-        return ([m
+[31m-            "<div style='font-family:Arial,sans-serif;text-align:center;padding:50px;"[m
+[31m-            "max-width:500px;margin:0 auto;'>"[m
+[31m-            "<div style='color:#A32D2D;font-size:60px;'>✗</div>"[m
+[31m-            "<h2 style='color:#A32D2D;'>Offer Declined</h2>"[m
+[31m-            "<p>Thank you for letting us know, <b>" + (candidate_name or "") + "</b>.</p>"[m
+[31m-            "<p>We appreciate your time and wish you all the best.</p>"[m
+[31m-            "</div>"[m
+[31m-        )[m
+[32m+[m[32mfrom frappe.utils import add_months, today, getdate[m
+[32m+[m
+[32m+[m
+[32m+[m[32m@frappe.whitelist(allow_guest=False)[m
+[32m+[m[32mdef probation_action(employee, action):[m
+[32m+[m	[32memp = frappe.get_doc("Employee", employee)[m
+[32m+[m
+[32m+[m	[32m# Get reporting manager details[m
+[32m+[m	[32mmanager_email = None[m
+[32m+[m	[32mmanager_name = "Manager"[m
+[32m+[m	[32mif emp.reports_to:[m
+[32m+[m		[32mmanager = frappe.db.get_value([m
+[32m+[m			[32m"Employee", emp.reports_to,[m
+[32m+[m			[32m["company_email", "employee_name"], as_dict=True[m
+[32m+[m		[32m)[m
+[32m+[m		[32mif manager:[m
+[32m+[m			[32mmanager_email = manager.company_email[m
+[32m+[m			[32mmanager_name = manager.employee_name[m
+[32m+[m
+[32m+[m	[32m# Get HR Manager role emails for CC[m
+[32m+[m	[32mhr_managers = frappe.db.sql("""[m
+[32m+[m		[32mSELECT DISTINCT u.email[m
+[32m+[m		[32mFROM `tabUser` u[m
+[32m+[m		[32mJOIN `tabHas Role` hr ON hr.parent = u.name[m
+[32m+[m		[32mWHERE hr.role = 'HR Manager'[m
+[32m+[m		[32mAND u.enabled = 1[m
+[32m+[m		[32mAND u.email != ''[m
+[32m+[m	[32m""", as_dict=True)[m
+[32m+[m	[32mcc_emails = [r.email for r in hr_managers if r.email][m
+[32m+[m
+[32m+[m	[32mif action == "confirm":[m
+[32m+[m		[32memp.final_confirmation_date = today()[m
+[32m+[m		[32memp.save(ignore_permissions=True)[m
+[32m+[m		[32mfrappe.db.commit()[m
+[32m+[m
+[32m+[m		[32m# Send confirmation email to manager + CC HR[m
+[32m+[m		[32mif manager_email:[m
+[32m+[m			[32mfrappe.sendmail([m
+[32m+[m				[32mrecipients=[manager_email],[m
+[32m+[m				[32mcc=cc_emails,[m
+[32m+[m				[32msubject=f"Employee Confirmed: {emp.employee_name}",[m
+[32m+[m				[32mmessage=f"""[m
+[32m+[m				[32m<p>Dear {manager_name},</p>[m
+[32m+[m				[32m<p>This is to confirm that <strong>{emp.employee_name}</strong>[m
+[32m+[m				[32m(ID: {emp.name}) has been <strong>confirmed</strong> as a[m
+[32m+[m				[32mpermanent employee effective <strong>{today()}</strong>.</p>[m
+[32m+[m				[32m<p>Regards,<br>HR System</p>[m
+[32m+[m				[32m"""[m
+[32m+[m			[32m)[m
+[32m+[m
+[32m+[m		[32mfrappe.respond_as_web_page([m
+[32m+[m			[32mtitle="Confirmed",[m
+[32m+[m			[32mhtml=f"""[m
+[32m+[m			[32m<div style="text-align:center;padding:60px;font-family:Arial;">[m
+[32m+[m				[32m<h2 style="color:#28a745;">✅ Employee Confirmed Successfully</h2>[m
+[32m+[m				[32m<p><strong>{emp.employee_name}</strong> has been confirmed[m
+[32m+[m				[32mas a permanent employee.</p>[m
+[32m+[m				[32m<p>HR team has been notified.</p>[m
+[32m+[m			[32m</div>[m
+[32m+[m			[32m"""[m
+[32m+[m		[32m)[m
+[32m+[m
+[32m+[m	[32melif action == "extend":[m
+[32m+[m		[32mcurrent_end = getdate(emp.custom_probation_end_date)[m
+[32m+[m		[32mnew_end = add_months(current_end, 2)[m
+[32m+[m		[32memp.custom_probation_end_date = new_end[m
+[32m+[m		[32memp.custom_probation_notified = 0  # reset so 15-day reminder fires again[m
+[32m+[m		[32memp.save(ignore_permissions=True)[m
+[32m+[m		[32mfrappe.db.commit()[m
+[32m+[m
+[32m+[m		[32m# Send extension notification to manager + CC HR[m
+[32m+[m		[32mif manager_email:[m
+[32m+[m			[32mfrappe.sendmail([m
+[32m+[m				[32mrecipients=[manager_email],[m
+[32m+[m				[32mcc=cc_emails,[m
+[32m+[m				[32msubject=f"Probation Extended: {emp.employee_name}",[m
+[32m+[m				[32mmessage=f"""[m
+[32m+[m				[32m<p>Dear {manager_name},</p>[m
+[32m+[m				[32m<p>The probation period of <strong>{emp.employee_name}</strong>[m
+[32m+[m				[32m(ID: {emp.name}) has been <strong>extended by 2 months</strong>.</p>[m
+[32m+[m				[32m<p>New probation end date:[m
+[32m+[m				[32m<strong>{new_end.strftime('%d-%m-%Y')}</strong></p>[m
+[32m+[m				[32m<p>You will receive another reminder 15 days before[m
+[32m+[m				[32mthe new probation end date.</p>[m
+[32m+[m				[32m<p>Regards,<br>HR System</p>[m
+[32m+[m				[32m"""[m
+[32m+[m			[32m)[m
+[32m+[m
+[32m+[m		[32mfrappe.respond_as_web_page([m
+[32m+[m			[32mtitle="Extended",[m
+[32m+[m			[32mhtml=f"""[m
+[32m+[m			[32m<div style="text-align:center;padding:60px;font-family:Arial;">[m
+[32m+[m				[32m<h2 style="color:#ffc107;">⏳ Probation Extended</h2>[m
+[32m+[m				[32m<p>Probation for <strong>{emp.employee_name}</strong>[m
+[32m+[m				[32mhas been extended by 2 months.</p>[m
+[32m+[m				[32m<p>New end date:[m
+[32m+[m				[32m<strong>{new_end.strftime('%d-%m-%Y')}</strong></p>[m
+[32m+[m				[32m<p>You will receive a reminder 15 days before the new end date.</p>[m
+[32m+[m			[32m</div>[m
+[32m+[m			[32m"""[m
+[32m+[m		[32m)[m

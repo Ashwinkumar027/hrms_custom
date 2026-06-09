@@ -301,3 +301,7 @@ fixtures = [
 override_doctype_class = {
     "Employee Checkin": "hrms_custom.overrides.employee_checkin.MultiLocationEmployeeCheckin"
 }
+# Whitelisted API methods
+whitelist_methods = {
+    "probation_action": "hrms_custom.api.probation_action"
+}
