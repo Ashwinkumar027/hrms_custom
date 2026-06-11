@@ -1,0 +1,51 @@
+[
+ {
+  "applies_to": "Company",
+  "company": "AIONION CAPITAL (Demo)",
+  "docstatus": 0,
+  "doctype": "Employee Allowed Shift Location",
+  "employee": null,
+  "employee_name": null,
+  "enabled": 1,
+  "from_date": "2026-06-11",
+  "locations": [
+   {
+    "shift_location": "chennai"
+   },
+   {
+    "shift_location": "INSURANCE OFFICE"
+   }
+  ],
+  "modified": "2026-06-11 11:27:18.169390",
+  "name": "EASL-Company--AIONION CAPITAL (Demo)-UAT",
+  "shift_location": null,
+  "shift_type": "UAT",
+  "to_date": null
+ },
+ {
+  "applies_to": "Company",
+  "company": "AIONION CAPITAL (Demo)",
+  "docstatus": 0,
+  "doctype": "Employee Allowed Shift Location",
+  "employee": null,
+  "employee_name": null,
+  "enabled": 1,
+  "from_date": "2026-06-11",
+  "locations": [
+   {
+    "shift_location": "INSURANCE OFFICE"
+   },
+   {
+    "shift_location": "chennai"
+   },
+   {
+    "shift_location": "test"
+   }
+  ],
+  "modified": "2026-06-11 11:59:15.741071",
+  "name": "EASL-Company--AIONION CAPITAL (Demo)-Permission Validation Shift",
+  "shift_location": null,
+  "shift_type": "Permission Validation Shift",
+  "to_date": null
+ }
+]

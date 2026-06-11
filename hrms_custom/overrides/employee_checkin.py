@@ -17,8 +17,8 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
         if not frappe.db.get_single_value("HR Settings", "allow_geolocation_tracking"):
             return
 
-        if not (self.latitude or self.longitude):
-            frappe.throw(_("Latitude and longitude values are required for checking in."))
+        if self.latitude in (None, "") or self.longitude in (None, ""):
+            frappe.throw(_("Latitude and longitude values are required for checking in/out."))
 
         if not self.employee or not self.shift:
             return
@@ -49,7 +49,7 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
             if not location:
                 continue
 
-            if not location.latitude or not location.longitude:
+            if location.latitude in (None, "") or location.longitude in (None, ""):
                 continue
 
             checkin_radius = flt(location.checkin_radius)
@@ -91,27 +91,36 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
 
 def get_allowed_shift_locations(employee, shift_type, checkin_time):
     checkin_date = getdate(checkin_time)
-    locations = []
 
-    # Check custom multi-location DocType first
     if frappe.db.exists("DocType", "Employee Allowed Shift Location"):
-        locations = frappe.get_all(
-            "Employee Allowed Shift Location",
-            filters={
+        employee_locations = get_locations_from_allowed_location_docs(
+            {
                 "employee": employee,
                 "shift_type": shift_type,
                 "enabled": 1,
                 "from_date": ["<=", checkin_date],
             },
-            or_filters=[
-                ["to_date", ">=", checkin_date],
-                ["to_date", "is", "not set"],
-            ],
-            pluck="shift_location",
+            checkin_date,
         )
 
-    if locations:
-        return remove_duplicates(locations)
+        if employee_locations:
+            return employee_locations
+
+        company = frappe.db.get_value("Employee", employee, "company")
+        if company:
+            company_locations = get_locations_from_allowed_location_docs(
+                {
+                    "applies_to": "Company",
+                    "company": company,
+                    "shift_type": shift_type,
+                    "enabled": 1,
+                    "from_date": ["<=", checkin_date],
+                },
+                checkin_date,
+            )
+
+            if company_locations:
+                return company_locations
 
     # Fallback: standard Shift Assignment location (original HRMS behaviour)
     assignment_locations = frappe.get_all(
@@ -132,6 +141,39 @@ def get_allowed_shift_locations(employee, shift_type, checkin_time):
     )
 
     return remove_duplicates(assignment_locations)
+
+
+def get_locations_from_allowed_location_docs(filters, checkin_date):
+    docs = frappe.get_all(
+        "Employee Allowed Shift Location",
+        filters=filters,
+        or_filters=[
+            ["to_date", ">=", checkin_date],
+            ["to_date", "is", "not set"],
+        ],
+        fields=["name", "shift_location"],
+    )
+
+    if not docs:
+        return []
+
+    locations = [doc.shift_location for doc in docs if doc.shift_location]
+    parent_names = [doc.name for doc in docs]
+
+    if frappe.db.exists("DocType", "Employee Allowed Shift Location Detail"):
+        locations.extend(
+            frappe.get_all(
+                "Employee Allowed Shift Location Detail",
+                filters={
+                    "parent": ["in", parent_names],
+                    "parenttype": "Employee Allowed Shift Location",
+                    "parentfield": "locations",
+                },
+                pluck="shift_location",
+            )
+        )
+
+    return remove_duplicates(locations)
 
 
 def remove_duplicates(values):

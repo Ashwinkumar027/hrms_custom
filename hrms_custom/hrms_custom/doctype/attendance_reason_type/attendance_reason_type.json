@@ -1,0 +1,100 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:type_name",
+ "creation": "2026-06-08 00:49:31.842073",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_y2if",
+  "type_name",
+  "description",
+  "is_active",
+  "attendance_behavior",
+  "reasons",
+  "section_break_vmtm",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_y2if",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Attendance Reason Type",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Type Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "reasons",
+   "fieldtype": "Table",
+   "label": "Reasons",
+   "options": "Attendance Reason Type Detail"
+  },
+  {
+   "fieldname": "section_break_vmtm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "attendance_behavior",
+   "fieldtype": "Select",
+   "label": "Attendance Behavior",
+   "options": "Creates Attendance\nTags Existing Attendance",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-06-08 01:46:15.625026",
+ "modified_by": "Administrator",
+ "module": "HRMS custom",
+ "name": "Attendance Reason Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

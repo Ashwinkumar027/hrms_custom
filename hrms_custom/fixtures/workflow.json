@@ -2,16 +2,16 @@
  {
   "docstatus": 0,
   "doctype": "Workflow",
-  "document_type": "Job Requisition",
+  "document_type": "Attendance Request",
   "enable_action_confirmation": 0,
   "is_active": 1,
-  "modified": "2026-05-05 17:20:18.710878",
-  "name": "Manpower Requisition Flow",
+  "modified": "2026-06-09 00:34:05.733247",
+  "name": "Attendance Request Approval",
   "override_status": 0,
-  "send_email_alert": 1,
+  "send_email_alert": 0,
   "states": [
    {
-    "allow_edit": "Hiring Manager",
+    "allow_edit": "Employee",
     "avoid_status_override": 0,
     "doc_status": "0",
     "evaluate_as_expression": 0,
@@ -25,7 +25,7 @@
     "workflow_builder_id": null
    },
    {
-    "allow_edit": "HR Manager",
+    "allow_edit": "Leave Approver",
     "avoid_status_override": 0,
     "doc_status": "0",
     "evaluate_as_expression": 0,
@@ -33,27 +33,13 @@
     "message": null,
     "next_action_email_template": null,
     "send_email": 1,
-    "state": "Pending Hr Approval",
+    "state": "Pending Approval",
     "update_field": null,
     "update_value": null,
     "workflow_builder_id": null
    },
    {
-    "allow_edit": "Final Approver",
-    "avoid_status_override": 0,
-    "doc_status": "0",
-    "evaluate_as_expression": 0,
-    "is_optional_state": 0,
-    "message": null,
-    "next_action_email_template": null,
-    "send_email": 1,
-    "state": "Pending Final Approval",
-    "update_field": null,
-    "update_value": null,
-    "workflow_builder_id": null
-   },
-   {
-    "allow_edit": "HR Manager",
+    "allow_edit": "Leave Approver",
     "avoid_status_override": 0,
     "doc_status": "1",
     "evaluate_as_expression": 0,
@@ -67,7 +53,7 @@
     "workflow_builder_id": null
    },
    {
-    "allow_edit": "HR Manager",
+    "allow_edit": "Leave Approver",
     "avoid_status_override": 0,
     "doc_status": "0",
     "evaluate_as_expression": 0,
@@ -83,170 +69,41 @@
   ],
   "transitions": [
    {
-    "action": "Submit for HR Approval",
+    "action": "Submit for Approval",
     "allow_self_approval": 1,
-    "allowed": "Hiring Manager",
-    "condition": null,
-    "next_state": "Pending Hr Approval",
+    "allowed": "Employee",
+    "condition": "doc.owner == frappe.session.user",
+    "next_state": "Pending Approval",
     "send_email_to_creator": 0,
     "state": "Draft",
     "transition_tasks": null,
     "workflow_builder_id": null
    },
    {
-    "action": "HR Approve",
+    "action": "Approve",
     "allow_self_approval": 1,
-    "allowed": "HR Manager",
-    "condition": null,
-    "next_state": "Pending Final Approval",
-    "send_email_to_creator": 0,
-    "state": "Pending Hr Approval",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "HR Reject",
-    "allow_self_approval": 1,
-    "allowed": "HR Manager",
-    "condition": null,
-    "next_state": "Rejected",
-    "send_email_to_creator": 0,
-    "state": "Pending Hr Approval",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "Final Approve",
-    "allow_self_approval": 1,
-    "allowed": "Final Approver",
+    "allowed": "Leave Approver",
     "condition": null,
     "next_state": "Approved",
     "send_email_to_creator": 0,
-    "state": "Pending Final Approval",
+    "state": "Pending Approval",
     "transition_tasks": null,
     "workflow_builder_id": null
    },
    {
-    "action": "Final Reject",
+    "action": "Reject",
     "allow_self_approval": 1,
-    "allowed": "Final Approver",
+    "allowed": "Leave Approver",
     "condition": null,
     "next_state": "Rejected",
     "send_email_to_creator": 0,
-    "state": "Pending Final Approval",
+    "state": "Pending Approval",
     "transition_tasks": null,
     "workflow_builder_id": null
    }
   ],
   "workflow_data": null,
-  "workflow_name": "Manpower Requisition Flow",
-  "workflow_state_field": "workflow_state"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow",
-  "document_type": "Employee Onboarding",
-  "enable_action_confirmation": 0,
-  "is_active": 1,
-  "modified": "2026-05-12 07:32:30.998665",
-  "name": "Employee Onboarding Workflow",
-  "override_status": 0,
-  "send_email_alert": 0,
-  "states": [
-   {
-    "allow_edit": "HR User",
-    "avoid_status_override": 0,
-    "doc_status": "0",
-    "evaluate_as_expression": 0,
-    "is_optional_state": 0,
-    "message": null,
-    "next_action_email_template": null,
-    "send_email": 1,
-    "state": "Draft",
-    "update_field": null,
-    "update_value": null,
-    "workflow_builder_id": null
-   },
-   {
-    "allow_edit": "HR Manager",
-    "avoid_status_override": 0,
-    "doc_status": "0",
-    "evaluate_as_expression": 0,
-    "is_optional_state": 0,
-    "message": null,
-    "next_action_email_template": null,
-    "send_email": 1,
-    "state": "Pending Manager Input",
-    "update_field": null,
-    "update_value": null,
-    "workflow_builder_id": null
-   },
-   {
-    "allow_edit": "HR User",
-    "avoid_status_override": 0,
-    "doc_status": "0",
-    "evaluate_as_expression": 0,
-    "is_optional_state": 0,
-    "message": null,
-    "next_action_email_template": null,
-    "send_email": 1,
-    "state": "Pending HR Review",
-    "update_field": null,
-    "update_value": null,
-    "workflow_builder_id": null
-   },
-   {
-    "allow_edit": "HR User",
-    "avoid_status_override": 0,
-    "doc_status": "1",
-    "evaluate_as_expression": 0,
-    "is_optional_state": 0,
-    "message": null,
-    "next_action_email_template": null,
-    "send_email": 1,
-    "state": "Onboarding In Progress",
-    "update_field": null,
-    "update_value": null,
-    "workflow_builder_id": null
-   }
-  ],
-  "transitions": [
-   {
-    "action": "Assign to Manager",
-    "allow_self_approval": 1,
-    "allowed": "HR User",
-    "condition": null,
-    "next_state": "Pending Manager Input",
-    "send_email_to_creator": 0,
-    "state": "Draft",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "Submit Activities",
-    "allow_self_approval": 1,
-    "allowed": "HR Manager",
-    "condition": null,
-    "next_state": "Pending HR Review",
-    "send_email_to_creator": 0,
-    "state": "Pending Manager Input",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   },
-   {
-    "action": "HR Approve & Start",
-    "allow_self_approval": 1,
-    "allowed": "HR User",
-    "condition": null,
-    "next_state": "Onboarding In Progress",
-    "send_email_to_creator": 0,
-    "state": "Pending HR Review",
-    "transition_tasks": null,
-    "workflow_builder_id": null
-   }
-  ],
-  "workflow_data": null,
-  "workflow_name": "Employee Onboarding Workflow",
+  "workflow_name": "Attendance Request Approval",
   "workflow_state_field": "workflow_state"
  }
 ]

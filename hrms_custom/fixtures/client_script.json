@@ -2,6 +2,17 @@
  {
   "docstatus": 0,
   "doctype": "Client Script",
+  "dt": "Attendance Reason Allocation",
+  "enabled": 1,
+  "modified": "2026-06-08 12:44:10.335652",
+  "module": "HRMS custom",
+  "name": "Attendance Reason Allocation",
+  "script": "frappe.ui.form.on('Attendance Reason Allocation', {\r\n    refresh(frm) {\r\n        toggle_fields(frm);\r\n    },\r\n    applies_to(frm) {\r\n        frm.set_value('employee', '');\r\n        frm.set_value('employee_name', '');\r\n        frm.set_value('department', '');\r\n        toggle_fields(frm);\r\n    }\r\n});\r\n\r\nfunction toggle_fields(frm) {\r\n    let is_employee   = frm.doc.applies_to === 'Employee';\r\n    let is_department = frm.doc.applies_to === 'Department';\r\n\r\n    frm.set_df_property('employee',      'hidden', is_employee   ? 0 : 1);\r\n    frm.set_df_property('employee_name', 'hidden', is_employee   ? 0 : 1);\r\n    frm.set_df_property('department',    'hidden', is_department ? 0 : 1);\r\n\r\n    frm.fields_dict['employee']      && frm.fields_dict['employee'].refresh();\r\n    frm.fields_dict['employee_name'] && frm.fields_dict['employee_name'].refresh();\r\n    frm.fields_dict['department']    && frm.fields_dict['department'].refresh();\r\n}",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
   "dt": "Job Offer",
   "enabled": 0,
   "modified": "2026-05-13 09:26:48.506126",
@@ -74,6 +85,17 @@
   "module": "HRMS custom",
   "name": "Job Offer - Fetch CTC from Job Requisition",
   "script": "frappe.ui.form.on('Job Offer', {\r\n\r\n    custom_job_requisition(frm) {\r\n\r\n        if (!frm.doc.custom_job_requisition) {\r\n\r\n            frm.set_value('custom_proposed_ctc', '');\r\n\r\n            return;\r\n        }\r\n\r\n        frappe.db.get_value(\r\n            'Job Requisition',\r\n            frm.doc.custom_job_requisition,\r\n            [\r\n                'custom_proposed_salary',\r\n                'designation'\r\n            ]\r\n        ).then(r => {\r\n\r\n            if (!r.message) return;\r\n\r\n            let data = r.message;\r\n\r\n            // Set Proposed CTC\r\n            if (data.custom_proposed_salary) {\r\n\r\n                frm.set_value(\r\n                    'custom_proposed_ctc',\r\n                    data.custom_proposed_salary\r\n                );\r\n\r\n                frappe.show_alert({\r\n                    message: __('Proposed CTC fetched successfully'),\r\n                    indicator: 'green'\r\n                });\r\n            }\r\n\r\n            // Set designation\r\n            if (data.designation && !frm.doc.designation) {\r\n\r\n                frm.set_value(\r\n                    'designation',\r\n                    data.designation\r\n                );\r\n            }\r\n        });\r\n    }\r\n\r\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Attendance Request",
+  "enabled": 1,
+  "modified": "2026-06-07 22:22:49.737212",
+  "module": "HRMS custom",
+  "name": "Attendance Request Permission Client Script",
+  "script": "\nfrappe.ui.form.on('Attendance Request', {\n    refresh(frm) {\n        toggle_permission_fields(frm);\n    },\n\n    custom_request_type(frm) {\n        toggle_permission_fields(frm);\n        frm.set_value('custom_permission_type', '');\n        frm.set_value('custom_permission_from_time', '');\n        frm.set_value('custom_permission_to_time', '');\n        frm.set_value('custom_permission_hours', 0);\n\n        if (frm.doc.custom_request_type === 'Permission' && frm.doc.from_date) {\n            frm.set_value('to_date', frm.doc.from_date);\n        }\n    },\n\n    custom_permission_type(frm) {\n        fetch_permission_details(frm);\n    },\n\n    employee(frm) {\n        fetch_permission_details(frm);\n    },\n\n    from_date(frm) {\n        if (frm.doc.custom_request_type === 'Permission' && frm.doc.from_date) {\n            frm.set_value('to_date', frm.doc.from_date);\n        }\n        fetch_permission_details(frm);\n    }\n});\n\nfunction toggle_permission_fields(frm) {\n    const is_permission = frm.doc.custom_request_type === 'Permission';\n\n    frm.toggle_display(['half_day', 'half_day_date'], !is_permission);\n\n    frm.toggle_display([\n        'custom_permission_type',\n        'custom_permission_from_time',\n        'custom_permission_to_time',\n        'custom_permission_hours'\n    ], is_permission);\n\n    frm.set_df_property('to_date', 'read_only', is_permission ? 1 : 0);\n}\n\nfunction fetch_permission_details(frm) {\n    if (\n        frm.doc.custom_request_type !== 'Permission' ||\n        !frm.doc.employee ||\n        !frm.doc.from_date ||\n        !frm.doc.custom_permission_type\n    ) {\n        return;\n    }\n\n    frappe.show_progress('Calculating...', 50, 100, 'Fetching shift and checkin data');\n\n    frappe.call({\n        method: 'hrms_custom.overrides.attendance_request.get_permission_details',\n        args: {\n            employee: frm.doc.employee,\n            permission_date: frm.doc.from_date,\n            permission_type: frm.doc.custom_permission_type\n        },\n        callback(r) {\n            frappe.hide_progress();\n\n            if (!r.message) {\n                return;\n            }\n\n            const d = r.message;\n            frm.set_value('custom_permission_from_time', d.permission_from_time);\n            frm.set_value('custom_permission_to_time', d.permission_to_time);\n            frm.set_value('custom_permission_hours', d.permission_hours);\n\n            frappe.show_alert({\n                message: `${frm.doc.custom_permission_type}: ${d.permission_from_time.substring(0, 5)} to ${d.permission_to_time.substring(0, 5)} (${d.permission_hours} hrs)`,\n                indicator: 'blue'\n            }, 6);\n        },\n        error() {\n            frappe.hide_progress();\n        }\n    });\n}\n",
   "view": "Form"
  }
 ]
