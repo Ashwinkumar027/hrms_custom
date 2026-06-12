@@ -11,6 +11,10 @@ fixtures = [
         "filters": [["module", "in", ["HRMS Custom", "HRMS custom"]]],
     },
     {
+        "dt": "Custom Field",
+        "filters": [["dt", "=", "Job Applicant"]],
+    },
+    {
         "dt": "Property Setter",
         "filters": [["module", "in", ["HRMS Custom", "HRMS custom"]]],
     },
