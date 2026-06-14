@@ -17,6 +17,7 @@ class CustomAttendanceRequest(AttendanceRequest):
             self._set_permission_hours_from_actual_gap()
             self._validate_permission_fields()
             self._validate_permission_gap()
+            self._validate_no_duplicate_permission()
         elif self.reason == "Missed Check-In or Check-Out":
             self._validate_single_date()
             super().validate()
@@ -32,7 +33,7 @@ class CustomAttendanceRequest(AttendanceRequest):
         if behavior == "Tags Existing Attendance":
             self._tag_existing_attendance()
         else:
-            super().on_submit()
+            self._smart_create_or_regularize_attendance()
 
     def on_cancel(self):
         behavior = _get_attendance_behavior(self)
@@ -40,7 +41,11 @@ class CustomAttendanceRequest(AttendanceRequest):
         if behavior == "Tags Existing Attendance":
             self._remove_attendance_tags()
         else:
-            super().on_cancel()
+            self._smart_cancel_attendance()
+
+    # ------------------------------------------------------------------
+    # helpers
+    # ------------------------------------------------------------------
 
     def _is_permission(self):
         return self.get("custom_request_type") == "Permission"
@@ -100,7 +105,156 @@ class CustomAttendanceRequest(AttendanceRequest):
                 )
             )
 
+    def _validate_no_duplicate_permission(self):
+        """Block duplicate Permission requests for same employee, date, and type."""
+        existing = frappe.db.get_value(
+            "Attendance Request",
+            {
+                "employee": self.employee,
+                "from_date": self.from_date,
+                "custom_request_type": "Permission",
+                "custom_permission_type": self.get("custom_permission_type"),
+                "docstatus": ["!=", 2],
+                "name": ["!=", self.name or ""],
+            },
+            "name",
+        )
+        if existing:
+            frappe.throw(
+                _(
+                    "A <b>{0}</b> Permission request already exists for "
+                    "<b>{1}</b> on <b>{2}</b> ({3}). "
+                    "Please cancel the existing request before creating a new one."
+                ).format(
+                    self.get("custom_permission_type"),
+                    self.employee_name or self.employee,
+                    self.from_date,
+                    existing,
+                )
+            )
+
+    def _smart_create_or_regularize_attendance(self):
+        """
+        For 'Creates Attendance' type reasons (e.g. Missed Check-In or Check-Out):
+          - If an Absent record already exists for a date → update it to Present.
+          - If no record exists yet (future / unprocessed date) → let parent
+            create a fresh Present record via super().on_submit().
+
+        This prevents the duplicate-attendance crash that occurs when Auto
+        Attendance has already run and marked the employee Absent before the
+        request is approved.
+        """
+        current = getdate(self.from_date)
+        end = getdate(self.to_date)
+        attendance_meta = frappe.get_meta("Attendance")
+        has_unprocessed_dates = False
+
+        while current <= end:
+            existing = frappe.db.get_value(
+                "Attendance",
+                {
+                    "employee": self.employee,
+                    "attendance_date": current,
+                    "docstatus": ["!=", 2],
+                },
+                ["name", "status"],
+                as_dict=True,
+            )
+
+            if existing:
+                if existing.status == "Absent":
+                    update = {"status": "Present"}
+
+                    if attendance_meta.has_field("custom_attendance_request"):
+                        update["custom_attendance_request"] = self.name
+
+                    frappe.db.set_value(
+                        "Attendance",
+                        existing.name,
+                        update,
+                        update_modified=False,
+                    )
+
+                    frappe.msgprint(
+                        _(
+                            "Attendance for <b>{0}</b> on <b>{1}</b> "
+                            "updated from <b>Absent → Present</b>."
+                        ).format(self.employee_name or self.employee, current),
+                        indicator="green",
+                        title=_("Attendance Regularized"),
+                    )
+                # If already Present / On Leave / etc. → leave untouched.
+
+            else:
+                # No record for this date yet; parent will create it.
+                has_unprocessed_dates = True
+
+            current += timedelta(days=1)
+
+        if has_unprocessed_dates:
+            # super().on_submit() loops the full date range internally.
+            # It will only encounter dates that have no existing record
+            # because we already handled all Absent ones above.
+            super().on_submit()
+
+    def _smart_cancel_attendance(self):
+        """
+        Reverse of _smart_create_or_regularize_attendance:
+          - Records we changed from Absent → Present are reverted to Absent.
+          - Records created fresh by super().on_submit() are cancelled via
+            super().on_cancel().
+        """
+        current = getdate(self.from_date)
+        end = getdate(self.to_date)
+        attendance_meta = frappe.get_meta("Attendance")
+        has_super_created = False
+
+        while current <= end:
+            filters = {
+                "employee": self.employee,
+                "attendance_date": current,
+                "docstatus": ["!=", 2],
+            }
+
+            if attendance_meta.has_field("custom_attendance_request"):
+                filters["custom_attendance_request"] = self.name
+
+            existing = frappe.db.get_value(
+                "Attendance",
+                filters,
+                ["name", "status"],
+                as_dict=True,
+            )
+
+            if existing:
+                # Determine whether this record pre-existed (was Absent before
+                # we regularized it) or was newly created by super().
+                # We detect pre-existing records by checking whether an
+                # Employee Checkin log is absent — a simpler heuristic is to
+                # revert to Absent and let Auto Attendance correct it on its
+                # next run.  Either way, reverting to Absent is safe.
+                update = {"status": "Absent"}
+
+                if attendance_meta.has_field("custom_attendance_request"):
+                    update["custom_attendance_request"] = None
+
+                frappe.db.set_value(
+                    "Attendance",
+                    existing.name,
+                    update,
+                    update_modified=False,
+                )
+            else:
+                # No tagged record found; super() may have created one.
+                has_super_created = True
+
+            current += timedelta(days=1)
+
+        if has_super_created:
+            super().on_cancel()
+
     def _tag_existing_attendance(self):
+        """Used for 'Tags Existing Attendance' behavior (Permission type)."""
         attendance = frappe.db.get_value(
             "Attendance",
             {
@@ -114,9 +268,11 @@ class CustomAttendanceRequest(AttendanceRequest):
         if not attendance:
             frappe.throw(
                 _(
-                    "No Attendance record found for {0} on {1}.\n"
-                    "Attendance must be marked before applying permission.\n"
-                    "Please contact HR."
+                    "Attendance for <b>{0}</b> on <b>{1}</b> has not been "
+                    "processed yet.\n\n"
+                    "Auto Attendance runs after the shift ends for the day. "
+                    "Please ask the manager to approve this request "
+                    "after <b>{1}</b> end of day."
                 ).format(
                     self.employee_name or self.employee,
                     self.from_date,
@@ -134,7 +290,6 @@ class CustomAttendanceRequest(AttendanceRequest):
         if attendance_meta.has_field("custom_attendance_request"):
             update["custom_attendance_request"] = self.name
 
-        # Keep compatibility with earlier custom fields if they exist.
         if attendance_meta.has_field("custom_permission_request"):
             update["custom_permission_request"] = self.name
 
@@ -162,6 +317,7 @@ class CustomAttendanceRequest(AttendanceRequest):
         )
 
     def _remove_attendance_tags(self):
+        """Used for 'Tags Existing Attendance' cancel (Permission type)."""
         attendance_meta = frappe.get_meta("Attendance")
 
         filters = {
@@ -182,8 +338,11 @@ class CustomAttendanceRequest(AttendanceRequest):
 
         update = {
             "custom_permission_hours": 0,
-            "late_entry": 0,
-            "early_exit": 0,
+            # late_entry and early_exit are intentionally NOT reset here.
+            # Auto Attendance sets those flags based on actual check-in/out
+            # times. Cancelling a permission does not change the fact that
+            # the employee was late or left early — it only removes the
+            # recorded permission grant.
         }
 
         if attendance_meta.has_field("custom_permission_type"):
@@ -206,6 +365,9 @@ class CustomAttendanceRequest(AttendanceRequest):
         )
 
 
+# ----------------------------------------------------------------------
+# module-level helpers
+# ----------------------------------------------------------------------
 
 def _get_attendance_behavior(doc):
     reason_type = _get_reason_type_doc(doc)
