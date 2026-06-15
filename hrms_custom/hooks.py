@@ -15,6 +15,10 @@ fixtures = [
         "filters": [["dt", "=", "Job Applicant"]],
     },
     {
+        "dt": "Custom Field",
+        "filters": [["dt", "=", "Shift Type"]],
+    },
+    {
         "dt": "Property Setter",
         "filters": [["module", "in", ["HRMS Custom", "HRMS custom"]]],
     },
@@ -97,4 +101,9 @@ permission_query_conditions = {
 # Whitelisted API methods
 whitelist_methods = {
     "probation_action": "hrms_custom.api.probation_action"
+}
+scheduler_events = {
+    "monthly": [
+        "hrms_custom.hrms_custom.utils.late_lop_processor.process_late_deductions"
+    ]
 }
