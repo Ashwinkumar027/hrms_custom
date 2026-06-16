@@ -8,32 +8,23 @@ app_license = "mit"
 fixtures = [
     {
         "dt": "Custom Field",
-        "filters": [["module", "in", ["HRMS Custom", "HRMS custom"]]],
-    },
-    {
-        "dt": "Custom Field",
-        "filters": [["dt", "=", "Job Applicant"]],
-    },
-    {
-        "dt": "Custom Field",
-        "filters": [["dt", "=", "Shift Type"]],
+        "filters": [["module", "=", "HRMS custom"]],
     },
     {
         "dt": "Property Setter",
-        "filters": [["module", "in", ["HRMS Custom", "HRMS custom"]]],
+        "filters": [["module", "=", "HRMS custom"]],
     },
     {
         "dt": "Client Script",
-        "filters": [["module", "in", ["HRMS Custom", "HRMS custom"]]],
+        "filters": [["module", "=", "HRMS custom"]],
     },
     {
         "dt": "Server Script",
-        "filters": [["module", "in", ["HRMS Custom", "HRMS custom"]]],
+        "filters": [["module", "=", "HRMS custom"]],
     },
     {
         "dt": "Custom DocPerm",
         "filters": [["parent", "in", ["Attendance Request", "Shift Request", "Expense Claim", "Employee Advance"]]],
-
     },
     {
         "dt": "Workflow",
@@ -98,10 +89,12 @@ override_doctype_class = {
 permission_query_conditions = {
     "Attendance Request": "hrms_custom.permissions.attendance_request.get_permission_query_conditions",
 }
+
 # Whitelisted API methods
 whitelist_methods = {
     "probation_action": "hrms_custom.api.probation_action"
 }
+
 scheduler_events = {
     "monthly": [
         "hrms_custom.hrms_custom.utils.late_lop_processor.process_late_deductions"
