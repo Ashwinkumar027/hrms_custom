@@ -100,3 +100,8 @@ scheduler_events = {
         "hrms_custom.hrms_custom.utils.late_lop_processor.process_late_deductions"
     ]
 }
+doc_events = {
+	"Salary Slip": {
+		"before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
+	}
+}
