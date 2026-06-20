@@ -61,7 +61,7 @@
   "name": "Missed Attendance",
   "reasons": [
    {
-    "reason": "Missed Check-In or Check-Out"
+    "reason": "Regularization"
    }
   ],
   "type_name": "Missed Attendance"
