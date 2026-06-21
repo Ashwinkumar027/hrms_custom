@@ -96,6 +96,9 @@ whitelist_methods = {
 }
 
 scheduler_events = {
+    "daily": [
+        "hrms_custom.hrms_custom.utils.missing_attendance_email.send_missing_attendance_emails_for_yesterday"
+    ],
     "monthly": [
         "hrms_custom.hrms_custom.utils.late_lop_processor.process_late_deductions"
     ]
