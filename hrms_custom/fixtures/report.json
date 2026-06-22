@@ -1,0 +1,75 @@
+[
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2026-06-19 12:58:07.006018",
+  "module": "HRMS custom",
+  "name": "Bank Transfer Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Salary Slip",
+  "reference_report": null,
+  "report_name": "Bank Transfer Report",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Administrator"
+   },
+   {
+    "role": "HR Manager"
+   },
+   {
+    "role": "HR User"
+   },
+   {
+    "role": "Accounts Manager"
+   },
+   {
+    "role": "System Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 1,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": "frappe.query_reports[\"Salary Register Custom\"] = {\r\n\tfilters: [\r\n\t\t{\r\n\t\t\tfieldname: \"from_date\",\r\n\t\t\tlabel: __(\"From\"),\r\n\t\t\tfieldtype: \"Date\",\r\n\t\t\tdefault: frappe.datetime.add_months(frappe.datetime.get_today(), -1),\r\n\t\t\treqd: 1,\r\n\t\t\twidth: \"100px\",\r\n\t\t},\r\n\t\t{\r\n\t\t\tfieldname: \"to_date\",\r\n\t\t\tlabel: __(\"To\"),\r\n\t\t\tfieldtype: \"Date\",\r\n\t\t\tdefault: frappe.datetime.get_today(),\r\n\t\t\treqd: 1,\r\n\t\t\twidth: \"100px\",\r\n\t\t},\r\n\t\t{\r\n\t\t\tfieldname: \"currency\",\r\n\t\t\tfieldtype: \"Link\",\r\n\t\t\toptions: \"Currency\",\r\n\t\t\tlabel: __(\"Currency\"),\r\n\t\t\tdefault: erpnext.get_currency(frappe.defaults.get_default(\"Company\")),\r\n\t\t\twidth: \"50px\",\r\n\t\t},\r\n\t\t{\r\n\t\t\tfieldname: \"employee\",\r\n\t\t\tlabel: __(\"Employee\"),\r\n\t\t\tfieldtype: \"Link\",\r\n\t\t\toptions: \"Employee\",\r\n\t\t\twidth: \"100px\",\r\n\t\t},\r\n\t\t{\r\n\t\t\tfieldname: \"company\",\r\n\t\t\tlabel: __(\"Company\"),\r\n\t\t\tfieldtype: \"Link\",\r\n\t\t\toptions: \"Company\",\r\n\t\t\tdefault: frappe.defaults.get_user_default(\"Company\"),\r\n\t\t\twidth: \"100px\",\r\n\t\t\treqd: 1,\r\n\t\t},\r\n\t\t{\r\n\t\t\tfieldname: \"docstatus\",\r\n\t\t\tlabel: __(\"Document Status\"),\r\n\t\t\tfieldtype: \"Select\",\r\n\t\t\toptions: [\"Draft\", \"Submitted\", \"Cancelled\"],\r\n\t\t\tdefault: \"Submitted\",\r\n\t\t\twidth: \"100px\",\r\n\t\t},\r\n\t\t{\r\n\t\t\tfieldname: \"department\",\r\n\t\t\tlabel: __(\"Department\"),\r\n\t\t\tfieldtype: \"Link\",\r\n\t\t\toptions: \"Department\",\r\n\t\t\twidth: \"100px\",\r\n\t\t\tget_query: function () {\r\n\t\t\t\treturn {\r\n\t\t\t\t\tfilters: {\r\n\t\t\t\t\t\tcompany: frappe.query_report.get_filter_value(\"company\"),\r\n\t\t\t\t\t},\r\n\t\t\t\t};\r\n\t\t\t},\r\n\t\t},\r\n\t\t{\r\n\t\t\tfieldname: \"designation\",\r\n\t\t\tlabel: __(\"Designation\"),\r\n\t\t\tfieldtype: \"Link\",\r\n\t\t\toptions: \"Designation\",\r\n\t\t\twidth: \"100px\",\r\n\t\t},\r\n\t\t{\r\n\t\t\tfieldname: \"branch\",\r\n\t\t\tlabel: __(\"Branch\"),\r\n\t\t\tfieldtype: \"Link\",\r\n\t\t\toptions: \"Branch\",\r\n\t\t\twidth: \"100px\",\r\n\t\t},\r\n\t],\r\n};",
+  "json": null,
+  "letter_head": null,
+  "modified": "2026-06-19 16:43:52.097553",
+  "module": "HRMS custom",
+  "name": "Salary Register Custom",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Salary Slip",
+  "reference_report": null,
+  "report_name": "Salary Register Custom",
+  "report_script": "salary_slip = frappe.qb.DocType(\"Salary Slip\")\r\nsalary_detail = frappe.qb.DocType(\"Salary Detail\")\r\nsalary_component = frappe.qb.DocType(\"Salary Component\")\r\nemployee_doctype = frappe.qb.DocType(\"Employee\")\r\n\r\n\r\ndef execute(filters=None):\r\n\tif not filters:\r\n\t\tfilters = {}\r\n\r\n\tcurrency = None\r\n\tif filters.get(\"currency\"):\r\n\t\tcurrency = filters.get(\"currency\")\r\n\tcompany_currency = frappe.db.get_value(\"Company\", filters.get(\"company\"), \"default_currency\")\r\n\r\n\tsalary_slips = get_salary_slips(filters, company_currency)\r\n\tif not salary_slips:\r\n\t\treturn [], []\r\n\r\n\tearning_types, ded_types = get_earning_and_deduction_types(salary_slips)\r\n\tcolumns = get_columns(earning_types, ded_types)\r\n\r\n\tss_earning_map = get_salary_slip_details(salary_slips, currency, company_currency, \"earnings\")\r\n\tss_ded_map = get_salary_slip_details(salary_slips, currency, company_currency, \"deductions\")\r\n\r\n\temp_map = get_employee_extra_map()\r\n\r\n\tdata = []\r\n\tfor ss in salary_slips:\r\n\t\temp_info = emp_map.get(ss.employee) or {}\r\n\t\ttotal_days = frappe.utils.date_diff(ss.end_date, ss.start_date) + 1\r\n\r\n\t\trow = {\r\n\t\t\t\"salary_slip_id\": ss.name,\r\n\t\t\t\"employee\": ss.employee,\r\n\t\t\t\"employee_name\": ss.employee_name,\r\n\t\t\t\"data_of_joining\": emp_info.get(\"date_of_joining\"),\r\n\t\t\t\"left\": 1 if emp_info.get(\"relieving_date\") else 0,\r\n\t\t\t\"status\": emp_info.get(\"status\"),\r\n\t\t\t\"branch\": ss.branch,\r\n\t\t\t\"department\": ss.department,\r\n\t\t\t\"designation\": ss.designation,\r\n\t\t\t\"company\": ss.company,\r\n\t\t\t\"start_date\": ss.start_date,\r\n\t\t\t\"end_date\": ss.end_date,\r\n\t\t\t\"days_in_month\": total_days,\r\n\t\t\t\"leave_without_pay\": ss.leave_without_pay,\r\n\t\t\t\"absent_days\": ss.absent_days,\r\n\t\t\t\"payment_days\": ss.payment_days,\r\n\t\t\t\"currency\": currency or company_currency,\r\n\t\t\t\"total_loan_repayment\": ss.total_loan_repayment,\r\n\t\t}\r\n\r\n\t\tupdate_column_width(ss, columns)\r\n\r\n\t\tfor e in earning_types:\r\n\t\t\trow[frappe.scrub(e)] = ss_earning_map.get(ss.name, {}).get(e)\r\n\r\n\t\tfor d in ded_types:\r\n\t\t\trow[frappe.scrub(d)] = ss_ded_map.get(ss.name, {}).get(d)\r\n\r\n\t\tif currency == company_currency:\r\n\t\t\trow[\"gross_pay\"] = frappe.utils.flt(ss.gross_pay) * frappe.utils.flt(ss.exchange_rate)\r\n\t\t\trow[\"total_deduction\"] = (frappe.utils.flt(ss.total_deduction) + frappe.utils.flt(ss.total_loan_repayment)) * frappe.utils.flt(ss.exchange_rate)\r\n\t\t\trow[\"net_pay\"] = frappe.utils.flt(ss.net_pay) * frappe.utils.flt(ss.exchange_rate)\r\n\t\telse:\r\n\t\t\trow[\"gross_pay\"] = ss.gross_pay\r\n\t\t\trow[\"total_deduction\"] = frappe.utils.flt(ss.total_deduction) + frappe.utils.flt(ss.total_loan_repayment)\r\n\t\t\trow[\"net_pay\"] = ss.net_pay\r\n\r\n\t\tdata.append(row)\r\n\r\n\treturn columns, data\r\n\r\n\r\ndef get_earning_and_deduction_types(salary_slips):\r\n\tearnings = []\r\n\tdeductions = []\r\n\r\n\tfor sc in get_salary_components(salary_slips):\r\n\t\tcomponent_type = get_salary_component_type(sc)\r\n\t\tif component_type == \"Earning\":\r\n\t\t\tearnings.append(sc)\r\n\t\telif component_type == \"Deduction\":\r\n\t\t\tdeductions.append(sc)\r\n\r\n\treturn sorted(earnings), sorted(deductions)\r\n\r\n\r\ndef update_column_width(ss, columns):\r\n\tif ss.branch is not None:\r\n\t\tcolumns[6][\"width\"] = 120\r\n\tif ss.department is not None:\r\n\t\tcolumns[7][\"width\"] = 120\r\n\tif ss.designation is not None:\r\n\t\tcolumns[8][\"width\"] = 120\r\n\tif ss.leave_without_pay is not None:\r\n\t\tcolumns[13][\"width\"] = 120\r\n\r\n\r\ndef get_columns(earning_types, ded_types):\r\n\tcolumns = [\r\n\t\t{\"label\": \"Salary Slip ID\", \"fieldname\": \"salary_slip_id\", \"fieldtype\": \"Link\", \"options\": \"Salary Slip\", \"width\": 150},\r\n\t\t{\"label\": \"Employee\", \"fieldname\": \"employee\", \"fieldtype\": \"Link\", \"options\": \"Employee\", \"width\": 120},\r\n\t\t{\"label\": \"Employee Name\", \"fieldname\": \"employee_name\", \"fieldtype\": \"Data\", \"width\": 140},\r\n\t\t{\"label\": \"Date of Joining\", \"fieldname\": \"data_of_joining\", \"fieldtype\": \"Date\", \"width\": 80},\r\n\t\t{\"label\": \"Left?\", \"fieldname\": \"left\", \"fieldtype\": \"Check\", \"width\": 60},\r\n\t\t{\"label\": \"Status\", \"fieldname\": \"status\", \"fieldtype\": \"Data\", \"width\": 90},\r\n\t\t{\"label\": \"Branch\", \"fieldname\": \"branch\", \"fieldtype\": \"Link\", \"options\": \"Branch\", \"width\": -1},\r\n\t\t{\"label\": \"Department\", \"fieldname\": \"department\", \"fieldtype\": \"Link\", \"options\": \"Department\", \"width\": -1},\r\n\t\t{\"label\": \"Designation\", \"fieldname\": \"designation\", \"fieldtype\": \"Link\", \"options\": \"Designation\", \"width\": 120},\r\n\t\t{\"label\": \"Company\", \"fieldname\": \"company\", \"fieldtype\": \"Link\", \"options\": \"Company\", \"width\": 120},\r\n\t\t{\"label\": \"Start Date\", \"fieldname\": \"start_date\", \"fieldtype\": \"Data\", \"width\": 80},\r\n\t\t{\"label\": \"End Date\", \"fieldname\": \"end_date\", \"fieldtype\": \"Data\", \"width\": 80},\r\n\t\t{\"label\": \"Days In Month\", \"fieldname\": \"days_in_month\", \"fieldtype\": \"Float\", \"width\": 100},\r\n\t\t{\"label\": \"Leave Without Pay\", \"fieldname\": \"leave_without_pay\", \"fieldtype\": \"Float\", \"width\": 50},\r\n\t\t{\"label\": \"Absent Days\", \"fieldname\": \"absent_days\", \"fieldtype\": \"Float\", \"width\": 50},\r\n\t\t{\"label\": \"Payment Days\", \"fieldname\": \"payment_days\", \"fieldtype\": \"Float\", \"width\": 120},\r\n\t]\r\n\r\n\tfor earning in earning_types:\r\n\t\tcolumns.append({\"label\": earning, \"fieldname\": frappe.scrub(earning), \"fieldtype\": \"Currency\", \"options\": \"currency\", \"width\": 120})\r\n\r\n\tcolumns.append({\"label\": \"Gross Pay\", \"fieldname\": \"gross_pay\", \"fieldtype\": \"Currency\", \"options\": \"currency\", \"width\": 120})\r\n\r\n\tfor deduction in ded_types:\r\n\t\tcolumns.append({\"label\": deduction, \"fieldname\": frappe.scrub(deduction), \"fieldtype\": \"Currency\", \"options\": \"currency\", \"width\": 120})\r\n\r\n\tif \"lending\" in frappe.get_installed_apps():\r\n\t\tcolumns.append({\"label\": \"Loan Repayment\", \"fieldname\": \"total_loan_repayment\", \"fieldtype\": \"Currency\", \"options\": \"currency\", \"width\": 120})\r\n\r\n\tcolumns.append({\"label\": \"Total Deduction\", \"fieldname\": \"total_deduction\", \"fieldtype\": \"Currency\", \"options\": \"currency\", \"width\": 120})\r\n\tcolumns.append({\"label\": \"Net Pay\", \"fieldname\": \"net_pay\", \"fieldtype\": \"Currency\", \"options\": \"currency\", \"width\": 120})\r\n\tcolumns.append({\"label\": \"Currency\", \"fieldname\": \"currency\", \"fieldtype\": \"Data\", \"options\": \"Currency\", \"hidden\": 1})\r\n\r\n\treturn columns\r\n\r\n\r\ndef get_salary_components(salary_slips):\r\n\treturn (\r\n\t\tfrappe.qb.from_(salary_detail)\r\n\t\t.where((salary_detail.amount != 0) & (salary_detail.parent.isin([d.name for d in salary_slips])))\r\n\t\t.select(salary_detail.salary_component)\r\n\t\t.distinct()\r\n\t).run(pluck=True)\r\n\r\n\r\ndef get_salary_component_type(component_name):\r\n\treturn frappe.db.get_value(\"Salary Component\", component_name, \"type\", cache=True)\r\n\r\n\r\ndef get_salary_slips(filters, company_currency):\r\n\tdoc_status = {\"Draft\": 0, \"Submitted\": 1, \"Cancelled\": 2}\r\n\r\n\tquery = frappe.qb.from_(salary_slip).select(salary_slip.star)\r\n\r\n\tif filters.get(\"docstatus\"):\r\n\t\tquery = query.where(salary_slip.docstatus == doc_status[filters.get(\"docstatus\")])\r\n\tif filters.get(\"from_date\"):\r\n\t\tquery = query.where(salary_slip.start_date >= filters.get(\"from_date\"))\r\n\tif filters.get(\"to_date\"):\r\n\t\tquery = query.where(salary_slip.end_date <= filters.get(\"to_date\"))\r\n\tif filters.get(\"company\"):\r\n\t\tquery = query.where(salary_slip.company == filters.get(\"company\"))\r\n\tif filters.get(\"employee\"):\r\n\t\tquery = query.where(salary_slip.employee == filters.get(\"employee\"))\r\n\tif filters.get(\"currency\") and filters.get(\"currency\") != company_currency:\r\n\t\tquery = query.where(salary_slip.currency == filters.get(\"currency\"))\r\n\tif filters.get(\"department\"):\r\n\t\tquery = query.where(salary_slip.department == filters[\"department\"])\r\n\tif filters.get(\"designation\"):\r\n\t\tquery = query.where(salary_slip.designation == filters[\"designation\"])\r\n\tif filters.get(\"branch\"):\r\n\t\tquery = query.where(salary_slip.branch == filters[\"branch\"])\r\n\r\n\treturn query.run(as_dict=1) or []\r\n\r\n\r\ndef get_employee_extra_map():\r\n\tresult = (\r\n\t\tfrappe.qb.from_(employee_doctype)\r\n\t\t.select(employee_doctype.name, employee_doctype.date_of_joining, employee_doctype.status, employee_doctype.relieving_date)\r\n\t).run(as_dict=1)\r\n\r\n\temp_map = {}\r\n\tfor r in result:\r\n\t\temp_map[r.name] = r\r\n\treturn emp_map\r\n\r\n\r\ndef get_salary_slip_details(salary_slips, currency, company_currency, component_type):\r\n\tslip_names = [ss.name for ss in salary_slips]\r\n\r\n\tresult = (\r\n\t\tfrappe.qb.from_(salary_slip)\r\n\t\t.join(salary_detail)\r\n\t\t.on(salary_slip.name == salary_detail.parent)\r\n\t\t.where((salary_detail.parent.isin(slip_names)) & (salary_detail.parentfield == component_type))\r\n\t\t.select(salary_detail.parent, salary_detail.salary_component, salary_detail.amount, salary_slip.exchange_rate)\r\n\t).run(as_dict=1)\r\n\r\n\tss_map = {}\r\n\tfor d in result:\r\n\t\tif d.parent not in ss_map:\r\n\t\t\tss_map[d.parent] = {}\r\n\t\tif d.salary_component not in ss_map[d.parent]:\r\n\t\t\tss_map[d.parent][d.salary_component] = 0.0\r\n\r\n\t\tif currency == company_currency:\r\n\t\t\texisting = ss_map[d.parent][d.salary_component]\r\n\t\t\tss_map[d.parent][d.salary_component] = existing + frappe.utils.flt(d.amount) * frappe.utils.flt(d.exchange_rate or 1)\r\n\t\telse:\r\n\t\t\texisting = ss_map[d.parent][d.salary_component]\r\n\t\t\tss_map[d.parent][d.salary_component] = existing + frappe.utils.flt(d.amount)\r\n\r\n\treturn ss_map",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "HR Manager"
+   },
+   {
+    "role": "HR User"
+   }
+  ],
+  "timeout": 0
+ }
+]

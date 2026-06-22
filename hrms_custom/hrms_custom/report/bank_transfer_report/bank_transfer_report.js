@@ -5,21 +5,18 @@ frappe.query_reports["Bank Transfer Report"] = {
             label: __("Company"),
             fieldtype: "Link",
             options: "Company",
-            reqd: 1,
             default: frappe.defaults.get_user_default("Company")
         },
         {
             fieldname: "from_date",
             label: __("From Date"),
             fieldtype: "Date",
-            reqd: 1,
             default: frappe.datetime.month_start()
         },
         {
             fieldname: "to_date",
             label: __("To Date"),
             fieldtype: "Date",
-            reqd: 1,
             default: frappe.datetime.month_end()
         },
         {
@@ -38,14 +35,12 @@ frappe.query_reports["Bank Transfer Report"] = {
         {
             fieldname: "debit_account_number",
             label: __("Debit Account Number (Company IDFC Account)"),
-            fieldtype: "Data",
-            reqd: 1
+            fieldtype: "Data"
         },
         {
             fieldname: "transaction_date",
             label: __("Transaction Date"),
             fieldtype: "Date",
-            reqd: 1,
             default: frappe.datetime.nowdate()
         }
     ]

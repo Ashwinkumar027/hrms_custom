@@ -64,6 +64,10 @@ fixtures = [
         "filters": [["module", "=", "HRMS custom"]],
     },
     {
+        "dt": "Report",
+        "filters": [["module", "=", "HRMS custom"]],
+    },
+    {
         "dt": "Notification",
         "filters": [["name", "in", [
             "Joining Reminder 1 Day",
