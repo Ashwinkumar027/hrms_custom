@@ -11,6 +11,7 @@ from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequ
 class CustomAttendanceRequest(AttendanceRequest):
     def validate(self):
         self._clean_request_type_fields()
+        self._validate_not_future_date()
 
         if self._is_permission():
             self._validate_single_date()
@@ -23,6 +24,11 @@ class CustomAttendanceRequest(AttendanceRequest):
             super().validate()
         else:
             super().validate()
+
+    def _validate_not_future_date(self):
+        if self.reason == "Regularization":
+            if getdate(self.from_date) > getdate(frappe.utils.today()) or getdate(self.to_date) > getdate(frappe.utils.today()):
+                frappe.throw(_("Regularization requests cannot be created for future dates."))
 
     def before_submit(self):
         _validate_reason_allocation(self)
@@ -48,16 +54,16 @@ class CustomAttendanceRequest(AttendanceRequest):
     # ------------------------------------------------------------------
 
     def _is_permission(self):
-        return self.get("custom_request_type") == "Permission"
+        return self.get("custom_request_type") == "Permission Request"
 
     def _clean_request_type_fields(self):
-        if self.get("custom_request_type") == "Attendance Regularization":
+        if self.get("custom_request_type") == "Attendance Request":
             self.custom_permission_type = None
 
             if self.meta.has_field("custom_permission_hours"):
                 self.custom_permission_hours = 0
 
-        elif self.get("custom_request_type") == "Permission":
+        elif self.get("custom_request_type") == "Permission Request":
             self.reason = None
 
     def _validate_single_date(self):
@@ -112,7 +118,7 @@ class CustomAttendanceRequest(AttendanceRequest):
             {
                 "employee": self.employee,
                 "from_date": self.from_date,
-                "custom_request_type": "Permission",
+                "custom_request_type": "Permission Request",
                 "custom_permission_type": self.get("custom_permission_type"),
                 "docstatus": ["!=", 2],
                 "name": ["!=", self.name or ""],
@@ -377,7 +383,7 @@ def _get_attendance_behavior(doc):
 
 
 def _get_reason_type_doc(doc):
-    if doc.get("custom_request_type") == "Permission":
+    if doc.get("custom_request_type") == "Permission Request":
         lookup = doc.get("custom_permission_type")
     else:
         lookup = doc.reason
@@ -520,12 +526,12 @@ def _count_period_usage(doc, reason_type, allocation):
         pluck="reason",
     )
 
-    if doc.get("custom_request_type") == "Permission":
+    if doc.get("custom_request_type") == "Permission Request":
         existing = frappe.get_all(
             "Attendance Request",
             filters={
                 "employee": doc.employee,
-                "custom_request_type": "Permission",
+                "custom_request_type": "Permission Request",
                 "custom_permission_type": ["in", reasons],
                 "from_date": ["between", [window_start, window_end]],
                 "docstatus": 1,
