@@ -108,3 +108,9 @@ doc_events = {
 		"before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
 	}
 }
+override_doctype_class = {
+    "Employee Checkin": "hrms_custom.overrides.employee_checkin.MultiLocationEmployeeCheckin",
+    "Attendance Request": "hrms_custom.overrides.attendance_request.CustomAttendanceRequest",
+    # ADD THIS LINE ↓
+    "Employee Onboarding": "hrms_custom.overrides.employee_onboarding.CustomEmployeeOnboarding",
+}

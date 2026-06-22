@@ -109,30 +109,56 @@ def send_offer_letter(job_offer):
     frappe.db.commit()
 
     base_url = get_url()
-    accept_url = base_url + "/api/method/hrms_custom.api.respond_to_offer?token=" + token + "&response=Accepted&offer=" + doc.name
-    reject_url = base_url + "/api/method/hrms_custom.api.respond_to_offer?token=" + token + "&response=Rejected&offer=" + doc.name
-
-    attachments = []
-    appointment_letters = frappe.get_all(
-        "Appointment Letter",
-        filters={"job_applicant": doc.job_applicant},
-        fields=["name"],
-        limit=1
+    accept_url = (
+        base_url
+        + "/api/method/hrms_custom.api.respond_to_offer?token="
+        + token
+        + "&response=Accepted&offer="
+        + doc.name
+    )
+    reject_url = (
+        base_url
+        + "/api/method/hrms_custom.api.respond_to_offer?token="
+        + token
+        + "&response=Rejected&offer="
+        + doc.name
     )
 
-    if appointment_letters:
+    # ✅ Company → Print Format mapping
+    COMPANY_PRINT_MAP = {
+        "Aionion Insurance Marketing Private Limited": "Aionion Insurance Marketing Private Limited",
+        "Quanticus Software Solutions Private Limited": "Quanticus Software Solutions Private Limited",
+        "Aionion Businesses and Management Services LLC": "Aionion Businesses and Management Services LLC",
+        "Aionion Businesses and Management Services LLP": "Aionion Businesses and Management Services LLP",
+        "Corona Creative Solutions Private Limited": "Corona Creative Solutions Private Limited",
+        "Aionion Capital Market Services Private Limited": "Aionion Capital Market Services Private Limited",
+        "Anshul A Gupta & Associates": "Anshul A Gupta & Associates",
+    }
+
+    attachments = []
+    print_format = COMPANY_PRINT_MAP.get(doc.company)
+
+    if print_format:
         try:
             pdf_content = frappe.get_print(
-                "Appointment Letter",
-                appointment_letters[0].name,
+                "Job Offer",
+                doc.name,
+                print_format=print_format,
                 as_pdf=True
             )
             attachments = [{
-                "fname": "Offer_Letter_" + (candidate_name or "Candidate").replace(" ", "_") + ".pdf",
+                "fname": "Offer_Letter_"
+                + (candidate_name or "Candidate").replace(" ", "_")
+                + ".pdf",
                 "fcontent": pdf_content
             }]
-        except Exception:
-            pass
+        except Exception as e:
+            frappe.log_error(str(e), "Offer Letter PDF Error")
+    else:
+        frappe.log_error(
+            "No print format found for company: " + (doc.company or ""),
+            "Offer Letter PDF Error"
+        )
 
     message = (
         "<div style='font-family:Arial,sans-serif;max-width:650px;margin:0 auto;'>"
@@ -142,8 +168,9 @@ def send_offer_letter(job_offer):
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + (candidate_name or "Candidate") + "</b>,</p>"
-        "<p>Congratulations! We are delighted to inform you that you have been selected for the position of "
-        "<b>" + (doc.designation or "") + "</b> at <b>Aionion Capital</b>.</p>"
+        "<p>Congratulations! We are delighted to inform you that you have been "
+        "selected for the position of "
+        "<b>" + (doc.designation or "") + "</b> at <b>" + (doc.company or "") + "</b>.</p>"
         "<p>Please find your offer letter attached to this email.</p>"
         "<p>Kindly respond within <b>48 hours</b> by clicking one of the buttons below:</p>"
         "<div style='text-align:center;margin:30px 0;'>"
@@ -155,9 +182,10 @@ def send_offer_letter(job_offer):
         "padding:14px 30px;text-decoration:none;border-radius:4px;"
         "font-weight:bold;font-size:16px;'>✗ Decline Offer</a>"
         "</div>"
-        "<p style='color:#666;font-size:13px;'>Please be advised that the offer will be deemed revoked "
-        "if we do not receive your acceptance within 48 hours or if there are any inconsistencies "
-        "between the information provided during the interview and the details in the offer letter.</p>"
+        "<p style='color:#666;font-size:13px;'>Please be advised that the offer "
+        "will be deemed revoked if we do not receive your acceptance within 48 hours "
+        "or if there are any inconsistencies between the information provided during "
+        "the interview and the details in the offer letter.</p>"
         "<p>We look forward to welcoming you to our team!</p>"
         "<p>Warm Regards,<br><b>HR Department</b><br>Aionion Capital</p>"
         "</div>"
@@ -170,7 +198,7 @@ def send_offer_letter(job_offer):
 
     frappe.sendmail(
         recipients=[candidate_email],
-        subject="Offer Letter - " + (doc.designation or "") + " - Aionion Capital",
+        subject="Offer Letter - " + (doc.designation or "") + " - " + (doc.company or ""),
         message=message,
         attachments=attachments,
         reference_doctype="Job Offer",
@@ -358,3 +386,35 @@ def probation_action(employee, action):
             </div>
             """
         )
+@frappe.whitelist()
+def get_last_employee_id(company):
+    result = frappe.get_all(
+        "Employee",
+        filters={"company": company},
+        fields=["name"],
+        order_by="creation desc",
+        limit=1
+    )
+
+    if not result:
+        return {"last_id": None, "next_id": None}
+
+    last_id = result[0].name
+
+    # Extract prefix and number
+    import re
+    match = re.match(r'^([A-Za-z]+)(\d+)$', last_id)
+
+    if not match:
+        return {"last_id": last_id, "next_id": None}
+
+    prefix = match.group(1)
+    number = int(match.group(2))
+    pad_length = len(match.group(2))  # keep same zero padding
+    next_number = number + 1
+    next_id = prefix + str(next_number).zfill(pad_length)
+
+    return {
+        "last_id": last_id,
+        "next_id": next_id
+    }
