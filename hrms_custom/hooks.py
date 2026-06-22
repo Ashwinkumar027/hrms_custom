@@ -81,18 +81,21 @@ fixtures = [
     },
 ]
 
+# Single merged override_doctype_class (removed duplicate)
 override_doctype_class = {
     "Employee Checkin": "hrms_custom.overrides.employee_checkin.MultiLocationEmployeeCheckin",
     "Attendance Request": "hrms_custom.overrides.attendance_request.CustomAttendanceRequest",
+    "Employee Onboarding": "hrms_custom.overrides.employee_onboarding.CustomEmployeeOnboarding",
+}
+
+# Fixed: replaced wrong 'whitelist_methods' with correct key
+override_whitelisted_methods = {
+    "erpnext.setup.doctype.employee.employee.deactivate_sales_person":
+    "hrms_custom.overrides.employee.deactivate_sales_person"
 }
 
 permission_query_conditions = {
     "Attendance Request": "hrms_custom.permissions.attendance_request.get_permission_query_conditions",
-}
-
-# Whitelisted API methods
-whitelist_methods = {
-    "probation_action": "hrms_custom.api.probation_action"
 }
 
 scheduler_events = {
@@ -103,14 +106,9 @@ scheduler_events = {
         "hrms_custom.hrms_custom.utils.late_lop_processor.process_late_deductions"
     ]
 }
+
 doc_events = {
-	"Salary Slip": {
-		"before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
-	}
-}
-override_doctype_class = {
-    "Employee Checkin": "hrms_custom.overrides.employee_checkin.MultiLocationEmployeeCheckin",
-    "Attendance Request": "hrms_custom.overrides.attendance_request.CustomAttendanceRequest",
-    # ADD THIS LINE ↓
-    "Employee Onboarding": "hrms_custom.overrides.employee_onboarding.CustomEmployeeOnboarding",
+    "Salary Slip": {
+        "before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
+    }
 }
