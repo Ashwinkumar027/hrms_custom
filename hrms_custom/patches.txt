@@ -5,3 +5,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 hrms_custom.patches.v1_0.add_job_applicant_onboarding_fields
 hrms_custom.patches.v1_0.add_employee_onboarding_fields
+hrms_custom.patches.v1_0.add_employee_document_management
