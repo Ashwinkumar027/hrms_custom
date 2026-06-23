@@ -291,7 +291,7 @@ def respond_to_offer(token, response, offer):
         )
 
 
-@frappe.whitelist(allow_guest=False)
+@frappe.whitelist(allow_guest=True)
 def probation_action(employee, action):
     emp = frappe.get_doc("Employee", employee)
 
