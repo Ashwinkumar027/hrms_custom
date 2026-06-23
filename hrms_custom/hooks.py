@@ -104,6 +104,7 @@ override_whitelisted_methods = {
 
 permission_query_conditions = {
     "Attendance Request": "hrms_custom.permissions.attendance_request.get_permission_query_conditions",
+    "Employee": "hrms_custom.permissions.employee.get_permission_query_conditions",
 }
 
 scheduler_events = {
