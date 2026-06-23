@@ -124,7 +124,6 @@ def send_offer_letter(job_offer):
         + doc.name
     )
 
-    # ✅ Company → Print Format mapping
     COMPANY_PRINT_MAP = {
         "Aionion Insurance Marketing Private Limited": "Aionion Insurance Marketing Private Limited",
         "Quanticus Software Solutions Private Limited": "Quanticus Software Solutions Private Limited",
@@ -322,17 +321,49 @@ def probation_action(employee, action):
         emp.save(ignore_permissions=True)
         frappe.db.commit()
 
+        # Notify manager
         if manager_email:
             frappe.sendmail(
                 recipients=[manager_email],
                 cc=cc_emails,
                 subject=f"Employee Confirmed: {emp.employee_name}",
                 message=f"""
+                <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
+                <div style='background:#0F6E56;padding:20px;text-align:center;'>
+                <h2 style='color:white;margin:0;'>Employee Confirmed</h2>
+                </div>
+                <div style='padding:30px;background:#f9f9f9;'>
                 <p>Dear {manager_name},</p>
                 <p>This is to confirm that <strong>{emp.employee_name}</strong>
                 (ID: {emp.name}) has been <strong>confirmed</strong> as a
                 permanent employee effective <strong>{today()}</strong>.</p>
                 <p>Regards,<br>HR System</p>
+                </div>
+                </div>
+                """
+            )
+
+        # Notify employee
+        if emp.company_email:
+            frappe.sendmail(
+                recipients=[emp.company_email],
+                subject=f"Congratulations! Your Probation is Complete - {emp.employee_name}",
+                message=f"""
+                <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
+                <div style='background:#0F6E56;padding:20px;text-align:center;'>
+                <h2 style='color:white;margin:0;'>Probation Confirmation</h2>
+                </div>
+                <div style='padding:30px;background:#f9f9f9;'>
+                <p>Dear <strong>{emp.employee_name}</strong>,</p>
+                <p>Congratulations! We are pleased to inform you that your
+                probation period has been successfully completed and you have
+                been <strong>confirmed as a permanent employee</strong>
+                effective <strong>{today()}</strong>.</p>
+                <p>We appreciate your hard work and dedication during this period.</p>
+                <p>Welcome to the team permanently!</p>
+                <p>Regards,<br><strong>HR Team</strong><br>Aionion Capital</p>
+                </div>
+                </div>
                 """
             )
 
@@ -343,7 +374,7 @@ def probation_action(employee, action):
                 <h2 style="color:#28a745;">✅ Employee Confirmed Successfully</h2>
                 <p><strong>{emp.employee_name}</strong> has been confirmed
                 as a permanent employee.</p>
-                <p>HR team has been notified.</p>
+                <p>HR team and employee have been notified.</p>
             </div>
             """
         )
@@ -356,12 +387,18 @@ def probation_action(employee, action):
         emp.save(ignore_permissions=True)
         frappe.db.commit()
 
+        # Notify manager
         if manager_email:
             frappe.sendmail(
                 recipients=[manager_email],
                 cc=cc_emails,
                 subject=f"Probation Extended: {emp.employee_name}",
                 message=f"""
+                <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
+                <div style='background:#ffc107;padding:20px;text-align:center;'>
+                <h2 style='color:#333;margin:0;'>Probation Extended</h2>
+                </div>
+                <div style='padding:30px;background:#f9f9f9;'>
                 <p>Dear {manager_name},</p>
                 <p>The probation period of <strong>{emp.employee_name}</strong>
                 (ID: {emp.name}) has been <strong>extended by 2 months</strong>.</p>
@@ -370,6 +407,32 @@ def probation_action(employee, action):
                 <p>You will receive another reminder 15 days before
                 the new probation end date.</p>
                 <p>Regards,<br>HR System</p>
+                </div>
+                </div>
+                """
+            )
+
+        # Notify employee
+        if emp.company_email:
+            frappe.sendmail(
+                recipients=[emp.company_email],
+                subject=f"Your Probation Period Has Been Extended - {emp.employee_name}",
+                message=f"""
+                <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
+                <div style='background:#ffc107;padding:20px;text-align:center;'>
+                <h2 style='color:#333;margin:0;'>Probation Period Extended</h2>
+                </div>
+                <div style='padding:30px;background:#f9f9f9;'>
+                <p>Dear <strong>{emp.employee_name}</strong>,</p>
+                <p>This is to inform you that your probation period has been
+                <strong>extended by 2 months</strong>.</p>
+                <p>Your new probation end date is
+                <strong>{new_end.strftime('%d-%m-%Y')}</strong>.</p>
+                <p>Please continue to give your best and feel free to speak
+                with your manager for any guidance.</p>
+                <p>Regards,<br><strong>HR Team</strong><br>Aionion Capital</p>
+                </div>
+                </div>
                 """
             )
 
@@ -382,10 +445,12 @@ def probation_action(employee, action):
                 has been extended by 2 months.</p>
                 <p>New end date:
                 <strong>{new_end.strftime('%d-%m-%Y')}</strong></p>
-                <p>You will receive a reminder 15 days before the new end date.</p>
+                <p>Employee and HR team have been notified.</p>
             </div>
             """
         )
+
+
 @frappe.whitelist()
 def get_last_employee_id(company):
     result = frappe.get_all(
@@ -401,7 +466,6 @@ def get_last_employee_id(company):
 
     last_id = result[0].name
 
-    # Extract prefix and number
     import re
     match = re.match(r'^([A-Za-z]+)(\d+)$', last_id)
 
@@ -410,7 +474,7 @@ def get_last_employee_id(company):
 
     prefix = match.group(1)
     number = int(match.group(2))
-    pad_length = len(match.group(2))  # keep same zero padding
+    pad_length = len(match.group(2))
     next_number = number + 1
     next_id = prefix + str(next_number).zfill(pad_length)
 
