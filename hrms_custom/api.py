@@ -482,3 +482,37 @@ def get_last_employee_id(company):
         "last_id": last_id,
         "next_id": next_id
     }
+@frappe.whitelist()
+def get_employee_policies(employee):
+
+    company = frappe.db.get_value(
+        "Employee",
+        employee,
+        "company"
+    )
+
+    if not company:
+        return []
+
+    policy_names = frappe.get_all(
+        "HR Policy Company",
+        filters={"company": company},
+        pluck="parent"
+    )
+
+    if not policy_names:
+        return []
+
+    return frappe.get_all(
+        "HR Policy",
+        filters={
+            "name": ["in", policy_names],
+            "is_active": 1
+        },
+        fields=[
+            "name",
+            "policy_name",
+            "policy_pdf"
+        ],
+        order_by="policy_name asc"
+    )
