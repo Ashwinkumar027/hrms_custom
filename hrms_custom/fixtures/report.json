@@ -11,6 +11,111 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
+  "modified": "2026-06-23 10:15:46.974210",
+  "module": "HRMS custom",
+  "name": "Expiring Documents",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Employee",
+  "reference_report": null,
+  "report_name": "Expiring Documents",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "HR User"
+   },
+   {
+    "role": "HR Manager"
+   },
+   {
+    "role": "System Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2026-06-23 10:15:46.969383",
+  "module": "HRMS custom",
+  "name": "Employee Documents Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Employee",
+  "reference_report": null,
+  "report_name": "Employee Documents Report",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "HR User"
+   },
+   {
+    "role": "HR Manager"
+   },
+   {
+    "role": "System Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2026-06-23 10:15:46.947484",
+  "module": "HRMS custom",
+  "name": "Missing Employee Documents",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Employee",
+  "reference_report": null,
+  "report_name": "Missing Employee Documents",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "HR User"
+   },
+   {
+    "role": "HR Manager"
+   },
+   {
+    "role": "System Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
   "modified": "2026-06-19 12:58:07.006018",
   "module": "HRMS custom",
   "name": "Bank Transfer Report",

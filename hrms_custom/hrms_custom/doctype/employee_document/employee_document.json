@@ -1,0 +1,28 @@
+{
+ "actions": [],
+ "creation": "2026-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["document_type", "attachment", "column_break_1", "document_number", "issue_date", "expiry_date", "status", "remarks"],
+ "fields": [
+  {"fieldname": "document_type", "fieldtype": "Link", "in_list_view": 1, "label": "Document Type", "options": "Document Type", "reqd": 1},
+  {"fieldname": "attachment", "fieldtype": "Attach", "in_list_view": 1, "label": "Attachment", "reqd": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "document_number", "fieldtype": "Data", "in_list_view": 1, "label": "Document Number"},
+  {"fieldname": "issue_date", "fieldtype": "Date", "label": "Issue Date"},
+  {"fieldname": "expiry_date", "fieldtype": "Date", "in_list_view": 1, "label": "Expiry Date"},
+  {"default": "Active", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "label": "Status", "options": "Active\nExpired\nPending Verification"},
+  {"fieldname": "remarks", "fieldtype": "Small Text", "label": "Remarks"}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HRMS custom",
+ "name": "Employee Document",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
