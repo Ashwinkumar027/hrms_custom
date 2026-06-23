@@ -306,6 +306,7 @@ def probation_action(employee, action):
             manager_email = manager.company_email
             manager_name = manager.employee_name
 
+    # Get HR Managers
     hr_managers = frappe.db.sql("""
         SELECT DISTINCT u.email
         FROM `tabUser` u
@@ -321,11 +322,10 @@ def probation_action(employee, action):
         emp.save(ignore_permissions=True)
         frappe.db.commit()
 
-        # Notify manager
+        # ✅ Notify Manager
         if manager_email:
             frappe.sendmail(
                 recipients=[manager_email],
-                cc=cc_emails,
                 subject=f"Employee Confirmed: {emp.employee_name}",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
@@ -334,20 +334,20 @@ def probation_action(employee, action):
                 </div>
                 <div style='padding:30px;background:#f9f9f9;'>
                 <p>Dear {manager_name},</p>
-                <p>This is to confirm that <strong>{emp.employee_name}</strong>
-                (ID: {emp.name}) has been <strong>confirmed</strong> as a
-                permanent employee effective <strong>{today()}</strong>.</p>
+                <p><strong>{emp.employee_name}</strong> (ID: {emp.name})
+                has been confirmed as a permanent employee
+                effective <strong>{today()}</strong>.</p>
                 <p>Regards,<br>HR System</p>
                 </div>
                 </div>
                 """
             )
 
-        # Notify employee
+        # ✅ Notify Employee
         if emp.company_email:
             frappe.sendmail(
                 recipients=[emp.company_email],
-                subject=f"Congratulations! Your Probation is Complete - {emp.employee_name}",
+                subject=f"Congratulations! Your Probation is Complete",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
                 <div style='background:#0F6E56;padding:20px;text-align:center;'>
@@ -355,13 +355,35 @@ def probation_action(employee, action):
                 </div>
                 <div style='padding:30px;background:#f9f9f9;'>
                 <p>Dear <strong>{emp.employee_name}</strong>,</p>
-                <p>Congratulations! We are pleased to inform you that your
-                probation period has been successfully completed and you have
-                been <strong>confirmed as a permanent employee</strong>
+                <p>Congratulations! Your probation period has been successfully
+                completed and you have been confirmed as a
+                <strong>permanent employee</strong>
                 effective <strong>{today()}</strong>.</p>
-                <p>We appreciate your hard work and dedication during this period.</p>
-                <p>Welcome to the team permanently!</p>
                 <p>Regards,<br><strong>HR Team</strong><br>Aionion Capital</p>
+                </div>
+                </div>
+                """
+            )
+
+        # ✅ Notify HR Managers
+        if cc_emails:
+            frappe.sendmail(
+                recipients=cc_emails,
+                subject=f"Employee Confirmed: {emp.employee_name}",
+                message=f"""
+                <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
+                <div style='background:#0F6E56;padding:20px;text-align:center;'>
+                <h2 style='color:white;margin:0;'>Employee Confirmation Notice</h2>
+                </div>
+                <div style='padding:30px;background:#f9f9f9;'>
+                <p>Dear HR Team,</p>
+                <p><strong>{emp.employee_name}</strong> (ID: {emp.name})<br>
+                Department: <strong>{emp.department or 'N/A'}</strong><br>
+                Company: <strong>{emp.company or 'N/A'}</strong><br>
+                has been <strong>confirmed as a permanent employee</strong>
+                effective <strong>{today()}</strong>.</p>
+                <p>Please update the records accordingly.</p>
+                <p>Regards,<br><strong>HR System</strong></p>
                 </div>
                 </div>
                 """
@@ -387,11 +409,10 @@ def probation_action(employee, action):
         emp.save(ignore_permissions=True)
         frappe.db.commit()
 
-        # Notify manager
+        # ✅ Notify Manager
         if manager_email:
             frappe.sendmail(
                 recipients=[manager_email],
-                cc=cc_emails,
                 subject=f"Probation Extended: {emp.employee_name}",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
@@ -400,37 +421,57 @@ def probation_action(employee, action):
                 </div>
                 <div style='padding:30px;background:#f9f9f9;'>
                 <p>Dear {manager_name},</p>
-                <p>The probation period of <strong>{emp.employee_name}</strong>
-                (ID: {emp.name}) has been <strong>extended by 2 months</strong>.</p>
-                <p>New probation end date:
+                <p>Probation of <strong>{emp.employee_name}</strong>
+                (ID: {emp.name}) has been extended by 2 months.</p>
+                <p>New end date:
                 <strong>{new_end.strftime('%d-%m-%Y')}</strong></p>
-                <p>You will receive another reminder 15 days before
-                the new probation end date.</p>
                 <p>Regards,<br>HR System</p>
                 </div>
                 </div>
                 """
             )
 
-        # Notify employee
+        # ✅ Notify Employee
         if emp.company_email:
             frappe.sendmail(
                 recipients=[emp.company_email],
-                subject=f"Your Probation Period Has Been Extended - {emp.employee_name}",
+                subject=f"Your Probation Period Has Been Extended",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
                 <div style='background:#ffc107;padding:20px;text-align:center;'>
-                <h2 style='color:#333;margin:0;'>Probation Period Extended</h2>
+                <h2 style='color:#333;margin:0;'>Probation Extended</h2>
                 </div>
                 <div style='padding:30px;background:#f9f9f9;'>
                 <p>Dear <strong>{emp.employee_name}</strong>,</p>
-                <p>This is to inform you that your probation period has been
-                <strong>extended by 2 months</strong>.</p>
-                <p>Your new probation end date is
-                <strong>{new_end.strftime('%d-%m-%Y')}</strong>.</p>
-                <p>Please continue to give your best and feel free to speak
-                with your manager for any guidance.</p>
+                <p>Your probation has been extended by
+                <strong>2 months</strong>.</p>
+                <p>New end date:
+                <strong>{new_end.strftime('%d-%m-%Y')}</strong></p>
                 <p>Regards,<br><strong>HR Team</strong><br>Aionion Capital</p>
+                </div>
+                </div>
+                """
+            )
+
+        # ✅ Notify HR Managers
+        if cc_emails:
+            frappe.sendmail(
+                recipients=cc_emails,
+                subject=f"Probation Extended: {emp.employee_name}",
+                message=f"""
+                <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
+                <div style='background:#ffc107;padding:20px;text-align:center;'>
+                <h2 style='color:#333;margin:0;'>Probation Extension Notice</h2>
+                </div>
+                <div style='padding:30px;background:#f9f9f9;'>
+                <p>Dear HR Team,</p>
+                <p><strong>{emp.employee_name}</strong> (ID: {emp.name})<br>
+                Department: <strong>{emp.department or 'N/A'}</strong><br>
+                Company: <strong>{emp.company or 'N/A'}</strong><br>
+                probation has been <strong>extended by 2 months</strong>.</p>
+                <p>New end date:
+                <strong>{new_end.strftime('%d-%m-%Y')}</strong></p>
+                <p>Regards,<br><strong>HR System</strong></p>
                 </div>
                 </div>
                 """
