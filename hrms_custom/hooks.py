@@ -104,7 +104,8 @@ permission_query_conditions = {
 
 scheduler_events = {
     "daily": [
-        "hrms_custom.hrms_custom.utils.missing_attendance_email.send_missing_attendance_emails_for_yesterday"
+        "hrms_custom.hrms_custom.utils.missing_attendance_email.send_missing_attendance_emails_for_yesterday",
+        "hrms_custom.hrms_custom.utils.lop_summary_email.send_lop_summary_emails"
     ],
     "monthly": [
         "hrms_custom.hrms_custom.utils.late_lop_processor.process_late_deductions"
@@ -114,5 +115,15 @@ scheduler_events = {
 doc_events = {
     "Salary Slip": {
         "before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
+    },
+    "Attendance": {
+        "validate": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_lock",
+        "before_cancel": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_lock"
+    },
+    "Leave Application": {
+        "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_leave_application_lock"
+    },
+    "Attendance Request": {
+        "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_request_lock"
     }
 }
