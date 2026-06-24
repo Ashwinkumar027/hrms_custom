@@ -6,7 +6,7 @@ from hrms.hr.doctype.employee_onboarding.employee_onboarding import EmployeeOnbo
 class CustomEmployeeOnboarding(EmployeeOnboarding):
 
     def on_update(self):
-        super().on_update()
+        if hasattr(super(), "on_update"): super().on_update()
         if self.workflow_state == "Onboarding In Progress":
             self._create_onboarding_tickets()
 
