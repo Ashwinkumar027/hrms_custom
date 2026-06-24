@@ -1,5 +1,5 @@
 import frappe
-from hrms_custom.utils.email_utils import get_hr_sender, get_onboarding_contact
+from hrms_custom.utils.email_utils import get_hr_sender, get_onboarding_contact, get_onboarding_team
 from hrms.hr.doctype.employee_onboarding.employee_onboarding import EmployeeOnboarding
 
 
@@ -14,12 +14,6 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
         company = self.company or None
 
         # Dynamic — reads from Onboarding Task Contact DocType
-        SIM_EMAIL             = get_onboarding_contact("SIM Card", company)
-        IT_EMAIL              = get_onboarding_contact("IT Setup", company)
-        EMAIL_ADMIN           = get_onboarding_contact("Email ID", company)
-        SW_EMAIL              = get_onboarding_contact("Software Access", company)
-        IDCARD_EMAIL          = get_onboarding_contact("ID Card", company)
-        BC_EMAIL              = get_onboarding_contact("Business Card", company)
         IDCARD_DESIGNER_EMAIL = get_onboarding_contact("ID Card Design", company)
 
         base_info = {
@@ -43,33 +37,22 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
                 "</table>"
             ).format(extra=extra_rows, **base_info)
 
-        def make_ticket(subject, description):
+        def make_ticket(subject, description, task_type=None):
             if not frappe.db.exists("DocType", "HD Ticket"):
-                frappe.logger().info(f"HD Ticket skipped (Helpdesk not installed): {subject}")
+                frappe.logger("hrms_custom").info(
+                    f"HD Ticket skipped (Helpdesk not installed): {subject}"
+                )
                 return
+            # Get team dynamically from Onboarding Task Contact
+            team = get_onboarding_team(task_type, company) if task_type else None
+
             ticket = frappe.new_doc("HD Ticket")
             ticket.subject = subject
             ticket.description = description
             ticket.raised_by = frappe.session.user
+            if team and frappe.db.exists("HD Team", team):
+                ticket.agent_group = team
             ticket.insert(ignore_permissions=True)
-
-        def send_mail(to, subject, body, salutation):
-            if not to:
-                frappe.logger("hrms_custom").warning(
-                    f"No contact configured for task: {subject} — skipping email"
-                )
-                return
-            frappe.sendmail(
-                recipients=[to],
-                sender=get_hr_sender(),
-                subject=subject,
-                message=(
-                    "<p>Dear {sal},</p>"
-                    "<p>Please process the below request for new joiner.</p>"
-                    "{body}"
-                    "<p>Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
-                ).format(sal=salutation, body=body)
-            )
 
         tickets_created = 0
 
@@ -88,8 +71,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             subject = "SIM Card {} Request - {}".format(
                 self.custom_sim_card, self.employee_name
             )
-            make_ticket(subject, table)
-            send_mail(SIM_EMAIL, subject, table, "SIM Admin")
+            make_ticket(subject, table, task_type="SIM Card")
             tickets_created += 1
 
         # LAPTOP / DESKTOP
@@ -101,8 +83,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             subject = "{} Request - {}".format(
                 self.custom_laptop_type, self.employee_name
             )
-            make_ticket(subject, table)
-            send_mail(IT_EMAIL, subject, table, "IT Admin")
+            make_ticket(subject, table, task_type="IT Setup")
             tickets_created += 1
 
         # EMAIL ID
@@ -120,8 +101,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             subject = "Email ID {} Request - {}".format(
                 self.custom_email_id, self.employee_name
             )
-            make_ticket(subject, table)
-            send_mail(EMAIL_ADMIN, subject, table, "Email Admin")
+            make_ticket(subject, table, task_type="Email ID")
             tickets_created += 1
 
         # SOFTWARE ACCESS
@@ -131,17 +111,15 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             )
             table = base_table(extra)
             subject = "Software Access Request - {}".format(self.employee_name)
-            make_ticket(subject, table)
-            send_mail(SW_EMAIL, subject, table, "Software Admin")
+            make_ticket(subject, table, task_type="Software Access")
             tickets_created += 1
 
-        # ID CARD TICKET
+        # ID CARD
         if self.custom_id_card:
             extra = "<tr><td><b>ID Card</b></td><td>Required</td></tr>"
             table = base_table(extra)
             subject = "ID Card Request - {}".format(self.employee_name)
-            make_ticket(subject, table)
-            send_mail(IDCARD_EMAIL, subject, table, "Admin")
+            make_ticket(subject, table, task_type="ID Card")
             tickets_created += 1
 
         # BUSINESS CARD
@@ -149,16 +127,15 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             extra = "<tr><td><b>Business Card</b></td><td>Required</td></tr>"
             table = base_table(extra)
             subject = "Business Card Request - {}".format(self.employee_name)
-            make_ticket(subject, table)
-            send_mail(BC_EMAIL, subject, table, "Admin")
+            make_ticket(subject, table, task_type="Business Card")
             tickets_created += 1
 
-        # ID CARD DESIGN EMAIL
+        # ID CARD DESIGN EMAIL ONLY
         self._send_idcard_design_email(IDCARD_DESIGNER_EMAIL)
 
         if tickets_created > 0:
             frappe.msgprint(
-                "{} ticket(s) created and email(s) sent!".format(tickets_created),
+                "{} ticket(s) created successfully!".format(tickets_created),
                 indicator="green",
                 title="Success"
             )
@@ -170,20 +147,19 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             )
             return
 
-        employee_id  = self.custom_employee_id_ or "Not Assigned"
-        emergency_ph = self.custom_emergency_phone_number or "Not Provided"
-        blood_group  = self.custom_blood_group_ or "Not Provided"
-        photo_url    = self.custom_candidate_passport_size_image_for_id_card or ""
+        employee_id   = self.custom_employee_id_ or "Not Assigned"
+        emergency_ph  = self.custom_emergency_phone_number or "Not Provided"
+        blood_group   = self.custom_blood_group_ or "Not Provided"
+        photo_url     = self.custom_candidate_passport_size_image_for_id_card or ""
         date_of_issue = str(self.date_of_joining or "")
-        company      = self.company or ""
-        emp_name     = self.employee_name or ""
+        company       = self.company or ""
+        emp_name      = self.employee_name or ""
 
         photo_html = ""
         if photo_url:
             if photo_url.startswith("/files/"):
                 from frappe.utils import get_url
                 photo_url = get_url(photo_url)
-
             photo_html = (
                 "<tr>"
                 "<td><b>Passport Photo</b></td>"

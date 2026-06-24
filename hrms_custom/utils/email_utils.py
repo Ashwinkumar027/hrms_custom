@@ -35,3 +35,29 @@ def get_onboarding_contact(task_type, company=None):
         return email or None
     except Exception:
         return None
+
+
+def get_onboarding_team(task_type, company=None):
+    """
+    Get HD Team for onboarding task.
+    First checks company-specific, then falls back to global.
+    """
+    try:
+        if company:
+            team = frappe.db.get_value(
+                "Onboarding Task Contact",
+                {"task_type": task_type, "company": company},
+                "team"
+            )
+            if team:
+                return team
+
+        # Global fallback
+        team = frappe.db.get_value(
+            "Onboarding Task Contact",
+            {"task_type": task_type, "company": ["is", "not set"]},
+            "team"
+        )
+        return team or None
+    except Exception:
+        return None
