@@ -1,0 +1,24 @@
+[
+ {
+  "company": "TestCompany",
+  "docstatus": 0,
+  "doctype": "Onboarding Task Contact",
+  "email": "ashwinpooja586@gmail.com",
+  "modified": "2026-06-24 16:49:41.143998",
+  "name": "p83lt4v9f3",
+  "task_type": "SIM Card",
+  "team": null,
+  "user": "ashwinpooja586@gmail.com"
+ },
+ {
+  "company": "TestCompany",
+  "docstatus": 0,
+  "doctype": "Onboarding Task Contact",
+  "email": "ashwinkumar.k@quanticustech.com",
+  "modified": "2026-06-24 16:49:55.749399",
+  "name": "pclgaug7rj",
+  "task_type": "Email ID",
+  "team": null,
+  "user": "ashwinkumar.k@quanticustech.com"
+ }
+]
