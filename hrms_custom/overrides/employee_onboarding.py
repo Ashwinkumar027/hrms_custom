@@ -1,4 +1,5 @@
 import frappe
+from hrms_custom.utils.email_utils import get_hr_sender
 from hrms.hr.doctype.employee_onboarding.employee_onboarding import EmployeeOnboarding
 
 
@@ -11,7 +12,6 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
 
     def _create_onboarding_tickets(self):
 
-        # 🔁 Change these emails tomorrow
         SIM_EMAIL             = "admin@example.com"
         IT_EMAIL              = "admin@example.com"
         EMAIL_ADMIN           = "admin@example.com"
@@ -51,6 +51,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
         def send_mail(to, subject, body, salutation):
             frappe.sendmail(
                 recipients=[to],
+                sender=get_hr_sender(),
                 subject=subject,
                 message=(
                     "<p>Dear {sal},</p>"
@@ -62,7 +63,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
 
         tickets_created = 0
 
-        # ✅ SIM CARD
+        # SIM CARD
         if self.custom_sim_card and self.custom_sim_card != "No":
             extra = "<tr><td><b>SIM Request</b></td><td>{}</td></tr>".format(
                 self.custom_sim_card
@@ -81,7 +82,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             send_mail(SIM_EMAIL, subject, table, "SIM Admin")
             tickets_created += 1
 
-        # ✅ LAPTOP / DESKTOP
+        # LAPTOP / DESKTOP
         if self.custom_laptop_type and self.custom_laptop_type != "No":
             extra = "<tr><td><b>Device Required</b></td><td>{}</td></tr>".format(
                 self.custom_laptop_type
@@ -94,7 +95,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             send_mail(IT_EMAIL, subject, table, "IT Admin")
             tickets_created += 1
 
-        # ✅ EMAIL ID
+        # EMAIL ID
         if self.custom_email_id and self.custom_email_id != "No":
             extra = "<tr><td><b>Email Request</b></td><td>{}</td></tr>".format(
                 self.custom_email_id
@@ -113,7 +114,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             send_mail(EMAIL_ADMIN, subject, table, "Email Admin")
             tickets_created += 1
 
-        # ✅ SOFTWARE ACCESS
+        # SOFTWARE ACCESS
         if self.custom_software_access:
             extra = "<tr><td><b>Software/CRM</b></td><td>{}</td></tr>".format(
                 self.custom_software_access
@@ -124,7 +125,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             send_mail(SW_EMAIL, subject, table, "Software Admin")
             tickets_created += 1
 
-        # ✅ ID CARD TICKET
+        # ID CARD TICKET
         if self.custom_id_card:
             extra = "<tr><td><b>ID Card</b></td><td>Required</td></tr>"
             table = base_table(extra)
@@ -133,7 +134,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             send_mail(IDCARD_EMAIL, subject, table, "Admin")
             tickets_created += 1
 
-        # ✅ BUSINESS CARD
+        # BUSINESS CARD
         if self.custom_business_card:
             extra = "<tr><td><b>Business Card</b></td><td>Required</td></tr>"
             table = base_table(extra)
@@ -142,7 +143,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             send_mail(BC_EMAIL, subject, table, "Admin")
             tickets_created += 1
 
-        # ✅ ID CARD DESIGN EMAIL
+        # ID CARD DESIGN EMAIL
         self._send_idcard_design_email(IDCARD_DESIGNER_EMAIL)
 
         if tickets_created > 0:
@@ -154,7 +155,6 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
 
     def _send_idcard_design_email(self, designer_email):
 
-        # ✅ Correct fieldnames from console output
         employee_id  = self.custom_employee_id_ or "Not Assigned"
         emergency_ph = self.custom_emergency_phone_number or "Not Provided"
         blood_group  = self.custom_blood_group_ or "Not Provided"
@@ -163,10 +163,8 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
         company      = self.company or ""
         emp_name     = self.employee_name or ""
 
-        # Photo HTML
         photo_html = ""
         if photo_url:
-            # Build full URL if relative path
             if photo_url.startswith("/files/"):
                 from frappe.utils import get_url
                 photo_url = get_url(photo_url)
@@ -183,16 +181,13 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
 
         message = (
             "<div style='font-family:Arial,sans-serif;max-width:650px;margin:0 auto;'>"
-
             "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"
             "<h2 style='color:white;margin:0;'>ID Card Design Request</h2>"
             "<p style='color:#cce0ff;margin:5px 0;'>{company}</p>"
             "</div>"
-
             "<div style='padding:30px;background:#f9f9f9;'>"
             "<p>Dear ID Card Designer,</p>"
             "<p>Please design the ID card for the following new joiner:</p>"
-
             "<table border='1' cellpadding='8' cellspacing='0' "
             "style='border-collapse:collapse;width:100%;margin-top:15px;'>"
             "<tr style='background:#1B4F8A;color:white;'>"
@@ -208,12 +203,10 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             "<tr><td><b>Date of Issue</b></td><td>{doi}</td></tr>"
             "{photo}"
             "</table>"
-
             "<p style='margin-top:20px;color:#555;'>"
             "Please design the ID card as per company format and send for printing.</p>"
             "<p>Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
             "</div>"
-
             "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
             "<p style='color:#cce0ff;margin:0;font-size:11px;'>"
             "Aionion Capital HRMS — Confidential</p>"
@@ -231,6 +224,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
 
         frappe.sendmail(
             recipients=[designer_email],
+            sender=get_hr_sender(),
             subject=subject,
             message=message,
             reference_doctype="Employee Onboarding",

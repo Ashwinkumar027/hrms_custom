@@ -2,6 +2,7 @@ import frappe
 from frappe.utils import now, get_url, add_months, today, getdate
 import urllib.parse
 import hashlib
+from hrms_custom.utils.email_utils import get_hr_sender
 
 
 @frappe.whitelist()
@@ -19,7 +20,6 @@ def send_preoffer_form(job_applicant):
     })
 
     form_url = get_url("/candidate-pre-offer/new?" + params)
-
     subject = "Action Required: Pre-Offer Form - Aionion Capital"
 
     message = (
@@ -65,6 +65,7 @@ def send_preoffer_form(job_applicant):
 
     frappe.sendmail(
         recipients=[doc.email_id],
+        sender=get_hr_sender(),
         subject=subject,
         message=message,
         reference_doctype="Job Applicant",
@@ -85,12 +86,8 @@ def send_preoffer_form(job_applicant):
 def send_offer_letter(job_offer):
     doc = frappe.get_doc("Job Offer", job_offer)
 
-    candidate_email = frappe.db.get_value(
-        "Job Applicant", doc.job_applicant, "email_id"
-    )
-    candidate_name = frappe.db.get_value(
-        "Job Applicant", doc.job_applicant, "applicant_name"
-    )
+    candidate_email = frappe.db.get_value("Job Applicant", doc.job_applicant, "email_id")
+    candidate_name = frappe.db.get_value("Job Applicant", doc.job_applicant, "applicant_name")
 
     if not candidate_email:
         frappe.throw("No email found for this candidate!")
@@ -112,16 +109,12 @@ def send_offer_letter(job_offer):
     accept_url = (
         base_url
         + "/api/method/hrms_custom.api.respond_to_offer?token="
-        + token
-        + "&response=Accepted&offer="
-        + doc.name
+        + token + "&response=Accepted&offer=" + doc.name
     )
     reject_url = (
         base_url
         + "/api/method/hrms_custom.api.respond_to_offer?token="
-        + token
-        + "&response=Rejected&offer="
-        + doc.name
+        + token + "&response=Rejected&offer=" + doc.name
     )
 
     COMPANY_PRINT_MAP = {
@@ -140,15 +133,12 @@ def send_offer_letter(job_offer):
     if print_format:
         try:
             pdf_content = frappe.get_print(
-                "Job Offer",
-                doc.name,
-                print_format=print_format,
-                as_pdf=True
+                "Job Offer", doc.name,
+                print_format=print_format, as_pdf=True
             )
             attachments = [{
                 "fname": "Offer_Letter_"
-                + (candidate_name or "Candidate").replace(" ", "_")
-                + ".pdf",
+                + (candidate_name or "Candidate").replace(" ", "_") + ".pdf",
                 "fcontent": pdf_content
             }]
         except Exception as e:
@@ -182,9 +172,7 @@ def send_offer_letter(job_offer):
         "font-weight:bold;font-size:16px;'>✗ Decline Offer</a>"
         "</div>"
         "<p style='color:#666;font-size:13px;'>Please be advised that the offer "
-        "will be deemed revoked if we do not receive your acceptance within 48 hours "
-        "or if there are any inconsistencies between the information provided during "
-        "the interview and the details in the offer letter.</p>"
+        "will be deemed revoked if we do not receive your acceptance within 48 hours.</p>"
         "<p>We look forward to welcoming you to our team!</p>"
         "<p>Warm Regards,<br><b>HR Department</b><br>Aionion Capital</p>"
         "</div>"
@@ -197,6 +185,7 @@ def send_offer_letter(job_offer):
 
     frappe.sendmail(
         recipients=[candidate_email],
+        sender=get_hr_sender(),
         subject="Offer Letter - " + (doc.designation or "") + " - " + (doc.company or ""),
         message=message,
         attachments=attachments,
@@ -256,6 +245,7 @@ def respond_to_offer(token, response, offer):
         color = "#0F6E56" if response == "Accepted" else "#A32D2D"
         frappe.sendmail(
             recipients=hr_emails,
+            sender=get_hr_sender(),
             subject="Offer " + response + " - " + (candidate_name or offer),
             message=(
                 "<div style='font-family:Arial;padding:20px;'>"
@@ -306,7 +296,6 @@ def probation_action(employee, action):
             manager_email = manager.company_email
             manager_name = manager.employee_name
 
-    # Get HR Managers
     hr_managers = frappe.db.sql("""
         SELECT DISTINCT u.email
         FROM `tabUser` u
@@ -317,15 +306,17 @@ def probation_action(employee, action):
     """, as_dict=True)
     cc_emails = [r.email for r in hr_managers if r.email]
 
+    employee_email = emp.company_email or emp.personal_email or emp.user_id
+
     if action == "confirm":
         emp.final_confirmation_date = today()
         emp.save(ignore_permissions=True)
         frappe.db.commit()
 
-        # ✅ Notify Manager
         if manager_email:
             frappe.sendmail(
                 recipients=[manager_email],
+                sender=get_hr_sender(),
                 subject=f"Employee Confirmed: {emp.employee_name}",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
@@ -343,10 +334,10 @@ def probation_action(employee, action):
                 """
             )
 
-        # ✅ Notify Employee
-        if emp.company_email:
+        if employee_email:
             frappe.sendmail(
-                recipients=[emp.company_email],
+                recipients=[employee_email],
+                sender=get_hr_sender(),
                 subject=f"Congratulations! Your Probation is Complete",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
@@ -365,10 +356,10 @@ def probation_action(employee, action):
                 """
             )
 
-        # ✅ Notify HR Managers
         if cc_emails:
             frappe.sendmail(
                 recipients=cc_emails,
+                sender=get_hr_sender(),
                 subject=f"Employee Confirmed: {emp.employee_name}",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
@@ -409,10 +400,10 @@ def probation_action(employee, action):
         emp.save(ignore_permissions=True)
         frappe.db.commit()
 
-        # ✅ Notify Manager
         if manager_email:
             frappe.sendmail(
                 recipients=[manager_email],
+                sender=get_hr_sender(),
                 subject=f"Probation Extended: {emp.employee_name}",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
@@ -431,10 +422,10 @@ def probation_action(employee, action):
                 """
             )
 
-        # ✅ Notify Employee
-        if emp.company_email:
+        if employee_email:
             frappe.sendmail(
-                recipients=[emp.company_email],
+                recipients=[employee_email],
+                sender=get_hr_sender(),
                 subject=f"Your Probation Period Has Been Extended",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
@@ -453,10 +444,10 @@ def probation_action(employee, action):
                 """
             )
 
-        # ✅ Notify HR Managers
         if cc_emails:
             frappe.sendmail(
                 recipients=cc_emails,
+                sender=get_hr_sender(),
                 subject=f"Probation Extended: {emp.employee_name}",
                 message=f"""
                 <div style='font-family:Arial;max-width:600px;margin:0 auto;'>
@@ -519,18 +510,12 @@ def get_last_employee_id(company):
     next_number = number + 1
     next_id = prefix + str(next_number).zfill(pad_length)
 
-    return {
-        "last_id": last_id,
-        "next_id": next_id
-    }
+    return {"last_id": last_id, "next_id": next_id}
+
+
 @frappe.whitelist()
 def get_employee_policies(employee):
-
-    company = frappe.db.get_value(
-        "Employee",
-        employee,
-        "company"
-    )
+    company = frappe.db.get_value("Employee", employee, "company")
 
     if not company:
         return []
@@ -550,10 +535,6 @@ def get_employee_policies(employee):
             "name": ["in", policy_names],
             "is_active": 1
         },
-        fields=[
-            "name",
-            "policy_name",
-            "policy_pdf"
-        ],
+        fields=["name", "policy_name", "policy_pdf"],
         order_by="policy_name asc"
     )

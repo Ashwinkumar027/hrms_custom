@@ -4,6 +4,7 @@
 import frappe
 from frappe import _
 from frappe.utils import add_days, date_diff, today
+from hrms_custom.utils.email_utils import get_hr_sender
 
 EXPIRY_WINDOW_DAYS = 30
 EXPIRY_WATCHED_TYPES = ["Passport", "Driving License"]
@@ -25,6 +26,7 @@ def send_document_alerts():
 		recipients=hr_manager_emails,
 		subject=_("Employee Document Alerts - {0}").format(today()),
 		message=build_email_message(expiring_rows, missing_rows),
+		sender=get_hr_sender(),
 	)
 
 

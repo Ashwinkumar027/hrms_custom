@@ -1,6 +1,7 @@
 from frappe.utils import add_days, formatdate, getdate, today
 
 import frappe
+from hrms_custom.utils.email_utils import get_hr_sender
 
 
 VALID_ATTENDANCE_STATUSES = ("Present", "Half Day", "Work From Home", "On Leave")
@@ -237,4 +238,5 @@ def _send_missing_attendance_email(employee, recipient, attendance_date, subject
         ).format(employee.employee_name or employee.name, formatted_date),
         reference_doctype="Employee",
         reference_name=employee.name,
+        sender=get_hr_sender(),
     )

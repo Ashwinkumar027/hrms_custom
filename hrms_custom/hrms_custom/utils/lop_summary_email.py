@@ -36,6 +36,7 @@ import frappe
 from frappe.utils import getdate, formatdate, nowdate
 
 from hrms_custom.hrms_custom.utils.late_lop_processor import _get_grace_days
+from hrms_custom.utils.email_utils import get_hr_sender
 
 
 LOG_PREFIX = "[LOPEmail]"
@@ -158,6 +159,7 @@ def _process_employee(emp, period_start, period_end, lwp_types):
         message=body,
         reference_doctype="Employee",
         reference_name=emp.name,
+        sender=get_hr_sender(),
     )
     if cc_email:
         send_kwargs["cc"] = [cc_email]
