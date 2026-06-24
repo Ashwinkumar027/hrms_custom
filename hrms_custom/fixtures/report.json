@@ -176,5 +176,46 @@
    }
   ],
   "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-06-24 12:45:05.528557",
+  "module": "HRMS custom",
+  "name": "Upcoming Holidays",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Employee",
+  "reference_report": null,
+  "report_name": "Upcoming Holidays",
+  "report_script": "def execute(filters=None):\r\n    columns = [\r\n        {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 120},\r\n        {\"label\": \"Holiday Name\", \"fieldname\": \"holiday_name\", \"fieldtype\": \"Data\", \"width\": 250},\r\n        {\"label\": \"Type\", \"fieldname\": \"type\", \"fieldtype\": \"Data\", \"width\": 150},\r\n    ]\r\n\r\n    today = frappe.utils.today()\r\n    getdate = frappe.utils.getdate\r\n\r\n    employee = frappe.db.get_value(\r\n        \"Employee\", {\"user_id\": frappe.session.user}, [\"name\", \"company\"], as_dict=True\r\n    )\r\n    if not employee:\r\n        return columns, []\r\n\r\n    rows = []\r\n\r\n    default_holiday_list = frappe.db.get_value(\"Company\", employee.company, \"default_holiday_list\")\r\n    if default_holiday_list:\r\n        national_holidays = frappe.get_all(\r\n            \"Holiday\",\r\n            filters={\"parent\": default_holiday_list, \"holiday_date\": [\">=\", today], \"weekly_off\": 0},\r\n            fields=[\"holiday_date as date\", \"description as holiday_name\"],\r\n            order_by=\"holiday_date asc\",\r\n        )\r\n        for h in national_holidays:\r\n            h[\"type\"] = \"National Holiday\"\r\n            rows.append(h)\r\n\r\n    optional_list = frappe.db.get_value(\r\n        \"Leave Period\", {\"company\": employee.company, \"is_active\": 1}, \"optional_holiday_list\"\r\n    )\r\n    if optional_list:\r\n        optional_holidays = frappe.get_all(\r\n            \"Holiday\",\r\n            filters={\"parent\": optional_list, \"holiday_date\": [\">=\", today]},\r\n            fields=[\"holiday_date as date\", \"description as holiday_name\"],\r\n            order_by=\"holiday_date asc\",\r\n        )\r\n        for h in optional_holidays:\r\n            h[\"type\"] = \"Optional Holiday\"\r\n            rows.append(h)\r\n\r\n    rows.sort(key=lambda r: getdate(r[\"date\"]))\r\n    rows = rows[:5]\r\n\r\n    for r in rows:\r\n        r[\"holiday_name\"] = frappe.utils.strip_html(r[\"holiday_name\"]).strip()\r\n\r\n    return columns, rows\r\ndata = execute(filters)",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Employee"
+   },
+   {
+    "role": "HR Manager"
+   },
+   {
+    "role": "HR User"
+   },
+   {
+    "role": "Employee Self Service"
+   },
+   {
+    "role": "System Manager"
+   }
+  ],
+  "timeout": 0
  }
 ]
