@@ -10,7 +10,7 @@ doctype_js = {
 }
 
 fixtures = [
-    "Onboarding Task Contact",
+    # "Onboarding Task Contact",
     {
         "dt": "Custom Field",
         "filters": [["module", "=", "HRMS custom"]],
