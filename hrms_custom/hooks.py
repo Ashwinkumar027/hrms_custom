@@ -28,7 +28,7 @@ fixtures = [
     },
     {
         "dt": "Custom DocPerm",
-        "filters": [["parent", "in", ["Attendance Request", "Shift Request", "Expense Claim", "Employee Advance"]]],
+        "filters": [["parent", "in", ["Attendance Request", "Shift Request", "Expense Claim", "Employee Advance", "Employee"]]],
     },
     {
         "dt": "Workflow",
@@ -108,6 +108,11 @@ permission_query_conditions = {
 }
 
 scheduler_events = {
+    "cron": {
+        "0 9 * * *": [
+            "hrms_custom.hrms_custom.utils.upcoming_holiday_notification.send_upcoming_holiday_notifications"
+        ]
+    },
     "daily": [
         "hrms_custom.hrms_custom.utils.missing_attendance_email.send_missing_attendance_emails_for_yesterday",
         "hrms_custom.hrms_custom.utils.lop_summary_email.send_lop_summary_emails",
