@@ -1,5 +1,5 @@
 import frappe
-from hrms_custom.utils.email_utils import get_hr_sender, get_onboarding_contact
+from hrms_custom.utils.email_utils import get_hr_sender, get_onboarding_contact, get_onboarding_team
 from hrms.hr.doctype.employee_onboarding.employee_onboarding import EmployeeOnboarding
 
 
@@ -13,7 +13,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
     def _create_onboarding_tickets(self):
         company = self.company or None
 
-        # Only ID Card Design needs individual email — rest go to teams
+        # Dynamic — reads from Onboarding Task Contact DocType
         IDCARD_DESIGNER_EMAIL = get_onboarding_contact("ID Card Design", company)
 
         base_info = {
@@ -37,12 +37,15 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
                 "</table>"
             ).format(extra=extra_rows, **base_info)
 
-        def make_ticket(subject, description, team=None):
+        def make_ticket(subject, description, task_type=None):
             if not frappe.db.exists("DocType", "HD Ticket"):
                 frappe.logger("hrms_custom").info(
                     f"HD Ticket skipped (Helpdesk not installed): {subject}"
                 )
                 return
+            # Get team dynamically from Onboarding Task Contact
+            team = get_onboarding_team(task_type, company) if task_type else None
+
             ticket = frappe.new_doc("HD Ticket")
             ticket.subject = subject
             ticket.description = description
@@ -53,7 +56,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
 
         tickets_created = 0
 
-        # SIM CARD → Admin Support
+        # SIM CARD
         if self.custom_sim_card and self.custom_sim_card != "No":
             extra = "<tr><td><b>SIM Request</b></td><td>{}</td></tr>".format(
                 self.custom_sim_card
@@ -68,10 +71,10 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             subject = "SIM Card {} Request - {}".format(
                 self.custom_sim_card, self.employee_name
             )
-            make_ticket(subject, table, team="Admin Support")
+            make_ticket(subject, table, task_type="SIM Card")
             tickets_created += 1
 
-        # LAPTOP / DESKTOP → IT Support
+        # LAPTOP / DESKTOP
         if self.custom_laptop_type and self.custom_laptop_type != "No":
             extra = "<tr><td><b>Device Required</b></td><td>{}</td></tr>".format(
                 self.custom_laptop_type
@@ -80,10 +83,10 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             subject = "{} Request - {}".format(
                 self.custom_laptop_type, self.employee_name
             )
-            make_ticket(subject, table, team="IT Support")
+            make_ticket(subject, table, task_type="IT Setup")
             tickets_created += 1
 
-        # EMAIL ID → IT Support
+        # EMAIL ID
         if self.custom_email_id and self.custom_email_id != "No":
             extra = "<tr><td><b>Email Request</b></td><td>{}</td></tr>".format(
                 self.custom_email_id
@@ -98,36 +101,36 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             subject = "Email ID {} Request - {}".format(
                 self.custom_email_id, self.employee_name
             )
-            make_ticket(subject, table, team="IT Support")
+            make_ticket(subject, table, task_type="Email ID")
             tickets_created += 1
 
-        # SOFTWARE ACCESS → IT Support
+        # SOFTWARE ACCESS
         if self.custom_software_access:
             extra = "<tr><td><b>Software/CRM</b></td><td>{}</td></tr>".format(
                 self.custom_software_access
             )
             table = base_table(extra)
             subject = "Software Access Request - {}".format(self.employee_name)
-            make_ticket(subject, table, team="IT Support")
+            make_ticket(subject, table, task_type="Software Access")
             tickets_created += 1
 
-        # ID CARD → Admin Support
+        # ID CARD
         if self.custom_id_card:
             extra = "<tr><td><b>ID Card</b></td><td>Required</td></tr>"
             table = base_table(extra)
             subject = "ID Card Request - {}".format(self.employee_name)
-            make_ticket(subject, table, team="Admin Support")
+            make_ticket(subject, table, task_type="ID Card")
             tickets_created += 1
 
-        # BUSINESS CARD → Admin Support
+        # BUSINESS CARD
         if self.custom_business_card:
             extra = "<tr><td><b>Business Card</b></td><td>Required</td></tr>"
             table = base_table(extra)
             subject = "Business Card Request - {}".format(self.employee_name)
-            make_ticket(subject, table, team="Admin Support")
+            make_ticket(subject, table, task_type="Business Card")
             tickets_created += 1
 
-        # ID CARD DESIGN → Email only to Anuradha
+        # ID CARD DESIGN EMAIL ONLY
         self._send_idcard_design_email(IDCARD_DESIGNER_EMAIL)
 
         if tickets_created > 0:
