@@ -1,5 +1,5 @@
 import frappe
-from hrms_custom.utils.email_utils import get_hr_sender
+from hrms_custom.utils.email_utils import get_hr_sender, get_onboarding_contact
 from hrms.hr.doctype.employee_onboarding.employee_onboarding import EmployeeOnboarding
 
 
@@ -11,14 +11,16 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             self._create_onboarding_tickets()
 
     def _create_onboarding_tickets(self):
+        company = self.company or None
 
-        SIM_EMAIL             = "admin@example.com"
-        IT_EMAIL              = "admin@example.com"
-        EMAIL_ADMIN           = "admin@example.com"
-        SW_EMAIL              = "admin@example.com"
-        IDCARD_EMAIL          = "admin@example.com"
-        BC_EMAIL              = "admin@example.com"
-        IDCARD_DESIGNER_EMAIL = "ashwinkumar.k@quanticustech.com"
+        # Dynamic — reads from Onboarding Task Contact DocType
+        SIM_EMAIL             = get_onboarding_contact("SIM Card", company)
+        IT_EMAIL              = get_onboarding_contact("IT Setup", company)
+        EMAIL_ADMIN           = get_onboarding_contact("Email ID", company)
+        SW_EMAIL              = get_onboarding_contact("Software Access", company)
+        IDCARD_EMAIL          = get_onboarding_contact("ID Card", company)
+        BC_EMAIL              = get_onboarding_contact("Business Card", company)
+        IDCARD_DESIGNER_EMAIL = get_onboarding_contact("ID Card Design", company)
 
         base_info = {
             "name":    self.employee_name or "",
@@ -42,6 +44,9 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             ).format(extra=extra_rows, **base_info)
 
         def make_ticket(subject, description):
+            if not frappe.db.exists("DocType", "HD Ticket"):
+                frappe.logger().info(f"HD Ticket skipped (Helpdesk not installed): {subject}")
+                return
             ticket = frappe.new_doc("HD Ticket")
             ticket.subject = subject
             ticket.description = description
@@ -49,6 +54,11 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             ticket.insert(ignore_permissions=True)
 
         def send_mail(to, subject, body, salutation):
+            if not to:
+                frappe.logger("hrms_custom").warning(
+                    f"No contact configured for task: {subject} — skipping email"
+                )
+                return
             frappe.sendmail(
                 recipients=[to],
                 sender=get_hr_sender(),
@@ -154,6 +164,11 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             )
 
     def _send_idcard_design_email(self, designer_email):
+        if not designer_email:
+            frappe.logger("hrms_custom").warning(
+                "No ID Card Designer configured — skipping design email"
+            )
+            return
 
         employee_id  = self.custom_employee_id_ or "Not Assigned"
         emergency_ph = self.custom_emergency_phone_number or "Not Provided"
