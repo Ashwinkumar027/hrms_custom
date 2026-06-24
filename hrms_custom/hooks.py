@@ -132,7 +132,8 @@ doc_events = {
         "before_cancel": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_lock"
     },
     "Leave Application": {
-        "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_leave_application_lock"
+        "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_leave_application_lock",
+        "validate": "hrms_custom.hrms_custom.utils.probation_leave_restriction.check_probation_leave_type"
     },
     "Attendance Request": {
         "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_request_lock"
