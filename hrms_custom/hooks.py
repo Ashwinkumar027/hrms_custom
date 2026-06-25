@@ -12,6 +12,10 @@ doctype_js = {
 fixtures = [
     {
         "dt": "DocType",
+        "filters": [["name", "=", "Offer Letter Print Settings"]],
+    },
+    {
+        "dt": "DocType",
         "filters": [["name", "=", "Onboarding Task Contact"]],
     },
     "Onboarding Task Contact",
