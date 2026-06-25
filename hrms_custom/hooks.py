@@ -10,6 +10,10 @@ doctype_js = {
 }
 
 fixtures = [
+    {
+        "dt": "DocType",
+        "filters": [["name", "=", "Onboarding Task Contact"]],
+    },
     "Onboarding Task Contact",
     {
         "dt": "Custom Field",
