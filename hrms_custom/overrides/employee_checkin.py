@@ -58,6 +58,9 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
             )
 
     def validate_distance_from_shift_location(self):
+        if self.custom_auto_closed:
+            return
+
         if not frappe.db.get_single_value("HR Settings", "allow_geolocation_tracking"):
             return
 
