@@ -4,6 +4,7 @@ from frappe.utils import get_datetime, add_to_date, getdate, now_datetime
 
 def execute():
     if frappe.conf.get("disable_checkout_window_guard"):
+        frappe.log_error(title="auto_close debug", message="Kill switch active, exiting")
         return
 
     stale_ins = frappe.db.sql("""
@@ -21,6 +22,11 @@ def execute():
           )
     """, as_dict=True)
 
+    frappe.log_error(
+        title="auto_close debug",
+        message=f"Found {len(stale_ins)} candidate stale INs: {[d.name for d in stale_ins]}"
+    )
+
     for log in stale_ins:
         try:
             _close_if_window_passed(log)
@@ -31,7 +37,6 @@ def execute():
             )
 
 
-
 def _close_if_window_passed(log):
     shift = frappe.db.get_value(
         "Shift Type",
@@ -40,21 +45,31 @@ def _close_if_window_passed(log):
         as_dict=True,
     )
     if not shift:
+        frappe.log_error(
+            title="auto_close debug",
+            message=f"{log.name}: Shift Type '{log.shift}' lookup returned nothing"
+        )
         return
 
     shift_date = getdate(log.time)
     shift_end = get_datetime(f"{shift_date} {shift.end_time}")
     cutoff = add_to_date(shift_end, minutes=shift.allow_check_out_after_shift_end_time or 0)
 
+    frappe.log_error(
+        title="auto_close debug",
+        message=f"{log.name}: shift_date={shift_date}, cutoff={cutoff}, now={now_datetime()}, will_close={now_datetime() > cutoff}"
+    )
+
     if now_datetime() <= cutoff:
-        return  # window still open, real checkout may still come in
+        return
 
     if frappe.db.exists("Employee Checkin", {
         "employee": log.employee,
         "time": cutoff,
         "custom_auto_closed": 1,
     }):
-        return  # already closed, idempotency guard
+        frappe.log_error(title="auto_close debug", message=f"{log.name}: already closed, idempotency hit")
+        return
 
     out_doc = frappe.new_doc("Employee Checkin")
     out_doc.employee = log.employee
@@ -66,3 +81,5 @@ def _close_if_window_passed(log):
 
     frappe.db.set_value("Employee Checkin", log.name, "custom_auto_closed", 1)
     frappe.db.commit()
+
+    frappe.log_error(title="auto_close debug", message=f"{log.name}: CLOSED successfully, created {out_doc.name}")
