@@ -3,7 +3,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate
+from frappe.utils import flt, getdate, get_datetime, add_to_date
 
 from hrms.hr.doctype.employee_checkin.employee_checkin import (
     CheckinRadiusExceededError,
@@ -13,6 +13,50 @@ from hrms.hr.utils import get_distance_between_coordinates
 
 
 class MultiLocationEmployeeCheckin(EmployeeCheckin):
+
+    def validate(self):
+        super().validate()
+        self.block_late_checkout()
+
+    def block_late_checkout(self):
+        if frappe.conf.get("disable_checkout_window_guard"):
+            return
+
+        if self.log_type != "OUT" or not self.employee:
+            return
+
+        last_in = frappe.db.get_value(
+            "Employee Checkin",
+            {"employee": self.employee, "log_type": "IN", "time": ["<", self.time]},
+            ["name", "time", "shift"],
+            order_by="time desc",
+            as_dict=True,
+        )
+        if not last_in or not last_in.shift:
+            return
+
+        shift = frappe.db.get_value(
+            "Shift Type",
+            last_in.shift,
+            ["end_time", "allow_check_out_after_shift_end_time"],
+            as_dict=True,
+        )
+        if not shift:
+            return
+
+        shift_date = getdate(last_in.time)
+        shift_end = get_datetime(f"{shift_date} {shift.end_time}")
+        cutoff = add_to_date(shift_end, minutes=shift.allow_check_out_after_shift_end_time or 0)
+
+        if get_datetime(self.time) > cutoff:
+            frappe.throw(
+                _(
+                    "Checkout window for {0} closed at {1}. "
+                    "That day will be marked Absent. Please check in for your next shift."
+                ).format(shift_date.strftime("%d-%m-%Y"), cutoff.strftime("%H:%M")),
+                title=_("Checkout window closed"),
+            )
+
     def validate_distance_from_shift_location(self):
         if not frappe.db.get_single_value("HR Settings", "allow_geolocation_tracking"):
             return
