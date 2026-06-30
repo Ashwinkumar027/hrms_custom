@@ -129,8 +129,12 @@ scheduler_events = {
     ],
     "monthly": [
         "hrms_custom.hrms_custom.utils.late_lop_processor.process_late_deductions"
+    ],
+    "hourly": [
+        "hrms_custom.tasks.auto_close_stale_checkins.execute"
     ]
 }
+       
 
 doc_events = {
     "Salary Slip": {
