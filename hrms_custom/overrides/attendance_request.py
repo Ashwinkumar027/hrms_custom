@@ -17,8 +17,8 @@ class CustomAttendanceRequest(AttendanceRequest):
             self._validate_single_date()
             self._set_permission_hours_from_actual_gap()
             self._validate_permission_fields()
-            self._validate_permission_gap()
             self._validate_no_duplicate_permission()
+            self._validate_permission_gap()
         elif self.reason == "Missed Check-In or Check-Out":
             self._validate_single_date()
             super().validate()
@@ -112,14 +112,13 @@ class CustomAttendanceRequest(AttendanceRequest):
             )
 
     def _validate_no_duplicate_permission(self):
-        """Block duplicate Permission requests for same employee, date, and type."""
+        """Block duplicate Permission requests for the same employee and date (any type)."""
         existing = frappe.db.get_value(
             "Attendance Request",
             {
                 "employee": self.employee,
                 "from_date": self.from_date,
                 "custom_request_type": "Permission Request",
-                "custom_permission_type": self.get("custom_permission_type"),
                 "docstatus": ["!=", 2],
                 "name": ["!=", self.name or ""],
             },
@@ -128,11 +127,11 @@ class CustomAttendanceRequest(AttendanceRequest):
         if existing:
             frappe.throw(
                 _(
-                    "A <b>{0}</b> Permission request already exists for "
-                    "<b>{1}</b> on <b>{2}</b> ({3}). "
+                    "A Permission request already exists for "
+                    "<b>{0}</b> on <b>{1}</b> ({2}). Only one permission "
+                    "(Late In or Early Out) is allowed per date. "
                     "Please cancel the existing request before creating a new one."
                 ).format(
-                    self.get("custom_permission_type"),
                     self.employee_name or self.employee,
                     self.from_date,
                     existing,
@@ -321,6 +320,53 @@ class CustomAttendanceRequest(AttendanceRequest):
             indicator="green",
             title=_("Permission Applied"),
         )
+        self._maybe_reverse_half_day(attendance)
+
+    def _maybe_reverse_half_day(self, attendance_name):
+        """Model B reversal: flip Half Day -> Present if in-window worked
+        hours + permission credit clear the threshold."""
+        att = frappe.db.get_value(
+            "Attendance",
+            attendance_name,
+            ["status", "in_time", "out_time", "custom_absent_due_to_missing_checkout"],
+            as_dict=True,
+        )
+        if not att or att.status != "Half Day":
+            return
+        if att.get("custom_absent_due_to_missing_checkout"):
+            return
+        if not att.in_time or not att.out_time:
+            return
+
+        shift_start, shift_end = _get_shift_window(self.employee, self.from_date)
+        shift_doc = _get_shift_doc(self.employee, self.from_date)
+
+        threshold = flt(shift_doc.working_hours_threshold_for_half_day)
+        if threshold <= 0:
+            return
+
+        effective_in = max(get_datetime(att.in_time), shift_start)
+        effective_out = min(get_datetime(att.out_time), shift_end)
+
+        in_window_hours = time_diff_in_hours(effective_out, effective_in)
+        if in_window_hours < 0:
+            in_window_hours = 0.0
+
+        permission_hours = flt(self.get("custom_permission_hours"))
+        effective_hours = in_window_hours + permission_hours
+
+        if effective_hours >= threshold:
+            frappe.db.set_value(
+                "Attendance",
+                attendance_name,
+                {"status": "Present", "leave_type": None},
+                update_modified=False,
+            )
+            frappe.msgprint(
+                _("Attendance for {0} reversed to Present.").format(self.from_date),
+                indicator="green",
+                title=_("Attendance Reversed"),
+            )
 
     def _remove_attendance_tags(self):
         """Used for 'Tags Existing Attendance' cancel (Permission type)."""
