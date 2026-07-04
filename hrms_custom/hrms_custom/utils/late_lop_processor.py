@@ -1,10 +1,11 @@
 from datetime import date
 import frappe
-from frappe.utils import getdate, nowdate
+from frappe.utils import getdate, get_datetime, nowdate, cint
 
-DEFAULT_GRACE_DAYS = 5
-LOP_LEAVE_TYPE     = "Loss of Pay"
-LOG_PREFIX         = "[LateLOP]"
+DEFAULT_GRACE_DAYS       = 5
+DEFAULT_GRACE_TIME_LIMIT = 45   # minutes after shift start; used only if not configured on Shift Type
+LOP_LEAVE_TYPE           = "Loss of Pay"
+LOG_PREFIX               = "[LateLOP]"
 
 
 def process_late_deductions(period_start=None, period_end=None):
@@ -42,41 +43,140 @@ def process_late_deductions(period_start=None, period_end=None):
 
 
 def _process_employee(emp, period_start, period_end):
-    grace_days = _get_grace_days(emp.name, period_end)
+    """
+    Rules (per Attendance record, status=Present, late_entry=1, docstatus=1):
 
+      minutes_late = in_time - (attendance_date + shift.start_time)
+
+      minutes_late <= late_entry_grace_period                         -> ignore (fully forgiven, defensive guard)
+      late_entry_grace_period < minutes_late <= grace_day_time_limit   -> queue for grace-day consumption
+      minutes_late > grace_day_time_limit                              -> Half Day + LOP immediately, balance untouched
+
+    Grace-day balance is tracked per Shift Type independently, so an
+    employee whose Shift Type changes mid-cycle draws from each shift's
+    own allowance rather than a single merged number.
+    """
     late_records = frappe.get_all(
         "Attendance",
         filters={
             "employee"       : emp.name,
+            "status"         : "Present",
             "late_entry"     : 1,
             "attendance_date": ["between", [period_start, period_end]],
             "docstatus"      : 1,
         },
-        fields=["name", "attendance_date"],
+        fields=["name", "attendance_date", "in_time", "shift"],
         order_by="attendance_date asc",
     )
 
-    total_lates = len(late_records)
-
-    if total_lates <= grace_days:
+    if not late_records:
         return 0
 
-    excess_records = late_records[grace_days:]
+    queue = []
     created = 0
 
-    for att in excess_records:
-        att_date = getdate(att.attendance_date)
-
+    for att in late_records:
         if _already_lop(att.name):
             continue
 
-        _mark_half_day_lop(att.name, att_date, emp.name)
-        created += 1
+        shift_cfg = _get_shift_config(att.shift, emp.name, att.attendance_date)
+        if not shift_cfg:
+            continue
+
+        minutes_late = _get_minutes_late(att, shift_cfg)
+        if minutes_late is None:
+            continue
+
+        if minutes_late <= shift_cfg.grace_period:
+            # Defensive guard — should not normally occur since native HRMS
+            # only sets late_entry=1 when minutes_late > grace_period.
+            continue
+
+        if minutes_late > shift_cfg.grace_time_limit:
+            _mark_half_day_lop(att.name, att.attendance_date, emp.employee_name)
+            created += 1
+            continue
+
+        att._grace_days = shift_cfg.grace_days
+        att._resolved_shift = shift_cfg.resolved_shift_name
+        queue.append(att)
+
+    if queue:
+        balances = {}  # resolved_shift_name -> remaining balance
+        for att in queue:
+            shift_name = att._resolved_shift
+            if shift_name not in balances:
+                balances[shift_name] = att._grace_days
+
+            if balances[shift_name] > 0:
+                balances[shift_name] -= 1
+                # Forgiven — stays Present, no action needed.
+                continue
+            _mark_half_day_lop(att.name, att.attendance_date, emp.employee_name)
+            created += 1
 
     if created:
-        _log(f"{emp.employee_name}: {total_lates} lates, grace={grace_days}, marked {created} as Half Day LOP")
+        _log(f"{emp.employee_name}: marked {created} as Half Day LOP for period {period_start}-{period_end}")
 
     return created
+
+
+def _get_shift_config(shift, employee, attendance_date):
+    """Resolve shift start_time, grace_period, grace_days, grace_time_limit for a given attendance."""
+    shift_name = shift
+    if not shift_name:
+        shift_name = frappe.db.get_value(
+            "Shift Assignment",
+            {"employee": employee, "docstatus": 1, "start_date": ["<=", attendance_date]},
+            "shift_type",
+            order_by="start_date desc",
+        )
+    if not shift_name:
+        shift_name = frappe.db.get_value("Employee", employee, "default_shift")
+    if not shift_name:
+        return None
+
+    shift_doc = frappe.db.get_value(
+        "Shift Type",
+        shift_name,
+        [
+            "start_time",
+            "late_entry_grace_period",
+            "custom_late_entry_grace_days",
+            "custom_late_entry_grace_day_time_limit",
+        ],
+        as_dict=True,
+    )
+    if not shift_doc:
+        return None
+
+    grace_period = cint(shift_doc.late_entry_grace_period)
+
+    raw_time_limit = shift_doc.custom_late_entry_grace_day_time_limit
+    grace_time_limit = cint(raw_time_limit) if raw_time_limit is not None else DEFAULT_GRACE_TIME_LIMIT
+
+    raw_grace_days = shift_doc.custom_late_entry_grace_days
+    grace_days = cint(raw_grace_days) if raw_grace_days is not None else DEFAULT_GRACE_DAYS
+
+    return frappe._dict(
+        resolved_shift_name=shift_name,
+        start_time=shift_doc.start_time,
+        grace_period=grace_period,
+        grace_time_limit=grace_time_limit,
+        grace_days=grace_days,
+    )
+
+
+def _get_minutes_late(att, shift_cfg):
+    if not att.in_time or not shift_cfg.start_time:
+        return None
+
+    att_date = getdate(att.attendance_date)
+    shift_start_dt = get_datetime(f"{att_date} {shift_cfg.start_time}")
+    in_time_dt = get_datetime(att.in_time)
+
+    delta = in_time_dt - shift_start_dt
+    return delta.total_seconds() / 60
 
 
 def _mark_half_day_lop(att_name, att_date, employee):
@@ -99,9 +199,6 @@ def _already_lop(att_name):
     return status and status.status == "Half Day" and status.leave_type == LOP_LEAVE_TYPE
 
 
-
-
-
 def _get_completed_period(today=None):
     today = getdate(today or nowdate())
 
@@ -118,33 +215,6 @@ def _get_completed_period(today=None):
         start_year, start_month = end_year, end_month - 1
 
     return date(start_year, start_month, 26), period_end
-
-
-def _get_grace_days(employee, period_end):
-    shift = frappe.db.get_value(
-        "Shift Assignment",
-        {"employee": employee, "docstatus": 1, "start_date": ["<=", period_end]},
-        "shift_type",
-        order_by="start_date desc",
-    )
-    if not shift:
-        shift = frappe.db.get_value("Employee", employee, "default_shift")
-    if not shift:
-        return DEFAULT_GRACE_DAYS
-
-    grace = frappe.db.get_value("Shift Type", shift, "custom_late_entry_grace_days")
-    return int(grace or DEFAULT_GRACE_DAYS)
-
-
-def _lop_leave_exists(employee, att_date):
-    return frappe.db.exists("Leave Application", {
-        "employee"  : employee,
-        "leave_type": LOP_LEAVE_TYPE,
-        "from_date" : att_date,
-        "to_date"   : att_date,
-        "half_day"  : 1,
-        "docstatus" : ["!=", 2],
-    })
 
 
 def _log(msg):
