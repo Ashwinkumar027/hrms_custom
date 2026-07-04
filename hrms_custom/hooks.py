@@ -132,9 +132,12 @@ scheduler_events = {
     ],
     "hourly": [
         "hrms_custom.tasks.auto_close_stale_checkins.execute"
+    ],
+    "hourly_long": [
+        "hrms_custom.hrms_custom.utils.force_absent_missing_checkout.execute"
     ]
 }
-       
+
 
 doc_events = {
     "Salary Slip": {
