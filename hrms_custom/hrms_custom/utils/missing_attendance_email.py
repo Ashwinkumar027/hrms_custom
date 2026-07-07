@@ -60,6 +60,9 @@ def send_missing_attendance_emails(attendance_date=None, dry_run=False, employee
         if not _is_employee_active_on_date(employee, attendance_date):
             result["skipped"] += 1
             continue
+        if not _has_active_shift_assignment(employee.name, attendance_date):
+            result["skipped"] += 1
+            continue
 
         if _has_valid_attendance(employee.name, attendance_date):
             result["skipped"] += 1
@@ -123,6 +126,24 @@ def _has_valid_attendance(employee, attendance_date):
             "status": ["in", VALID_ATTENDANCE_STATUSES],
         },
     )
+
+
+def _has_active_shift_assignment(employee, attendance_date):
+    rows = frappe.get_all(
+        "Shift Assignment",
+        filters={
+            "employee": employee,
+            "docstatus": 1,
+            "status": "Active",
+            "start_date": ["<=", attendance_date],
+        },
+        or_filters=[
+            ["end_date", ">=", attendance_date],
+            ["end_date", "is", "not set"],
+        ],
+        limit_page_length=1,
+    )
+    return bool(rows)
 
 
 def _has_approved_leave(employee, attendance_date):
