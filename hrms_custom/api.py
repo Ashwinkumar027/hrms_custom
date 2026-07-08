@@ -538,3 +538,141 @@ def get_employee_policies(employee):
         fields=["name", "policy_name", "policy_pdf"],
         order_by="policy_name asc"
     )
+ONBOARDING_WEB_FORMS = {
+    "Employee Registration Form": {"doctype": "Employee Registration Form", "route": "employee-registration-form", "trackable": True},
+    "Employee Fraternization Policy": {"doctype": "Employee Fraternization Policy", "route": "employee-fraternization-policy", "trackable": True},
+    "Form 11": {"doctype": "Form 11", "route": "Form11", "trackable": False},
+    "Employee Agreement": {"doctype": "Employee Agreement", "route": "employee-agreement-form", "trackable": True},
+    "ESI Enrollment": {"doctype": "ESI Enrollment", "route": "esi-enrollment", "trackable": True},
+}
+
+
+@frappe.whitelist()
+def send_onboarding_forms_email(employee_onboarding):
+    doc = frappe.get_doc("Employee Onboarding", employee_onboarding)
+
+    applicant_email = None
+    applicant_name = doc.employee_name or "Candidate"
+
+    if doc.job_applicant:
+        applicant_email = frappe.db.get_value("Job Applicant", doc.job_applicant, "email_id")
+        fetched_name = frappe.db.get_value("Job Applicant", doc.job_applicant, "applicant_name")
+        if fetched_name:
+            applicant_name = fetched_name
+
+    if not applicant_email and getattr(doc, "employee", None):
+        applicant_email = frappe.db.get_value("Employee", doc.employee, "personal_email")
+
+    if not applicant_email:
+        frappe.throw("No applicant/employee email found to send the forms to.")
+
+    base_url = get_url()
+    employee = getattr(doc, "employee", None)
+
+    links_html = ""
+    for label, cfg in ONBOARDING_WEB_FORMS.items():
+        param = f"?employee={employee}" if (employee and cfg["trackable"]) else ""
+        url = f"{base_url}/{cfg['route']}{param}"
+        links_html += (
+            "<p style='margin:10px 0;'><a href='" + url + "' "
+            "style='color:#1B4F8A;font-weight:bold;text-decoration:none;'>&#8594; "
+            + label + "</a></p>"
+        )
+
+    subject = "Action Required: Complete Your Onboarding Forms - Aionion Capital"
+    message = (
+        "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
+        "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"
+        "<h2 style='color:white;margin:0;'>Onboarding Forms</h2>"
+        "<p style='color:#cce0ff;margin:5px 0;'>Aionion Capital</p>"
+        "</div>"
+        "<div style='padding:30px;background:#f9f9f9;'>"
+        "<p>Dear <b>" + applicant_name + "</b>,</p>"
+        "<p>Welcome aboard! As part of your onboarding, please complete the "
+        "following forms at your earliest convenience so we can proceed with "
+        "your joining formalities:</p>"
+        + links_html +
+        "<p style='margin-top:20px;color:#555;'>Please complete all forms "
+        "before your joining date. If you face any issues, contact HR.</p>"
+        "<p>For any queries contact: "
+        "<a href='mailto:hr@aionioncapital.com'>hr@aionioncapital.com</a></p>"
+        "<p>Warm Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
+        "</div>"
+        "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
+        "<p style='color:#cce0ff;margin:0;font-size:12px;'>Aionion Capital HRMS</p>"
+        "</div>"
+        "</div>"
+    )
+
+    frappe.sendmail(
+        recipients=[applicant_email],
+        sender=get_hr_sender(),
+        subject=subject,
+        message=message,
+        reference_doctype="Employee Onboarding",
+        reference_name=doc.name,
+    )
+
+    frappe.db.set_value("Employee Onboarding", doc.name, "custom_forms_sent_on", now())
+    frappe.db.commit()
+
+    return {"success": True, "message": f"Onboarding forms sent to {applicant_email}"}
+
+
+@frappe.whitelist()
+def get_onboarding_form_status(employee_onboarding):
+    doc = frappe.get_doc("Employee Onboarding", employee_onboarding)
+    employee = getattr(doc, "employee", None)
+
+    status = {}
+    for label, cfg in ONBOARDING_WEB_FORMS.items():
+        if not cfg["trackable"]:
+            status[label] = "Not Tracked"
+            continue
+        filled = bool(employee and frappe.db.exists(cfg["doctype"], {"employee": employee}))
+        status[label] = "Filled" if filled else "Not Filled"
+
+    return status
+
+
+@frappe.whitelist()
+def download_onboarding_documents(employee_onboarding):
+    doc = frappe.get_doc("Employee Onboarding", employee_onboarding)
+    employee = getattr(doc, "employee", None)
+
+    if not employee:
+        frappe.throw("Employee is not linked yet on this onboarding record.")
+
+    missing = []
+    doc_refs = {}
+
+    for label, cfg in ONBOARDING_WEB_FORMS.items():
+        if not cfg["trackable"]:
+            continue
+        row = frappe.db.get_value(cfg["doctype"], {"employee": employee}, ["name", "docstatus"], as_dict=True)
+        if not row or row.docstatus != 1:
+            missing.append(label)
+        else:
+            doc_refs[cfg["doctype"]] = row.name
+
+    if missing:
+        frappe.throw(
+            "Cannot download yet — the following forms are not submitted: "
+            + ", ".join(missing)
+        )
+
+    from pypdf import PdfWriter
+    import io
+
+    writer = PdfWriter()
+    for dt, name in doc_refs.items():
+        pdf_bytes = frappe.get_print(dt, name, as_pdf=True)
+        writer.append(io.BytesIO(pdf_bytes))
+
+    output = io.BytesIO()
+    writer.write(output)
+    output.seek(0)
+
+    frappe.local.response.filename = f"{employee}_onboarding_documents.pdf"
+    frappe.local.response.filecontent = output.getvalue()
+    frappe.local.response.type = "download"

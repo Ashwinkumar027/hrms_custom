@@ -36,10 +36,13 @@
   "health_q7", "health_q7_details",
   "health_q8", "health_q8_details",
   "column_break_health_sign",
+  "health_declaration_content", "health_declaration_confirm",
   "health_signature", "health_date",
   "section_break_nda",
+  "nda_content", "nda_confirm",
   "nda_signature", "nda_date", "nda_place",
   "section_break_bgv",
+  "bgv_content", "bgv_confirm",
   "bgv_signature", "bgv_date"
  ],
  "fields": [
@@ -99,16 +102,28 @@
   {"fieldname": "health_q8", "fieldtype": "Select", "label": "8. Under medical treatment/observation in past 6 months?", "options": "Yes\nNo"},
   {"fieldname": "health_q8_details", "fieldtype": "Small Text", "label": "If so, give details", "depends_on": "eval:doc.health_q8=='Yes'"},
   {"fieldname": "column_break_health_sign", "fieldtype": "Column Break"},
-  {"fieldname": "health_signature", "fieldtype": "Signature", "label": "Health Declaration Signature"},
+
+  {"fieldname": "health_declaration_content", "fieldtype": "HTML", "label": "Declaration", "options": "<div style='max-height:250px; overflow-y:auto; border:1px solid #d1d8dd; border-radius:4px; padding:12px; font-size:13px; background:#fafbfc;'><p>I, the undersigned, do hereby declare that all my answers are complete and correct, and that I am prepared to undergo a medical examination if so required. I know that the company may use the particulars included in this form in order to evaluate my suitability for employment in the company, or other companies, or for special assignments at work, and that from time to time, and for that purpose, the particulars contained herein, as well as other data and documents that I may submit concerning my candidacy for employment, may be submitted and/or transferred to various persons and entities in the company or other companies, and I hereby give my consent to the above. Furthermore, I waive any claims, against the company, of confidentiality in respect of the above-mentioned information for the aforementioned purposes.</p></div>"},
+  {"fieldname": "health_declaration_confirm", "fieldtype": "Check", "label": "I have read and understood the above Health Declaration", "reqd": 1},
+
+  {"fieldname": "health_signature", "fieldtype": "Signature", "label": "Health Declaration Signature", "read_only_depends_on": "eval:!doc.health_declaration_confirm"},
   {"fieldname": "health_date", "fieldtype": "Date", "label": "Health Declaration Date"},
 
   {"fieldname": "section_break_nda", "fieldtype": "Section Break", "label": "Non-Disclosure Agreement"},
-  {"fieldname": "nda_signature", "fieldtype": "Signature", "label": "NDA Signature"},
+
+  {"fieldname": "nda_content", "fieldtype": "HTML", "label": "NDA Terms", "options": "<div style='max-height:300px; overflow-y:auto; border:1px solid #d1d8dd; border-radius:4px; padding:12px; font-size:13px; background:#fafbfc;'><p>This Non-Disclosure Agreement is hereby incorporated into the existing Employment Agreement between AIonion Capital Market Services Private Limited or its subsidiaries (Aionion) and the undersigned employee.</p><p>As an employee, contractor or temporary staff of Aionion, the employee may have access to confidential information including customer information, financial or business information obtained through their association with Aionion.</p><p>Confidential information is considered invaluable and sensitive and unauthorized disclosure of the same can cause significant monetary and reputational damages to Aionion. Legal systems have strict provisions in ensuring protection of confidential information in any form. Inappropriate disclosure of Aionion confidential information by an employee may result in the imposition of monetary penalties and/or initiation of legal proceedings.</p><p>In consideration of the above, the employee hereby acknowledges and agrees that the:</p><ol><li>Employee will not access confidential information for which they have no legitimate need to know and for which they are not the authorized user. This includes accessing their own confidential information without proper access permission.</li><li>Employee will not in any way divulge, copy, release, sell, loan, review, alter or destroy any confidential information unless expressly permitted by existing policy except as properly approved in writing by an authorized officer of Aionion within the scope of my association with Aionion.</li><li>Employee will not utilize another user's password in order to access any system nor will he/she reveal his/her computer credentials to anyone else for any reason. The Employee accepts responsibility and understands that he/she will be held accountable for all activities occurring under his/her computer credentials.</li><li>If the employee observes or has knowledge of unauthorized access or divulgence of confidential information he/she will report it immediately to the reporting manager and/or Human Resource Manager and/or Managing Director.</li><li>The employee agrees not to seek personal benefit or permit others to benefit personally by any confidential information that he/she may have access to or that he/she accesses as an unauthorized user.</li><li>The employee understands that all information, regardless of the media on which its stored (paper, computer, mobile, videos, recorders, etc.), the system which processes it (computers, voice mail, mobile, faxes, etc.), or the methods by which its moved (electronic mail, face to face conversation, etc.) is the property of Aionion and shall not be used inappropriately or for personal gain.</li><li>The employee also understands that Aionion reserves the right to inspect or monitor any company owned, leased, or controlled computer, computer device, network, computer facility, storage device, voice mail or telephone system at any time for any reason and that Aionion may divulge any information found during such inspections or monitoring to any party it deems appropriate. The employee understands that he/she should not consider electronic communications to be either private or secure, nor have an expectation of privacy in anything he/she creates, stores, sends, or receives on the computer and network.</li><li>The employee agrees to abide by all Aionion rules and regulations as specified in Aionion policies unless specifically altered by a separate contractual agreement.</li><li>The employee understands that his/her failure to comply with this Agreement may result in corrective action which might include, but is not limited to, termination of employment and/or loss of privileges within Aionion as well as potential civil or criminal penalties.</li></ol><p>All training materials and handouts given to the trainees are exclusive property of Aionion. No part of these documents can be duplicated or reproduced without the prior written permission of Aionion.</p><p>By signing this agreement, the employee acknowledges that Aionion has an active ongoing program to review records and transactions for inappropriate access, and understands that inappropriate access or disclosure of information can result in penalties up to and including termination of employment and/or legal action.</p></div>"},
+  {"fieldname": "nda_confirm", "fieldtype": "Check", "label": "I have read and understood the above Non-Disclosure Agreement", "reqd": 1},
+
+  {"fieldname": "nda_signature", "fieldtype": "Signature", "label": "NDA Signature", "read_only_depends_on": "eval:!doc.nda_confirm"},
   {"fieldname": "nda_date", "fieldtype": "Date", "label": "NDA Date"},
   {"fieldname": "nda_place", "fieldtype": "Data", "label": "Place"},
 
   {"fieldname": "section_break_bgv", "fieldtype": "Section Break", "label": "Background Verification Consent"},
-  {"fieldname": "bgv_signature", "fieldtype": "Signature", "label": "BGV Consent Signature"},
+
+  {"fieldname": "bgv_content", "fieldtype": "HTML", "label": "BGV Authorization", "options": "<div style='max-height:250px; overflow-y:auto; border:1px solid #d1d8dd; border-radius:4px; padding:12px; font-size:13px; background:#fafbfc;'><p><strong>To Whom It May Concern</strong></p><p><em>First Name &nbsp;&nbsp; Middle Name &nbsp;&nbsp; Last Name</em></p><p>I hereby authorize Aionion or their representatives to verify information presented on my Background Verification Form / resume and to procure an investigative report or consumer report for that purpose.</p><p>I certify that the information furnished in this form filled-in by me in conjunction with my addresses, details are true to the best of my knowledge.</p><p>I hereby grant authority to the bearer of this letter to access or to be provided with full details.</p></div>"},
+  {"fieldname": "bgv_confirm", "fieldtype": "Check", "label": "I have read and understood the above Background Verification Consent", "reqd": 1},
+
+  {"fieldname": "bgv_signature", "fieldtype": "Signature", "label": "BGV Consent Signature", "read_only_depends_on": "eval:!doc.bgv_confirm"},
   {"fieldname": "bgv_date", "fieldtype": "Date", "label": "BGV Consent Date"}
  ],
  "istable": 0,

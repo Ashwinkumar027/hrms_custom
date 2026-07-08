@@ -213,8 +213,20 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             photo=photo_html
         )
 
+        # CC all HR Manager role users
+        hr_managers = frappe.db.sql("""
+            SELECT DISTINCT u.email
+            FROM `tabUser` u
+            JOIN `tabHas Role` hr ON hr.parent = u.name
+            WHERE hr.role = 'HR Manager'
+            AND u.enabled = 1
+            AND u.email != ''
+        """, as_dict=True)
+        hr_emails = [r.email for r in hr_managers if r.email]
+
         frappe.sendmail(
             recipients=[designer_email],
+            cc=hr_emails,
             sender=get_hr_sender(),
             subject=subject,
             message=message,
