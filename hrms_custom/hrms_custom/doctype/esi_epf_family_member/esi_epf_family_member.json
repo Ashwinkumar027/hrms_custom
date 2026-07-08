@@ -1,0 +1,23 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["relation", "member_name", "aadhar_number", "dob", "residing_with_employee", "address"],
+ "fields": [
+  {"fieldname": "relation", "fieldtype": "Select", "label": "Relation", "options": "Father\nMother\nSpouse\nChild", "in_list_view": 1},
+  {"fieldname": "member_name", "fieldtype": "Data", "label": "Name", "in_list_view": 1, "reqd": 1},
+  {"fieldname": "aadhar_number", "fieldtype": "Data", "label": "Aadhar Number", "in_list_view": 1},
+  {"fieldname": "dob", "fieldtype": "Date", "label": "D.O.B", "in_list_view": 1},
+  {"fieldname": "residing_with_employee", "fieldtype": "Check", "label": "Residing with Employee"},
+  {"fieldname": "address", "fieldtype": "Small Text", "label": "Address"}
+ ],
+ "istable": 1,
+ "module": "HRMS custom",
+ "name": "ESI EPF Family Member",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

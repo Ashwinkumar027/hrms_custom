@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-07-02 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "track_changes": 1,
+ "field_order": [
+  "policy", "employee", "status",
+  "column_break_1",
+  "read_confirmed", "candidate_signature", "place", "date"
+ ],
+ "fields": [
+  {"fieldname": "policy", "fieldtype": "Link", "label": "Policy", "options": "HR Policy", "reqd": 1},
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Pending\nSigned", "default": "Pending", "in_list_view": 1, "read_only": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "read_confirmed", "fieldtype": "Check", "label": "I have read and understood this policy"},
+  {"fieldname": "candidate_signature", "fieldtype": "Signature", "label": "Signature"},
+  {"fieldname": "place", "fieldtype": "Data", "label": "Place"},
+  {"fieldname": "date", "fieldtype": "Date", "label": "Date", "read_only": 1}
+ ],
+ "istable": 0,
+ "module": "HRMS custom",
+ "name": "Policy Acknowledgement",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "print": 1, "report": 1},
+  {"role": "HR User", "read": 1, "write": 1, "create": 1, "print": 1, "report": 1},
+  {"role": "Employee", "read": 1, "if_owner": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

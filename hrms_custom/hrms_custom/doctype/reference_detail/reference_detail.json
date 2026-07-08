@@ -1,0 +1,20 @@
+{
+ "actions": [],
+ "creation": "2026-07-02 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["reference_type", "ref_name", "ref_details"],
+ "fields": [
+  {"fieldname": "reference_type", "fieldtype": "Select", "label": "Reference Type", "options": "Personal\nOfficial", "in_list_view": 1},
+  {"fieldname": "ref_name", "fieldtype": "Data", "label": "Name", "in_list_view": 1},
+  {"fieldname": "ref_details", "fieldtype": "Small Text", "label": "Details (Address/Contact)"}
+ ],
+ "istable": 1,
+ "module": "HRMS custom",
+ "name": "Reference Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
