@@ -60,8 +60,8 @@ def _close_if_window_passed(log):
     out_doc.log_type = "OUT"
     out_doc.time = cutoff
     out_doc.custom_auto_closed = 1
+    out_doc.skip_auto_attendance = 0
     out_doc.flags.ignore_permissions = True
     out_doc.insert()
 
-    frappe.db.set_value("Employee Checkin", log.name, "custom_auto_closed", 1)
     frappe.db.commit()

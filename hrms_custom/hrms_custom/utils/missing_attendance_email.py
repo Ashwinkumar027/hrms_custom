@@ -49,6 +49,7 @@ def send_missing_attendance_emails(attendance_date=None, dry_run=False, employee
             "personal_email",
             "prefered_email",
             "prefered_contact_email",
+            "reports_to",
         ],
         order_by="name",
     )
@@ -57,6 +58,9 @@ def send_missing_attendance_emails(attendance_date=None, dry_run=False, employee
         result["checked"] += 1
 
         if not _is_employee_active_on_date(employee, attendance_date):
+            result["skipped"] += 1
+            continue
+        if not _has_active_shift_assignment(employee.name, attendance_date):
             result["skipped"] += 1
             continue
 
@@ -122,6 +126,24 @@ def _has_valid_attendance(employee, attendance_date):
             "status": ["in", VALID_ATTENDANCE_STATUSES],
         },
     )
+
+
+def _has_active_shift_assignment(employee, attendance_date):
+    rows = frappe.get_all(
+        "Shift Assignment",
+        filters={
+            "employee": employee,
+            "docstatus": 1,
+            "status": "Active",
+            "start_date": ["<=", attendance_date],
+        },
+        or_filters=[
+            ["end_date", ">=", attendance_date],
+            ["end_date", "is", "not set"],
+        ],
+        limit_page_length=1,
+    )
+    return bool(rows)
 
 
 def _has_approved_leave(employee, attendance_date):
@@ -224,18 +246,86 @@ def _already_queued(employee_name):
     )
 
 
+def _get_checkin_summary(employee, attendance_date):
+    """Returns info about real (non-auto-closed) checkins for this employee/date."""
+    logs = frappe.get_all(
+        "Employee Checkin",
+        filters={
+            "employee": employee,
+            "time": ["between", [
+                str(attendance_date) + " 00:00:00",
+                str(attendance_date) + " 23:59:59",
+            ]],
+        },
+        fields=["log_type", "time", "custom_auto_closed"],
+        order_by="time asc",
+    )
+
+    real_logs = [l for l in logs if not l.custom_auto_closed]
+    has_in = any(l.log_type == "IN" for l in real_logs)
+    has_out = any(l.log_type == "OUT" for l in real_logs)
+    first_in_time = next((l.time for l in real_logs if l.log_type == "IN"), None)
+
+    return {
+        "has_in": has_in,
+        "has_out": has_out,
+        "first_in_time": first_in_time,
+    }
+
+
+def _get_manager_email(employee):
+    if not employee.reports_to:
+        return None
+
+    manager = frappe.db.get_value(
+        "Employee",
+        employee.reports_to,
+        ["company_email", "prefered_email", "prefered_contact_email", "personal_email", "user_id"],
+        as_dict=True,
+    )
+    if not manager:
+        return None
+
+    return (
+        manager.company_email
+        or manager.prefered_email
+        or manager.prefered_contact_email
+        or manager.personal_email
+        or (frappe.db.get_value("User", manager.user_id, "email") if manager.user_id else None)
+    )
+
+
 def _send_missing_attendance_email(employee, recipient, attendance_date, subject):
     formatted_date = formatdate(attendance_date)
+    checkin_summary = _get_checkin_summary(employee.name, attendance_date)
+
+    if checkin_summary["has_in"] and not checkin_summary["has_out"]:
+        from frappe.utils import format_time
+        checkin_time = format_time(checkin_summary["first_in_time"])
+        body_line = (
+            "<p>You checked in on <b>{0}</b> at {1}, but no checkout was recorded. "
+            "This day could not be counted as Present.</p>"
+        ).format(formatted_date, checkin_time)
+    else:
+        body_line = (
+            "<p>No attendance record was found for <b>{0}</b>.</p>"
+        ).format(formatted_date)
+
+    cc_list = []
+    manager_email = _get_manager_email(employee)
+    if manager_email and manager_email != recipient:
+        cc_list.append(manager_email)
 
     frappe.sendmail(
         recipients=[recipient],
+        cc=cc_list,
         subject=subject,
         message=(
             "<p>Dear {0},</p>"
-            "<p>Attendance is not marked as Present for <b>{1}</b>.</p>"
+            "{1}"
             "<p>If you were working on this date, please regularize your attendance or contact HR.</p>"
             "<p>Regards,<br>HR Team</p>"
-        ).format(employee.employee_name or employee.name, formatted_date),
+        ).format(employee.employee_name or employee.name, body_line),
         reference_doctype="Employee",
         reference_name=employee.name,
         sender=get_hr_sender(),
