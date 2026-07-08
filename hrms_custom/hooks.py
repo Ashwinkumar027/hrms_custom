@@ -103,6 +103,7 @@ override_doctype_class = {
     "Employee Checkin": "hrms_custom.overrides.employee_checkin.MultiLocationEmployeeCheckin",
     "Attendance Request": "hrms_custom.overrides.attendance_request.CustomAttendanceRequest",
     "Employee Onboarding": "hrms_custom.overrides.employee_onboarding.CustomEmployeeOnboarding",
+    "Shift Type": "hrms_custom.overrides.shift_type.CustomShiftType",
 }
 
 # Fixed: replaced wrong 'whitelist_methods' with correct key
