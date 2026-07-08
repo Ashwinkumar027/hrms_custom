@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-07-08 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "track_changes": 1,
+ "field_order": [
+  "employee", "employee_name", "company",
+  "column_break_1",
+  "date", "place",
+  "section_break_policy",
+  "policy_content",
+  "policy_confirm",
+  "column_break_sign",
+  "signature"
+ ],
+ "fields": [
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee"},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Employee Name", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "date", "fieldtype": "Date", "label": "Date"},
+  {"fieldname": "place", "fieldtype": "Data", "label": "Place"},
+
+  {"fieldname": "section_break_policy", "fieldtype": "Section Break", "label": "Employee Fraternization Policy"},
+
+  {"fieldname": "policy_content", "fieldtype": "HTML", "label": "Policy Content", "options": "<div style='max-height:350px; overflow-y:auto; border:1px solid #d1d8dd; border-radius:4px; padding:12px; font-size:13px; background:#fafbfc;'><h4>1. Introduction</h4><p>At Aionion, we are committed to fostering a professional and inclusive work environment. This Employee Fraternization Policy is designed to establish clear guidelines regarding personal relationships within the workplace to prevent conflicts of interest, maintain a fair and transparent work environment, and uphold professional standards.</p><h4>2. Scope</h4><p>This policy applies to all employees, including full-time, part-time, temporary, and contract workers, as well as interns and volunteers.</p><h4>3. Definition of Personal Relationships</h4><p>Personal relationships covered by this policy include, but are not limited to, romantic relationships, dating, familial relationships (including spouses and siblings).</p><h4>4. Disclosure Requirements</h4><p>Employees are required to disclose personal relationships if one individual holds a position of authority over the other. However, voluntary disclosure is encouraged to address potential conflicts proactively.</p><h4>5. Conflict of Interest</h4><p><strong>a. Reporting Relationships:</strong> Employees in a reporting or supervisory relationship with a family member (spouse or sibling) must disclose the relationship to HR. In such cases, arrangements may be made to mitigate any conflicts of interest, such as reassignment of responsibilities or supervision.</p><p><strong>b. Professional Decision-Making:</strong> Employees involved in a personal relationship should ensure that their personal ties do not compromise their professional judgment, decisions, or actions.</p><h4>6. Conduct Expectations</h4><p>All employees are expected to maintain a professional and respectful workplace environment. Personal relationships, including those with spouses and siblings, should not interfere with work responsibilities or create a disruptive atmosphere.</p><h4>7. Impact on the Workplace</h4><p>Employees with personal relationships, including spouses and siblings, should be mindful of how their interactions may be perceived by colleagues. Any behavior that disrupts the workplace or creates discomfort for others is not acceptable.</p><h4>8. Consensual Relationships</h4><p>While consensual relationships between adults are a personal matter, employees are expected to be aware of the potential impact of their relationships on the workplace.</p><h4>9. Reporting Violations</h4><p>Any Employee who become aware of any violations of this policy should report them to HR or another designated authority. Reports will be handled confidentially and investigated promptly.</p><h4>10. Retaliation Protection</h4><p>An Employee who make good faith reports under this policy will not face retaliation. Retaliation against any employee for reporting a violation of this policy is strictly prohibited.</p><h4>11. Penalties for Non-Compliance</h4><p>Violations of this policy may result in disciplinary actions, ranging from counselling and reassignment of duties to suspension or termination of employment, depending on the severity and recurrence of the violation.</p><h4>12. Review and Updates</h4><p>This policy will be periodically reviewed to ensure its effectiveness and relevance. Any updates will be communicated to all employees.</p></div>"},
+
+  {"fieldname": "policy_confirm", "fieldtype": "Check", "label": "I have read and understood the above Employee Fraternization Policy", "reqd": 1},
+
+  {"fieldname": "column_break_sign", "fieldtype": "Column Break"},
+  {"fieldname": "signature", "fieldtype": "Signature", "label": "Signature", "read_only_depends_on": "eval:!doc.policy_confirm"}
+ ],
+ "istable": 0,
+ "module": "HRMS custom",
+ "name": "Employee Fraternization Policy",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "print": 1, "report": 1},
+  {"role": "HR User", "read": 1, "write": 1, "create": 1, "print": 1, "report": 1},
+  {"role": "Employee", "read": 1, "if_owner": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

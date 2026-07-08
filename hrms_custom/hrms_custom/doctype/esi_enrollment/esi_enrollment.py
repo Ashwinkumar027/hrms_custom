@@ -6,7 +6,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 
-class ESIEPFEnrollment(Document):
+class ESIEnrollment(Document):
 
     def validate(self):
         self.fetch_employee_details()
@@ -18,7 +18,7 @@ class ESIEPFEnrollment(Document):
 
     def before_insert(self):
         if frappe.db.exists(
-            "ESI EPF Enrollment", {"employee": self.employee, "docstatus": ["!=", 2]}
+            "ESI Enrollment", {"employee": self.employee, "docstatus": ["!=", 2]}
         ):
             frappe.throw(
                 _("An ESI/EPF Enrollment already exists for employee {0}").format(self.employee)
