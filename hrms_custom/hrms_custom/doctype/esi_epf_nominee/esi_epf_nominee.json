@@ -1,0 +1,23 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["nominee_name", "relationship", "dob", "aadhar_number", "address", "share_percentage"],
+ "fields": [
+  {"fieldname": "nominee_name", "fieldtype": "Data", "label": "Name", "in_list_view": 1, "reqd": 1},
+  {"fieldname": "relationship", "fieldtype": "Data", "label": "Relationship with Employee", "in_list_view": 1},
+  {"fieldname": "dob", "fieldtype": "Date", "label": "D.O.B", "in_list_view": 1},
+  {"fieldname": "aadhar_number", "fieldtype": "Data", "label": "Aadhar Number", "in_list_view": 1},
+  {"fieldname": "address", "fieldtype": "Small Text", "label": "Full Address"},
+  {"fieldname": "share_percentage", "fieldtype": "Percent", "label": "Share %", "in_list_view": 1}
+ ],
+ "istable": 1,
+ "module": "HRMS custom",
+ "name": "ESI EPF Nominee",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

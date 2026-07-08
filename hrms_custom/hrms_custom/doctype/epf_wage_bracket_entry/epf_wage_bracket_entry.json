@@ -1,0 +1,21 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["label", "value_or_amount", "any_epf_withdrawal", "any_eps_withdrawal"],
+ "fields": [
+  {"fieldname": "label", "fieldtype": "Data", "label": "Label", "in_list_view": 1},
+  {"fieldname": "value_or_amount", "fieldtype": "Data", "label": "Value", "in_list_view": 1},
+  {"fieldname": "any_epf_withdrawal", "fieldtype": "Select", "label": "Any EPF Withdrawal", "options": "Yes\nNo", "in_list_view": 1},
+  {"fieldname": "any_eps_withdrawal", "fieldtype": "Select", "label": "Any EPS Withdrawal", "options": "Yes\nNo", "in_list_view": 1}
+ ],
+ "istable": 1,
+ "module": "HRMS custom",
+ "name": "EPF Wage Bracket Entry",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
