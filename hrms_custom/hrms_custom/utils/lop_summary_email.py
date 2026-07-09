@@ -51,13 +51,13 @@ def send_lop_summary_emails():
     """
     Called by scheduler daily.
     Only executes on the 25th of every month, and only if
-    enable_lop_summary_email is set in site_config.
+    custom_enable_lop_summary_email is set in HR Settings.
     """
-    if not frappe.conf.get("enable_lop_summary_email"):
+    if not frappe.db.get_single_value("HR Settings", "custom_enable_lop_summary_email"):
         frappe.logger("hrms_custom").info(
-            "LOP summary email skipped: enable_lop_summary_email is not enabled."
+            "LOP summary email skipped: custom_enable_lop_summary_email is not enabled."
         )
-        return {"skipped_reason": "disabled_in_site_config"}
+        return {"skipped_reason": "disabled_in_hr_settings"}
 
     today = getdate(nowdate())
     if today.day != 25:

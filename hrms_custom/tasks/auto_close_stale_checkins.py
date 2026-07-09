@@ -3,7 +3,7 @@ from frappe.utils import get_datetime, add_to_date, getdate, now_datetime
 
 
 def execute():
-    if frappe.conf.get("disable_checkout_window_guard"):
+    if frappe.db.get_single_value("HR Settings", "custom_disable_checkout_window_guard"):
         return
 
     stale_ins = frappe.db.sql("""

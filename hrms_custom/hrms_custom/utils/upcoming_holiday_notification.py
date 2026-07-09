@@ -7,7 +7,7 @@ def send_upcoming_holiday_notifications():
     a National Holiday (company's default Holiday List) or
     Optional Holiday (active Leave Period's Holiday List for Optional Leave)."""
 
-    if not frappe.conf.get("enable_upcoming_holiday_email"):
+    if not frappe.db.get_single_value("HR Settings", "custom_enable_upcoming_holiday_email"):
         return
 
     tomorrow = getdate(add_days(today(), 1))

@@ -8,11 +8,11 @@ VALID_ATTENDANCE_STATUSES = ("Present", "Half Day", "Work From Home", "On Leave"
 
 
 def send_missing_attendance_emails_for_yesterday():
-    if not frappe.conf.get("enable_missing_attendance_email"):
+    if not frappe.db.get_single_value("HR Settings", "custom_enable_missing_attendance_email"):
         frappe.logger("hrms_custom").info(
-            "Missing attendance email skipped: enable_missing_attendance_email is not enabled."
+            "Missing attendance email skipped: custom_enable_missing_attendance_email is not enabled."
         )
-        return {"skipped_reason": "disabled_in_site_config"}
+        return {"skipped_reason": "disabled_in_hr_settings"}
 
     attendance_date = getdate(add_days(today(), -1))
     return send_missing_attendance_emails(attendance_date=attendance_date)

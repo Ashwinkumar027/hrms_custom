@@ -19,7 +19,7 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
         self.block_late_checkout()
 
     def block_late_checkout(self):
-        if frappe.conf.get("disable_checkout_window_guard"):
+        if frappe.db.get_single_value("HR Settings", "custom_disable_checkout_window_guard"):
             return
 
         if self.log_type != "OUT" or not self.employee:
