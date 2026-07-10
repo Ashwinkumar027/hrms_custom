@@ -36,6 +36,7 @@ import frappe
 from frappe.utils import getdate, formatdate, nowdate
 
 from hrms_custom.hrms_custom.utils.late_lop_processor import _get_grace_days
+from hrms_custom.hrms_custom.utils.missing_attendance_email import _has_active_shift_assignment
 from hrms_custom.utils.email_utils import get_hr_sender
 
 
@@ -115,6 +116,9 @@ def _process_employee(emp, period_start, period_end, lwp_types):
     if emp.date_of_joining and getdate(emp.date_of_joining) > period_end:
         return False
     if emp.relieving_date and getdate(emp.relieving_date) < period_start:
+        return False
+
+    if not _has_active_shift_assignment(emp.name, period_end):
         return False
 
     recipient = _get_email(emp)
