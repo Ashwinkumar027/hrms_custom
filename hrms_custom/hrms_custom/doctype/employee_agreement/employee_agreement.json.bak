@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-07-02 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "track_changes": 1,
+ "field_order": [
+  "employee", "employee_name", "company", "designation",
+  "column_break_1",
+  "date_of_joining", "aadhaar_name", "father_name", "age",
+  "section_break_1",
+  "full_address",
+  "section_break_ctc",
+  "ctc_amount", "ctc_in_words",
+  "section_break_sign",
+  "employee_signature", "date", "place", "witness_name"
+ ],
+ "fields": [
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Employee Name", "fetch_from": "employee.employee_name", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "reqd": 1},
+  {"fieldname": "designation", "fieldtype": "Link", "label": "Designation", "options": "Designation", "fetch_from": "employee.designation"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "date_of_joining", "fieldtype": "Date", "label": "Date of Joining", "fetch_from": "employee.date_of_joining"},
+  {"fieldname": "aadhaar_name", "fieldtype": "Data", "label": "Name (as per Aadhaar)", "reqd": 1},
+  {"fieldname": "father_name", "fieldtype": "Data", "label": "Father's Name"},
+  {"fieldname": "age", "fieldtype": "Int", "label": "Age"},
+
+  {"fieldname": "section_break_1", "fieldtype": "Section Break", "label": "Address"},
+  {"fieldname": "full_address", "fieldtype": "Small Text", "label": "Full Address"},
+
+  {"fieldname": "section_break_ctc", "fieldtype": "Section Break", "label": "Compensation"},
+  {"fieldname": "ctc_amount", "fieldtype": "Currency", "label": "CTC (Per Annum)"},
+  {"fieldname": "ctc_in_words", "fieldtype": "Data", "label": "CTC in Words"},
+
+  {"fieldname": "section_break_sign", "fieldtype": "Section Break", "label": "Signature"},
+  {"fieldname": "employee_signature", "fieldtype": "Signature", "label": "Employee Signature"},
+  {"fieldname": "date", "fieldtype": "Date", "label": "Date"},
+  {"fieldname": "place", "fieldtype": "Data", "label": "Place", "default": "Chennai"},
+  {"fieldname": "witness_name", "fieldtype": "Data", "label": "Witness Name"}
+ ],
+ "istable": 0,
+ "module": "HRMS custom",
+ "name": "Employee Agreement",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "print": 1, "report": 1},
+  {"role": "HR User", "read": 1, "write": 1, "create": 1, "print": 1, "report": 1},
+  {"role": "Employee", "read": 1, "if_owner": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

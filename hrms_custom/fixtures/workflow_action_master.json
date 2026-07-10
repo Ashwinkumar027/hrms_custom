@@ -2,6 +2,27 @@
  {
   "docstatus": 0,
   "doctype": "Workflow Action Master",
+  "modified": "2026-07-09 16:58:06.066371",
+  "name": "Verify",
+  "workflow_action_name": "Verify"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-07-09 16:58:14.853073",
+  "name": "Process",
+  "workflow_action_name": "Process"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-07-09 16:58:23.418158",
+  "name": "Hold",
+  "workflow_action_name": "Hold"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
   "modified": "2026-06-08 22:33:33.976278",
   "name": "Submit for Approval",
   "workflow_action_name": "Submit for Approval"

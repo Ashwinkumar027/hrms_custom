@@ -15,15 +15,7 @@
   "authorized_signatory_section",
   "signatory_name",
   "signatory_designation",
-  "signatory_signature",
-  "letterhead_section",
-  "registered_address",
-  "column_break_letterhead_1",
-  "compliance_email",
-  "column_break_letterhead_2",
-  "cin_number",
-  "sebi_registration_no",
-  "amfi_registration_no"
+  "signatory_signature"
  ],
  "fields": [
   {
@@ -81,51 +73,12 @@
    "fieldname": "signatory_signature",
    "fieldtype": "Attach Image",
    "label": "Signatory Signature Image"
-  },
-  {
-   "fieldname": "letterhead_section",
-   "fieldtype": "Section Break",
-   "label": "Letterhead / Regulatory Details"
-  },
-  {
-   "fieldname": "registered_address",
-   "fieldtype": "Small Text",
-   "label": "Registered Office Address"
-  },
-  {
-   "fieldname": "column_break_letterhead_1",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "compliance_email",
-   "fieldtype": "Data",
-   "label": "Compliance Email",
-   "options": "Email"
-  },
-  {
-   "fieldname": "column_break_letterhead_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "cin_number",
-   "fieldtype": "Data",
-   "label": "CIN Number"
-  },
-  {
-   "fieldname": "sebi_registration_no",
-   "fieldtype": "Data",
-   "label": "SEBI Registration No"
-  },
-  {
-   "fieldname": "amfi_registration_no",
-   "fieldtype": "Data",
-   "label": "AMFI Registration No"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-09 00:00:00.000000",
+ "modified": "2026-06-25 15:04:27.160136",
  "modified_by": "Administrator",
  "module": "HRMS custom",
  "name": "Offer Letter Print Settings",

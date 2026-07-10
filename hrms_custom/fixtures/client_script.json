@@ -2,6 +2,28 @@
  {
   "docstatus": 0,
   "doctype": "Client Script",
+  "dt": "Job Requisition",
+  "enabled": 1,
+  "modified": "2026-07-07 15:33:38.690946",
+  "module": "HRMS custom",
+  "name": "Hide Excepted compensation",
+  "script": "frappe.ui.form.on('Job Requisition', {\r\n    refresh(frm) {\r\n        frm.set_df_property('expected_compensation', 'hidden', 1);\r\n        frm.set_df_property('expected_compensation', 'reqd', 0);\r\n        \r\n        // Auto-fill so server-side validation doesn't block save\r\n        if (!frm.doc.expected_compensation) {\r\n            frm.set_value('expected_compensation', 0);\r\n        }\r\n        \r\n        frm.refresh_field('expected_compensation');\r\n    }\r\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Job Applicant",
+  "enabled": 1,
+  "modified": "2026-07-07 15:57:14.067572",
+  "module": "HRMS custom",
+  "name": "Intertype",
+  "script": "frappe.ui.form.on('Job Applicant', {\r\n    create_dialog: function (frm) {\r\n        let d = new frappe.ui.Dialog({\r\n            title: __(\"Enter Interview Type\"),\r\n            fields: [\r\n                {\r\n                    label: \"Interview Type\",\r\n                    fieldname: \"interview_type\",\r\n                    fieldtype: \"Link\",\r\n                    options: \"Interview Type\",\r\n                    reqd: 1,\r\n                    get_query: function () {\r\n                        return {\r\n                            filters: [[\"designation\", \"=\", frm.doc.designation]],\r\n                        };\r\n                    },\r\n                },\r\n            ],\r\n            primary_action_label: __(\"Create Interview\"),\r\n            primary_action(values) {\r\n                if (!values.interview_type) {\r\n                    frappe.msgprint(__(\"Please select an Interview Type\"));\r\n                    return;\r\n                }\r\n                frm.events.create_interview(frm, values);\r\n                d.hide();\r\n            },\r\n        });\r\n        d.show();\r\n    },\r\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
   "dt": "Employee Onboarding",
   "enabled": 1,
   "modified": "2026-06-21 01:13:36.366501",
@@ -151,6 +173,39 @@
   "module": "HRMS custom",
   "name": "ESI EPF Enrollment",
   "script": "frappe.ui.form.on('ESI EPF Enrollment', {\r\n    employee: function(frm) {\r\n        if (!frm.doc.employee) return;\r\n        frappe.call({\r\n            method: \"hrms_custom.hrms_custom.doctype.esi_epf_enrollment.esi_epf_enrollment.get_employee_snapshot\",\r\n            args: { employee: frm.doc.employee },\r\n            callback: function(r) {\r\n                if (r.message) {\r\n                    frm.set_value('employee_name', r.message.employee_name);\r\n                    frm.set_value('date_of_birth', r.message.date_of_birth);\r\n                    frm.set_value('date_of_joining', r.message.date_of_joining);\r\n                    frm.set_value('gender', r.message.gender);\r\n                    frm.set_value('department', r.message.department);\r\n                    frm.set_value('designation', r.message.designation);\r\n                    frm.set_value('bank_name', r.message.bank_name);\r\n                    frm.set_value('account_number', r.message.account_number);\r\n                    frm.set_value('ifsc_code', r.message.ifsc_code);\r\n                    frm.refresh_fields();\r\n                }\r\n            }\r\n        });\r\n    },\r\n\r\n    refresh: function(frm) {\r\n        if (frm.doc.docstatus === 1) {\r\n            frm.add_custom_button(__('Download Form 11 PDF'), function() {\r\n                window.open(\r\n                    frappe.urllib.get_full_url(\r\n                        \"/api/method/frappe.utils.print_format.download_pdf?doctype=ESI EPF Enrollment&name=\"\r\n                        + encodeURIComponent(frm.doc.name)\r\n                        + \"&format=Standard&no_letterhead=0\"\r\n                    )\r\n                );\r\n            });\r\n        }\r\n    }\r\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Employee Onboarding",
+  "enabled": 1,
+  "modified": "2026-07-08 18:06:15.228860",
+  "module": "HRMS custom",
+  "name": "Employee onboarding form",
+  "script": "frappe.ui.form.on(\"Employee Onboarding\", {\r\n    refresh: function(frm) {\r\n        frm.add_custom_button(\"Send Onboarding Form\", function() {\r\n            frappe.call({\r\n                method: \"hrms_custom.api.send_onboarding_forms_email\",\r\n                args: { employee_onboarding: frm.doc.name },\r\n                freeze: true,\r\n                freeze_message: \"Sending...\",\r\n                callback: function(r) {\r\n                    if (r.message && r.message.success) {\r\n                        frappe.msgprint({\r\n                            title: \"Sent\",\r\n                            indicator: \"green\",\r\n                            message: r.message.message\r\n                        });\r\n                    }\r\n                }\r\n            });\r\n        });\r\n\r\n        frm.add_custom_button(\"Check Form Status\", function() {\r\n            frappe.call({\r\n                method: \"hrms_custom.api.get_onboarding_form_status\",\r\n                args: { employee_onboarding: frm.doc.name },\r\n                callback: function(r) {\r\n                    if (r.message) {\r\n                        let rows = Object.entries(r.message).map(([k, v]) => {\r\n                            let icon = v === \"Filled\" ? \"✅ Filled\" : (v === \"Not Tracked\" ? \"⚪ Not Tracked\" : \"❌ Not Filled\");\r\n                            return `<tr><td>${k}</td><td>${icon}</td></tr>`;\r\n                        }).join(\"\");\r\n                        frappe.msgprint({\r\n                            title: \"Onboarding Form Status\",\r\n                            message: `<table class=\"table table-bordered\">${rows}</table>`\r\n                        });\r\n                    }\r\n                }\r\n            });\r\n        });\r\n\r\n        frm.add_custom_button(\"Download All Documents\", function() {\r\n            frappe.call({\r\n                method: \"hrms_custom.api.download_onboarding_documents\",\r\n                args: { employee_onboarding: frm.doc.name },\r\n                freeze: true,\r\n                freeze_message: \"Preparing PDF...\",\r\n                error: function(r) {\r\n                    frappe.msgprint({\r\n                        title: \"Cannot Download\",\r\n                        indicator: \"red\",\r\n                        message: (r._server_messages ? JSON.parse(r._server_messages)[0].replace(/[\"{}]/g, \"\") : \"Some forms are incomplete.\")\r\n                    });\r\n                }\r\n            });\r\n        });\r\n    }\r\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Onboarding Form Dispatch",
+  "enabled": 1,
+  "modified": "2026-07-09 16:32:49.262174",
+  "module": "HRMS custom",
+  "name": "Onboarding Form Dispatch",
+  "script": "frappe.ui.form.on('Onboarding Form Dispatch', {\r\n    refresh: function(frm) {\r\n        if (frm.doc.__islocal) return;\r\n\r\n        let sendCount = frm.doc.send_count || 0;\r\n\r\n        if (sendCount >= 2) {\r\n            frm.add_custom_button(__('Onboarding Forms Already Sent Twice'), function() {\r\n                frappe.msgprint('This employee has already received the onboarding forms the maximum of 2 times. Contact system admin to override.');\r\n            }).addClass('btn-secondary').prop('disabled', true);\r\n        } else {\r\n            frm.add_custom_button(__('Send Onboarding Forms'), function() {\r\n                frappe.confirm(\r\n                    `Send onboarding forms to <b>${frm.doc.employee_email || 'this employee'}</b>? (${sendCount}/2 sent so far)`,\r\n                    function() {\r\n                        frappe.call({\r\n                            method: \"hrms_custom.api.send_onboarding_forms_to_employee\",\r\n                            args: { dispatch_name: frm.doc.name },\r\n                            freeze: true,\r\n                            freeze_message: __(\"Sending...\"),\r\n                            callback: function(r) {\r\n                                if (r.message && r.message.success) {\r\n                                    frappe.show_alert({message: r.message.message, indicator: 'green'});\r\n                                    frm.reload_doc();\r\n                                }\r\n                            }\r\n                        });\r\n                    }\r\n                );\r\n            }).addClass('btn-primary');\r\n        }\r\n    }\r\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "TA Reimbursement Claim",
+  "enabled": 1,
+  "modified": "2026-07-09 17:25:09.615199",
+  "module": "HRMS custom",
+  "name": "TA Reimbursement Claim - Filter Proposal",
+  "script": "frappe.ui.form.on(\"TA Reimbursement Claim\", {\r\n    refresh(frm) {\r\n        frm.set_query(\"client_visit_proposal\", function () {\r\n            return {\r\n                filters: {\r\n                    employee: frm.doc.employee,\r\n                    status: \"Approved\",\r\n                    docstatus: 1,\r\n                },\r\n            };\r\n        });\r\n    },\r\n    employee(frm) {\r\n        frm.set_value(\"client_visit_proposal\", \"\");\r\n    },\r\n});",
   "view": "Form"
  }
 ]
