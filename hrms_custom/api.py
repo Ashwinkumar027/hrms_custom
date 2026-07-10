@@ -676,3 +676,68 @@ def download_onboarding_documents(employee_onboarding):
     frappe.local.response.filename = f"{employee}_onboarding_documents.pdf"
     frappe.local.response.filecontent = output.getvalue()
     frappe.local.response.type = "download"
+@frappe.whitelist()
+def send_onboarding_forms_to_employee(dispatch_name):
+    doc = frappe.get_doc("Onboarding Form Dispatch", dispatch_name)
+
+    if doc.send_count >= 2:
+        frappe.throw("This employee has already received the onboarding forms twice. Contact system admin to override.")
+
+    if not doc.employee_email:
+        frappe.throw("No email address set for this employee.")
+
+    base_url = get_url()
+    employee = doc.employee
+
+    links_html = ""
+    forms_sent = []
+    for label, cfg in ONBOARDING_WEB_FORMS.items():
+        param = f"?employee={employee}" if (employee and cfg["trackable"]) else ""
+        url = f"{base_url}/{cfg['route']}{param}"
+        links_html += (
+            "<p style='margin:10px 0;'><a href='" + url + "' "
+            "style='color:#1B4F8A;font-weight:bold;text-decoration:none;'>&#8594; "
+            + label + "</a></p>"
+        )
+        forms_sent.append(label)
+
+    subject = "Action Required: Complete Your Onboarding Forms - Aionion Capital"
+    message = (
+        "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
+        "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"
+        "<h2 style='color:white;margin:0;'>Onboarding Forms</h2>"
+        "<p style='color:#cce0ff;margin:5px 0;'>Aionion Capital</p>"
+        "</div>"
+        "<div style='padding:30px;background:#f9f9f9;'>"
+        "<p>Dear <b>" + (doc.employee_name or "Employee") + "</b>,</p>"
+        "<p>Please complete the following onboarding forms at your earliest convenience:</p>"
+        + links_html +
+        "<p style='margin-top:20px;color:#555;'>If you face any issues, contact HR.</p>"
+        "<p>Warm Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
+        "</div>"
+        "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
+        "<p style='color:#cce0ff;margin:0;font-size:12px;'>Aionion Capital HRMS</p>"
+        "</div>"
+        "</div>"
+    )
+
+    frappe.sendmail(
+        recipients=[doc.employee_email],
+        sender=get_hr_sender(),
+        subject=subject,
+        message=message,
+        reference_doctype="Onboarding Form Dispatch",
+        reference_name=doc.name,
+    )
+
+    doc.append("dispatch_log", {
+        "sent_on": now(),
+        "sent_by": frappe.session.user,
+        "forms_included": ", ".join(forms_sent),
+    })
+    doc.send_count = (doc.send_count or 0) + 1
+    doc.last_sent_on = now()
+    doc.save()
+    frappe.db.commit()
+
+    return {"success": True, "message": f"Onboarding forms sent to {doc.employee_email} ({doc.send_count}/2)"}

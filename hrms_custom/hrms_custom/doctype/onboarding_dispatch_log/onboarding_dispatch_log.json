@@ -1,0 +1,20 @@
+{
+ "actions": [],
+ "creation": "2026-07-09 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["sent_on", "sent_by", "forms_included"],
+ "fields": [
+  {"fieldname": "sent_on", "fieldtype": "Datetime", "label": "Sent On", "in_list_view": 1},
+  {"fieldname": "sent_by", "fieldtype": "Link", "label": "Sent By", "options": "User", "in_list_view": 1},
+  {"fieldname": "forms_included", "fieldtype": "Small Text", "label": "Forms Included"}
+ ],
+ "istable": 1,
+ "module": "HRMS custom",
+ "name": "Onboarding Dispatch Log",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

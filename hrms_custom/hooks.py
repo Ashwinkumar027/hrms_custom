@@ -20,6 +20,10 @@ fixtures = [
     },
     "Onboarding Task Contact",
     {
+        "dt": "DocType",
+        "filters": [["module", "=", "HRMS custom"]],
+    },
+    {
         "dt": "Custom Field",
         "filters": [["module", "=", "HRMS custom"]],
     },
@@ -37,19 +41,29 @@ fixtures = [
     },
     {
         "dt": "Custom DocPerm",
-        "filters": [["parent", "in", ["Attendance Request", "Shift Request", "Expense Claim", "Employee Advance", "Employee"]]],
+        "filters": [["parent", "in", ["Attendance Request", "Shift Request", "Expense Claim", "Employee Advance", "Employee", "TA Reimbursement Claim", "Client Visit Proposal"]]],
     },
     {
         "dt": "Workflow",
-        "filters": [["name", "=", "Attendance Request Approval"]],
+        "filters": [["name", "in", ["Attendance Request Approval", "TA Reimbursement Workflow"]]],
     },
     {
         "dt": "Workflow State",
-        "filters": [["name", "in", ["Draft", "Pending Approval", "Approved", "Rejected"]]],
+        "filters": [["name", "in", [
+            "Draft", "Pending Approval", "Approved", "Rejected",
+            "Pending RM Approval", "RM Rejected",
+            "Pending Admin Verification", "Admin Rejected",
+            "Pending Accounts Processing", "On Hold",
+            "Processed", "Accounts Rejected",
+        ]]],
     },
     {
         "dt": "Workflow Action Master",
-        "filters": [["name", "in", ["Submit for Approval", "Approve", "Reject"]]],
+        "filters": [["name", "in", ["Submit for Approval", "Approve", "Reject", "Verify", "Process", "Hold"]]],
+    },
+    {
+        "dt": "Role",
+        "filters": [["name", "in", ["TA Reporting Manager", "TA Admin Verifier", "TA Accounts Approver"]]],
     },
     {
         "dt": "Attendance Reason Type",
@@ -115,6 +129,11 @@ override_whitelisted_methods = {
 permission_query_conditions = {
     "Attendance Request": "hrms_custom.permissions.attendance_request.get_permission_query_conditions",
     "Employee": "hrms_custom.permissions.employee.get_permission_query_conditions",
+    "TA Reimbursement Claim": "hrms_custom.permissions.ta_reimbursement_claim.get_permission_query_conditions",
+}
+
+has_permission = {
+    "TA Reimbursement Claim": "hrms_custom.permissions.ta_reimbursement_claim.has_permission",
 }
 
 scheduler_events = {
