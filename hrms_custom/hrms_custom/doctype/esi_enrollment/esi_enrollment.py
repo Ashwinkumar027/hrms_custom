@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
+from hrms_custom.hrms_custom.utils.signature_utils import merge_or_allow_insert
 
 
 class ESIEnrollment(Document):
@@ -17,12 +18,7 @@ class ESIEnrollment(Document):
             self.validate_mandatory_attachments()
 
     def before_insert(self):
-        if frappe.db.exists(
-            "ESI Enrollment", {"employee": self.employee, "docstatus": ["!=", 2]}
-        ):
-            frappe.throw(
-                _("An ESI/EPF Enrollment already exists for employee {0}").format(self.employee)
-            )
+        merge_or_allow_insert(self, route="esi-enrollment")
 
     def fetch_employee_details(self):
         if not self.employee:

@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from hrms_custom.hrms_custom.utils.signature_utils import merge_or_allow_insert
 
 
 class EmployeeFraternizationPolicy(Document):
@@ -18,3 +19,6 @@ class EmployeeFraternizationPolicy(Document):
 				"You must confirm that you have read and understood the "
 				"policy before saving."
 			)
+
+	def before_insert(self):
+		merge_or_allow_insert(self, route="employee-fraternization-policy")

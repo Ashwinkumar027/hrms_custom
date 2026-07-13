@@ -539,15 +539,13 @@ def get_employee_policies(employee):
         order_by="policy_name asc"
     )
 
-
 ONBOARDING_WEB_FORMS = {
-    "Employee Registration Form": {"doctype": "Employee Registration Form", "route": "employee-registration-form", "trackable": True},
-    "Employee Fraternization Policy": {"doctype": "Employee Fraternization Policy", "route": "employee-fraternization-policy", "trackable": True},
-    "Form 11": {"doctype": "Form 11", "route": "Form11", "trackable": False},
-    "Employee Agreement": {"doctype": "Employee Agreement", "route": "employee-agreement-form", "trackable": True},
-    "ESI Enrollment": {"doctype": "ESI Enrollment", "route": "esi-enrollment", "trackable": True},
+    "Employee Registration Form": {"doctype": "Employee Registration Form", "route": "employee-registration-form", "trackable": True, "print_format": "Employee Registration Form - Print"},
+    "Employee Fraternization Policy": {"doctype": "Employee Fraternization Policy", "route": "employee-fraternization-policy", "trackable": True, "print_format": "Employee Fraternization Policy"},
+    "Form 11": {"doctype": "Form 11", "route": "Form11", "trackable": True, "print_format": "Form 11"},
+    "Employee Agreement": {"doctype": "Employee Agreement", "route": "employee-agreement-form", "trackable": True, "print_format": "Employee Agreement - Print"},
+    "ESI Enrollment": {"doctype": "ESI Enrollment", "route": "esi-enrollment", "trackable": True, "print_format": "ESI EPF Enrollment - Form Print"},
 }
-
 
 def _build_tracked_links(employee, base_url):
     links_html = ""
@@ -767,7 +765,7 @@ def download_onboarding_documents(employee):
         row = frappe.db.get_value(cfg["doctype"], {"employee": employee}, "name")
         if row:
             try:
-                pdf_bytes = frappe.get_print(cfg["doctype"], row, as_pdf=True)
+                pdf_bytes = frappe.get_print(cfg["doctype"], row, print_format=cfg.get("print_format"), as_pdf=True)
                 writer.append(io.BytesIO(pdf_bytes))
                 available.append(label)
             except Exception as e:
