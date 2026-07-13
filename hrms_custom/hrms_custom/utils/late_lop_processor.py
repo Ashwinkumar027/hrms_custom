@@ -167,6 +167,16 @@ def _get_shift_config(shift, employee, attendance_date):
     )
 
 
+def _get_grace_days(employee, attendance_date):
+    """Returns the grace_days allowance for this employee's shift as of
+    attendance_date. Thin wrapper around _get_shift_config for callers
+    (e.g. lop_summary_email.py) that only need the grace_days figure."""
+    shift_cfg = _get_shift_config(None, employee, attendance_date)
+    if not shift_cfg:
+        return 0
+    return shift_cfg.grace_days
+
+
 def _get_minutes_late(att, shift_cfg):
     if not att.in_time or not shift_cfg.start_time:
         return None
