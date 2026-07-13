@@ -37,29 +37,58 @@ fixtures = [
     },
     {
         "dt": "Custom DocPerm",
-        "filters": [["parent", "in", ["Attendance Request", "Shift Request", "Expense Claim", "Employee Advance", "Employee", "TA Reimbursement Claim", "Client Visit Proposal"]]],
+        "filters": [["parent", "in", [
+            "Attendance Request",
+            "Shift Request",
+            "Expense Claim",
+            "Employee Advance",
+            "Employee",
+            "TA Reimbursement Claim",
+            "Client Visit Proposal"
+        ]]],
     },
     {
         "dt": "Workflow",
-        "filters": [["name", "in", ["Attendance Request Approval", "TA Reimbursement Workflow"]]],
+        "filters": [["name", "in", [
+            "Attendance Request Approval",
+            "TA Reimbursement Workflow"
+        ]]],
     },
     {
         "dt": "Workflow State",
         "filters": [["name", "in", [
-            "Draft", "Pending Approval", "Approved", "Rejected",
-            "Pending RM Approval", "RM Rejected",
-            "Pending Admin Verification", "Admin Rejected",
-            "Pending Accounts Processing", "On Hold",
-            "Processed", "Accounts Rejected",
+            "Draft",
+            "Pending Approval",
+            "Approved",
+            "Rejected",
+            "Pending RM Approval",
+            "RM Rejected",
+            "Pending Admin Verification",
+            "Admin Rejected",
+            "Pending Accounts Processing",
+            "On Hold",
+            "Processed",
+            "Accounts Rejected"
         ]]],
     },
     {
         "dt": "Workflow Action Master",
-        "filters": [["name", "in", ["Submit for Approval", "Approve", "Reject", "Verify", "Process", "Hold"]]],
+        "filters": [["name", "in", [
+            "Submit for Approval",
+            "Approve",
+            "Reject",
+            "Verify",
+            "Process",
+            "Hold"
+        ]]],
     },
     {
         "dt": "Role",
-        "filters": [["name", "in", ["TA Reporting Manager", "TA Admin Verifier", "TA Accounts Approver"]]],
+        "filters": [["name", "in", [
+            "TA Reporting Manager",
+            "TA Admin Verifier",
+            "TA Accounts Approver"
+        ]]],
     },
     {
         "dt": "Attendance Reason Type",
@@ -67,7 +96,7 @@ fixtures = [
             "Permission",
             "On Duty",
             "Missed Attendance",
-            "Work From Home Allowance",
+            "Work From Home Allowance"
         ]]],
     },
     {
@@ -75,7 +104,7 @@ fixtures = [
         "filters": [
             ["applies_to", "=", "Company"],
             ["company", "=", "AIONION CAPITAL (Demo)"],
-            ["docstatus", "=", 1],
+            ["docstatus", "=", 1]
         ],
     },
     {
@@ -96,7 +125,7 @@ fixtures = [
             "Joining Reminder 1 Day",
             "Joining Reminder 10 Days",
             "Joining Reminder 45 Days",
-            "Notify Director After BH Approval",
+            "Notify Director After BH Approval"
         ]]],
     },
     {
@@ -104,11 +133,15 @@ fixtures = [
         "filters": [["name", "in", [
             "job-application",
             "candidate-pre-offer-form",
+            "employee-registration-form",
+            "employee-fraternization-policy",
+            "employee-agreement-form",
+            "esi-enrollment",
+            "employee-esi-pf"
         ]]],
     },
 ]
 
-# Single merged override_doctype_class (removed duplicate)
 override_doctype_class = {
     "Employee Checkin": "hrms_custom.overrides.employee_checkin.MultiLocationEmployeeCheckin",
     "Attendance Request": "hrms_custom.overrides.attendance_request.CustomAttendanceRequest",
@@ -116,7 +149,6 @@ override_doctype_class = {
     "Shift Type": "hrms_custom.overrides.shift_type.CustomShiftType",
 }
 
-# Fixed: replaced wrong 'whitelist_methods' with correct key
 override_whitelisted_methods = {
     "erpnext.setup.doctype.employee.employee.deactivate_sales_person":
     "hrms_custom.overrides.employee.deactivate_sales_person"
@@ -153,6 +185,7 @@ scheduler_events = {
         "hrms_custom.hrms_custom.utils.force_absent_missing_checkout.execute"
     ]
 }
+
 doc_events = {
     "Salary Slip": {
         "before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
@@ -177,6 +210,9 @@ doc_events = {
         "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
     },
     "ESI Enrollment": {
+        "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
+    },
+    "Form 11": {
         "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
     }
 }
