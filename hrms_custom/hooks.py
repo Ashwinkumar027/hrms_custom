@@ -168,11 +168,15 @@ scheduler_events = {
     "cron": {
         "0 9 * * *": [
             "hrms_custom.hrms_custom.utils.upcoming_holiday_notification.send_upcoming_holiday_notifications"
+        ],
+        "30 2 * * *": [
+            "hrms_custom.hrms_custom.utils.missing_attendance_email.send_missing_attendance_emails_for_yesterday"
+        ],
+        "0 3 * * *": [
+            "hrms_custom.hrms_custom.utils.lop_summary_email.send_lop_summary_emails"
         ]
     },
     "daily": [
-        "hrms_custom.hrms_custom.utils.missing_attendance_email.send_missing_attendance_emails_for_yesterday",
-        "hrms_custom.hrms_custom.utils.lop_summary_email.send_lop_summary_emails",
         "hrms_custom.hrms_custom.utils.document_alerts.send_document_alerts"
     ],
     "monthly": [
