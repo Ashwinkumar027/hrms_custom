@@ -2,6 +2,7 @@ import re
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from hrms_custom.hrms_custom.utils.signature_utils import merge_or_allow_insert
 
 
 class Form11(Document):
@@ -21,3 +22,6 @@ class Form11(Document):
 	def validate_ifsc(self):
 		if self.ifsc_code and not re.fullmatch(r"[A-Z]{4}0[A-Z0-9]{6}", self.ifsc_code.upper()):
 			frappe.throw(_("Invalid IFSC Code format"))
+
+	def before_insert(self):
+		merge_or_allow_insert(self, route="Form11")

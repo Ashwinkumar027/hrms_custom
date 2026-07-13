@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import today
+from hrms_custom.hrms_custom.utils.signature_utils import merge_or_allow_insert
 
 
 class EmployeeAgreement(Document):
@@ -10,5 +11,4 @@ class EmployeeAgreement(Document):
 			self.date = today()
 
 	def before_insert(self):
-		if frappe.db.exists("Employee Agreement", {"employee": self.employee, "docstatus": ["!=", 2]}):
-			frappe.throw(_("An Employee Agreement already exists for {0}").format(self.employee))
+		merge_or_allow_insert(self, route="employee-agreement-form")
