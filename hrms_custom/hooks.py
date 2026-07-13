@@ -157,8 +157,6 @@ scheduler_events = {
         "hrms_custom.hrms_custom.utils.force_absent_missing_checkout.execute"
     ]
 }
-
-
 doc_events = {
     "Salary Slip": {
         "before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
@@ -172,5 +170,17 @@ doc_events = {
     },
     "Attendance Request": {
         "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_request_lock"
+    },
+    "Employee Registration Form": {
+        "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
+    },
+    "Employee Fraternization Policy": {
+        "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
+    },
+    "Employee Agreement": {
+        "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
+    },
+    "ESI Enrollment": {
+        "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
     }
 }

@@ -538,6 +538,8 @@ def get_employee_policies(employee):
         fields=["name", "policy_name", "policy_pdf"],
         order_by="policy_name asc"
     )
+
+
 ONBOARDING_WEB_FORMS = {
     "Employee Registration Form": {"doctype": "Employee Registration Form", "route": "employee-registration-form", "trackable": True},
     "Employee Fraternization Policy": {"doctype": "Employee Fraternization Policy", "route": "employee-fraternization-policy", "trackable": True},
@@ -545,6 +547,23 @@ ONBOARDING_WEB_FORMS = {
     "Employee Agreement": {"doctype": "Employee Agreement", "route": "employee-agreement-form", "trackable": True},
     "ESI Enrollment": {"doctype": "ESI Enrollment", "route": "esi-enrollment", "trackable": True},
 }
+
+
+def _build_tracked_links(employee, base_url):
+    links_html = ""
+    labels = []
+    for label, cfg in ONBOARDING_WEB_FORMS.items():
+        if cfg["trackable"] and employee:
+            url = f"{base_url}/api/method/hrms_custom.api.open_onboarding_form?doctype={urllib.parse.quote(cfg['doctype'])}&route={cfg['route']}&employee={employee}"
+        else:
+            url = f"{base_url}/{cfg['route']}"
+        links_html += (
+            "<p style='margin:10px 0;'><a href='" + url + "' "
+            "style='color:#1B4F8A;font-weight:bold;text-decoration:none;'>&#8594; "
+            + label + "</a></p>"
+        )
+        labels.append(label)
+    return links_html, labels
 
 
 @frappe.whitelist()
@@ -569,15 +588,7 @@ def send_onboarding_forms_email(employee_onboarding):
     base_url = get_url()
     employee = getattr(doc, "employee", None)
 
-    links_html = ""
-    for label, cfg in ONBOARDING_WEB_FORMS.items():
-        param = f"?employee={employee}" if (employee and cfg["trackable"]) else ""
-        url = f"{base_url}/{cfg['route']}{param}"
-        links_html += (
-            "<p style='margin:10px 0;'><a href='" + url + "' "
-            "style='color:#1B4F8A;font-weight:bold;text-decoration:none;'>&#8594; "
-            + label + "</a></p>"
-        )
+    links_html, _ = _build_tracked_links(employee, base_url)
 
     subject = "Action Required: Complete Your Onboarding Forms - Aionion Capital"
     message = (
@@ -615,67 +626,10 @@ def send_onboarding_forms_email(employee_onboarding):
 
     frappe.db.set_value("Employee Onboarding", doc.name, "custom_forms_sent_on", now())
     frappe.db.commit()
-
     return {"success": True, "message": f"Onboarding forms sent to {applicant_email}"}
 
 
-@frappe.whitelist()
-def get_onboarding_form_status(employee_onboarding):
-    doc = frappe.get_doc("Employee Onboarding", employee_onboarding)
-    employee = getattr(doc, "employee", None)
 
-    status = {}
-    for label, cfg in ONBOARDING_WEB_FORMS.items():
-        if not cfg["trackable"]:
-            status[label] = "Not Tracked"
-            continue
-        filled = bool(employee and frappe.db.exists(cfg["doctype"], {"employee": employee}))
-        status[label] = "Filled" if filled else "Not Filled"
-
-    return status
-
-
-@frappe.whitelist()
-def download_onboarding_documents(employee_onboarding):
-    doc = frappe.get_doc("Employee Onboarding", employee_onboarding)
-    employee = getattr(doc, "employee", None)
-
-    if not employee:
-        frappe.throw("Employee is not linked yet on this onboarding record.")
-
-    missing = []
-    doc_refs = {}
-
-    for label, cfg in ONBOARDING_WEB_FORMS.items():
-        if not cfg["trackable"]:
-            continue
-        row = frappe.db.get_value(cfg["doctype"], {"employee": employee}, ["name", "docstatus"], as_dict=True)
-        if not row or row.docstatus != 1:
-            missing.append(label)
-        else:
-            doc_refs[cfg["doctype"]] = row.name
-
-    if missing:
-        frappe.throw(
-            "Cannot download yet — the following forms are not submitted: "
-            + ", ".join(missing)
-        )
-
-    from pypdf import PdfWriter
-    import io
-
-    writer = PdfWriter()
-    for dt, name in doc_refs.items():
-        pdf_bytes = frappe.get_print(dt, name, as_pdf=True)
-        writer.append(io.BytesIO(pdf_bytes))
-
-    output = io.BytesIO()
-    writer.write(output)
-    output.seek(0)
-
-    frappe.local.response.filename = f"{employee}_onboarding_documents.pdf"
-    frappe.local.response.filecontent = output.getvalue()
-    frappe.local.response.type = "download"
 @frappe.whitelist()
 def send_onboarding_forms_to_employee(dispatch_name):
     doc = frappe.get_doc("Onboarding Form Dispatch", dispatch_name)
@@ -685,21 +639,10 @@ def send_onboarding_forms_to_employee(dispatch_name):
 
     if not doc.employee_email:
         frappe.throw("No email address set for this employee.")
-
     base_url = get_url()
     employee = doc.employee
 
-    links_html = ""
-    forms_sent = []
-    for label, cfg in ONBOARDING_WEB_FORMS.items():
-        param = f"?employee={employee}" if (employee and cfg["trackable"]) else ""
-        url = f"{base_url}/{cfg['route']}{param}"
-        links_html += (
-            "<p style='margin:10px 0;'><a href='" + url + "' "
-            "style='color:#1B4F8A;font-weight:bold;text-decoration:none;'>&#8594; "
-            + label + "</a></p>"
-        )
-        forms_sent.append(label)
+    links_html, forms_sent = _build_tracked_links(employee, base_url)
 
     subject = "Action Required: Complete Your Onboarding Forms - Aionion Capital"
     message = (
@@ -740,4 +683,121 @@ def send_onboarding_forms_to_employee(dispatch_name):
     doc.save()
     frappe.db.commit()
 
-    return {"success": True, "message": f"Onboarding forms sent to {doc.employee_email} ({doc.send_count}/2)"}
+@frappe.whitelist(allow_guest=True)
+def open_onboarding_form(doctype, route, employee):
+    tracker = frappe.db.get_value(
+        "Form Fill Tracker",
+        {"employee": employee, "form_doctype": doctype},
+        ["name", "record_name", "fill_count"],
+        as_dict=True
+    )
+
+    if tracker and tracker.fill_count >= 2:
+        frappe.respond_as_web_page(
+            title="Submission Limit Reached",
+            html="""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2 style="color:#A32D2D;">Submission Limit Reached</h2>
+                <p>You have already submitted this form the maximum number of times (2).</p>
+                <p>If you need to make further changes, please contact HR directly.</p>
+            </div>
+            """
+        )
+        return
+
+    if tracker and tracker.record_name and frappe.db.exists(doctype, tracker.record_name):
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"/{route}/{tracker.record_name}"
+    else:
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"/{route}/new?employee={employee}"
+
+
+@frappe.whitelist()
+def get_form_fill_status(employee):
+    """
+    Generic status tracker used by BOTH Employee Onboarding and Onboarding Form Dispatch.
+    A record existing (Draft OR Submitted) counts as 'Filled'.
+    """
+    if not employee:
+        return {}
+
+    status = {}
+    for label, cfg in ONBOARDING_WEB_FORMS.items():
+        if not cfg["trackable"]:
+            status[label] = {"status": "Not Tracked", "record_name": None, "docstatus": None}
+            continue
+
+        row = frappe.db.get_value(
+            cfg["doctype"], {"employee": employee}, ["name", "docstatus"], as_dict=True
+        )
+        if row:
+            docstatus_label = {0: "Draft", 1: "Submitted", 2: "Cancelled"}.get(row.docstatus, "Draft")
+            status[label] = {
+                "status": f"Filled ({docstatus_label})",
+                "record_name": row.name,
+                "docstatus": row.docstatus,
+            }
+        else:
+            status[label] = {"status": "Not Filled", "record_name": None, "docstatus": None}
+
+    return status
+
+
+@frappe.whitelist()
+def download_onboarding_documents(employee):
+    """
+    Downloads ONE merged PDF of every form the employee has actually filled
+    (Draft or Submitted both count). Forms not filled are simply skipped and
+    reported back in the 'pending' list — this never hard-fails.
+    """
+    if not employee:
+        frappe.throw("Employee is required.")
+
+    from pypdf import PdfWriter
+    import io
+
+    writer = PdfWriter()
+    available = []
+    pending = []
+
+    for label, cfg in ONBOARDING_WEB_FORMS.items():
+        if not cfg["trackable"]:
+            continue
+        row = frappe.db.get_value(cfg["doctype"], {"employee": employee}, "name")
+        if row:
+            try:
+                pdf_bytes = frappe.get_print(cfg["doctype"], row, as_pdf=True)
+                writer.append(io.BytesIO(pdf_bytes))
+                available.append(label)
+            except Exception as e:
+                frappe.log_error(str(e), f"Onboarding PDF merge error: {label}")
+                pending.append(label)
+        else:
+            pending.append(label)
+
+    if not available:
+        frappe.respond_as_web_page(
+            title="Nothing to Download",
+            html="""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2 style="color:#A32D2D;">Nothing to Download Yet</h2>
+                <p>This employee hasn't filled out any onboarding forms yet.</p>
+                <p>Please complete at least one form before downloading.</p>
+            </div>
+            """
+        )
+        return
+
+    output = io.BytesIO()
+    writer.write(output)
+    output.seek(0)
+
+    frappe.local.response.filename = f"{employee}_onboarding_documents.pdf"
+    frappe.local.response.filecontent = output.getvalue()
+    frappe.local.response.type = "download"
+
+    frappe.msgprint(
+        f"Downloaded: {', '.join(available)}"
+        + (f"<br>Still pending: {', '.join(pending)}" if pending else "")
+    )
