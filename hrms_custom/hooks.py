@@ -51,7 +51,9 @@ fixtures = [
         "dt": "Workflow",
         "filters": [["name", "in", [
             "Attendance Request Approval",
-            "TA Reimbursement Workflow"
+            "TA Reimbursement Workflow",
+            "Employee Onboarding Workflow",
+            "Manpower Requisition Flow"
         ]]],
     },
     {
@@ -68,7 +70,12 @@ fixtures = [
             "Pending Accounts Processing",
             "On Hold",
             "Processed",
-            "Accounts Rejected"
+            "Accounts Rejected",
+            "Pending Manager Input",
+            "Pending HR Review",
+            "Onboarding In Progress",
+            "Pending Hr Approval",
+            "Pending Final Approval"
         ]]],
     },
     {
@@ -79,7 +86,15 @@ fixtures = [
             "Reject",
             "Verify",
             "Process",
-            "Hold"
+            "Hold",
+            "Assign to Manager",
+            "Submit Activities",
+            "HR Approve & Start",
+            "Submit for HR Approval",
+            "HR Approve",
+            "HR Reject",
+            "Final Approve",
+            "Final Reject"
         ]]],
     },
     {
