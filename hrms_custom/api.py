@@ -540,11 +540,11 @@ def get_employee_policies(employee):
     )
 
 ONBOARDING_WEB_FORMS = {
-    "Employee Registration Form": {"doctype": "Employee Registration Form", "route": "employee-registration-form", "trackable": True, "print_format": "Employee Registration Form - Print"},
-    "Employee Fraternization Policy": {"doctype": "Employee Fraternization Policy", "route": "employee-fraternization-policy", "trackable": True, "print_format": "Employee Fraternization Policy"},
-    "Form 11": {"doctype": "Form 11", "route": "Form11", "trackable": True, "print_format": "Form 11"},
-    "Employee Agreement": {"doctype": "Employee Agreement", "route": "employee-agreement-form", "trackable": True, "print_format": "Employee Agreement - Print"},
-    "ESI Enrollment": {"doctype": "ESI Enrollment", "route": "esi-enrollment", "trackable": True, "print_format": "ESI EPF Enrollment - Form Print"},
+    "Employee Registration Form": {"doctype": "Employee Registration Form", "route": "employee-registration-form", "desk_route": "employee-registration-form", "trackable": True, "print_format": "Employee Registration Form - Print"},
+    "Employee Fraternization Policy": {"doctype": "Employee Fraternization Policy", "route": "employee-fraternization-policy", "desk_route": "employee-fraternization-policy", "trackable": True, "print_format": "Employee Fraternization Policy"},
+    "Form 11": {"doctype": "Form 11", "route": "Form11", "desk_route": "form-11", "trackable": True, "print_format": "Form 11"},
+    "Employee Agreement": {"doctype": "Employee Agreement", "route": "employee-agreement-form", "desk_route": "employee-agreement", "trackable": True, "print_format": "Employee Agreement - Print"},
+    "ESI Enrollment": {"doctype": "ESI Enrollment", "route": "esi-enrollment", "desk_route": "esi-enrollment", "trackable": True, "print_format": "ESI EPF Enrollment - Form Print"},
 }
 
 def _build_tracked_links(employee, base_url):
@@ -681,7 +681,7 @@ def send_onboarding_forms_to_employee(dispatch_name):
     doc.save()
     frappe.db.commit()
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def open_onboarding_form(doctype, route, employee):
     tracker = frappe.db.get_value(
         "Form Fill Tracker",
@@ -703,12 +703,14 @@ def open_onboarding_form(doctype, route, employee):
         )
         return
 
+    desk_route = ONBOARDING_WEB_FORMS.get(doctype, {}).get("desk_route", route)
+
     if tracker and tracker.record_name and frappe.db.exists(doctype, tracker.record_name):
         frappe.local.response["type"] = "redirect"
-        frappe.local.response["location"] = f"/{route}/{tracker.record_name}"
+        frappe.local.response["location"] = f"/app/{desk_route}/{tracker.record_name}"
     else:
         frappe.local.response["type"] = "redirect"
-        frappe.local.response["location"] = f"/{route}/new?employee={employee}"
+        frappe.local.response["location"] = f"/app/{desk_route}/new?employee={employee}"
 
 
 @frappe.whitelist()
@@ -799,3 +801,22 @@ def download_onboarding_documents(employee):
         f"Downloaded: {', '.join(available)}"
         + (f"<br>Still pending: {', '.join(pending)}" if pending else "")
     )
+
+
+@frappe.whitelist(allow_guest=True)
+def get_employee_details_for_webform(employee):
+    """
+    Generic fetch for Web Form client scripts, since Web Forms don't process
+    fetch_from automatically like Desk forms do. Returns basic employee fields
+    needed across onboarding forms.
+    """
+    if not employee:
+        return {}
+
+    emp = frappe.db.get_value(
+        "Employee",
+        employee,
+        ["employee_name", "designation", "department", "company", "date_of_joining"],
+        as_dict=True,
+    )
+    return emp or {}

@@ -186,7 +186,15 @@ scheduler_events = {
     ]
 }
 
+after_migrate = [
+    "hrms_custom.hrms_custom.utils.fix_employee_permission.fix_employee_role_permission"
+]
+
 doc_events = {
+    "Employee": {
+        "after_insert": "hrms_custom.hrms_custom.utils.user_permissions.create_user_permission_for_employee",
+        "on_update": "hrms_custom.hrms_custom.utils.user_permissions.create_user_permission_for_employee"
+    },
     "Salary Slip": {
         "before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
     },

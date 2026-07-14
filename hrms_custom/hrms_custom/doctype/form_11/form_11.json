@@ -119,9 +119,9 @@
  "name": "Form 11",
  "owner": "Administrator",
  "permissions": [
-  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "print": 1, "export": 1, "report": 1},
-  {"role": "HR User", "read": 1, "write": 1, "create": 1, "print": 1, "report": 1},
-  {"role": "Employee", "read": 1, "if_owner": 1}
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "print": 1, "export": 1, "report": 1, "ignore_user_permissions": 1},
+  {"role": "HR User", "read": 1, "write": 1, "create": 1, "print": 1, "report": 1, "ignore_user_permissions": 1},
+  {"role": "Employee", "read": 1, "write": 1, "create": 1}
  ],
  "sort_field": "modified",
  "sort_order": "DESC"
