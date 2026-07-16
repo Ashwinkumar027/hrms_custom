@@ -803,20 +803,3 @@ def download_onboarding_documents(employee):
     )
 
 
-@frappe.whitelist(allow_guest=True)
-def get_employee_details_for_webform(employee):
-    """
-    Generic fetch for Web Form client scripts, since Web Forms don't process
-    fetch_from automatically like Desk forms do. Returns basic employee fields
-    needed across onboarding forms.
-    """
-    if not employee:
-        return {}
-
-    emp = frappe.db.get_value(
-        "Employee",
-        employee,
-        ["employee_name", "designation", "department", "company", "date_of_joining"],
-        as_dict=True,
-    )
-    return emp or {}

@@ -7,6 +7,11 @@ from hrms_custom.hrms_custom.utils.signature_utils import merge_or_allow_insert
 
 class EmployeeAgreement(Document):
 	def validate(self):
+		if self.employee_signature and self.employee_signature_upload:
+			frappe.throw(
+				_("Please provide only one signature — either draw or upload, not both.")
+			)
+
 		if self.employee_signature and not self.date:
 			self.date = today()
 

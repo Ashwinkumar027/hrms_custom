@@ -14,7 +14,8 @@
   "policy_content",
   "policy_confirm",
   "column_break_sign",
-  "signature"
+  "signature",
+  "signature_upload"
  ],
  "fields": [
   {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee"},
@@ -31,7 +32,8 @@
   {"fieldname": "policy_confirm", "fieldtype": "Check", "label": "I have read and understood the above Employee Fraternization Policy", "reqd": 1},
 
   {"fieldname": "column_break_sign", "fieldtype": "Column Break"},
-  {"fieldname": "signature", "fieldtype": "Signature", "label": "Signature", "read_only_depends_on": "eval:!doc.policy_confirm"}
+  {"fieldname": "signature", "fieldtype": "Signature", "label": "Signature", "read_only_depends_on": "eval:!doc.policy_confirm"},
+  {"fieldname": "signature_upload", "fieldtype": "Attach Image", "label": "Signature (Upload)", "read_only_depends_on": "eval:!doc.policy_confirm"}
  ],
  "istable": 0,
  "module": "HRMS custom",

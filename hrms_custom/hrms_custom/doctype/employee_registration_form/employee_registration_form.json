@@ -37,13 +37,13 @@
   "health_q8", "health_q8_details",
   "column_break_health_sign",
   "health_declaration_content", "health_declaration_confirm",
-  "health_signature", "health_date",
+  "health_signature", "health_signature_upload", "health_date",
   "section_break_nda",
   "nda_content", "nda_confirm",
-  "nda_signature", "nda_date", "nda_place",
+  "nda_signature", "nda_signature_upload", "nda_date", "nda_place",
   "section_break_bgv",
   "bgv_content", "bgv_confirm",
-  "bgv_signature", "bgv_date"
+  "bgv_signature", "bgv_signature_upload", "bgv_date"
  ],
  "fields": [
   {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee"},
@@ -107,6 +107,7 @@
   {"fieldname": "health_declaration_confirm", "fieldtype": "Check", "label": "I have read and understood the above Health Declaration", "reqd": 1},
 
   {"fieldname": "health_signature", "fieldtype": "Signature", "label": "Health Declaration Signature", "read_only_depends_on": "eval:!doc.health_declaration_confirm"},
+  {"fieldname": "health_signature_upload", "fieldtype": "Attach Image", "label": "Health Declaration Signature (Upload)", "read_only_depends_on": "eval:!doc.health_declaration_confirm"},
   {"fieldname": "health_date", "fieldtype": "Date", "label": "Health Declaration Date"},
 
   {"fieldname": "section_break_nda", "fieldtype": "Section Break", "label": "Non-Disclosure Agreement"},
@@ -115,6 +116,7 @@
   {"fieldname": "nda_confirm", "fieldtype": "Check", "label": "I have read and understood the above Non-Disclosure Agreement", "reqd": 1},
 
   {"fieldname": "nda_signature", "fieldtype": "Signature", "label": "NDA Signature", "read_only_depends_on": "eval:!doc.nda_confirm"},
+  {"fieldname": "nda_signature_upload", "fieldtype": "Attach Image", "label": "NDA Signature (Upload)", "read_only_depends_on": "eval:!doc.nda_confirm"},
   {"fieldname": "nda_date", "fieldtype": "Date", "label": "NDA Date"},
   {"fieldname": "nda_place", "fieldtype": "Data", "label": "Place"},
 
@@ -124,6 +126,7 @@
   {"fieldname": "bgv_confirm", "fieldtype": "Check", "label": "I have read and understood the above Background Verification Consent", "reqd": 1},
 
   {"fieldname": "bgv_signature", "fieldtype": "Signature", "label": "BGV Consent Signature", "read_only_depends_on": "eval:!doc.bgv_confirm"},
+  {"fieldname": "bgv_signature_upload", "fieldtype": "Attach Image", "label": "BGV Consent Signature (Upload)", "read_only_depends_on": "eval:!doc.bgv_confirm"},
   {"fieldname": "bgv_date", "fieldtype": "Date", "label": "BGV Consent Date"}
  ],
  "istable": 0,

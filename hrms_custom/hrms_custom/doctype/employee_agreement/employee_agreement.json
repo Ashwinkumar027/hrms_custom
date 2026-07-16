@@ -21,6 +21,7 @@
   "agreement_html",
   "section_break_sign",
   "employee_signature",
+  "employee_signature_upload",
   "date",
   "place",
   "witness_name",
@@ -113,6 +114,11 @@
    "fieldname": "employee_signature",
    "fieldtype": "Signature",
    "label": "Employee Signature"
+  },
+  {
+   "fieldname": "employee_signature_upload",
+   "fieldtype": "Attach Image",
+   "label": "Employee Signature (Upload)"
   },
   {
    "fieldname": "date",
