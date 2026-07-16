@@ -67,7 +67,7 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
         if self.latitude in (None, "") or self.longitude in (None, ""):
             frappe.throw(_("Latitude and longitude values are required for checking in/out."))
 
-        if not self.employee or not self.shift:
+        if not self.employee:
             return
 
         allowed_locations = get_allowed_shift_locations(
@@ -89,12 +89,17 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
             location = frappe.db.get_value(
                 "Shift Location",
                 location_name,
-                ["checkin_radius", "latitude", "longitude"],
+                ["checkin_radius", "latitude", "longitude", "custom_no_geofence"],
                 as_dict=True,
             )
 
             if not location:
                 continue
+
+            if location.custom_no_geofence:
+                if frappe.get_meta("Employee Checkin").has_field("custom_validated_shift_location"):
+                    self.custom_validated_shift_location = location_name
+                return
 
             if location.latitude in (None, "") or location.longitude in (None, ""):
                 continue
@@ -170,16 +175,19 @@ def get_allowed_shift_locations(employee, shift_type, checkin_time):
                 return company_locations
 
     # Fallback: standard Shift Assignment location (original HRMS behaviour)
+    assignment_filters = {
+        "employee": employee,
+        "start_date": ["<=", checkin_date],
+        "shift_location": ["is", "set"],
+        "docstatus": 1,
+        "status": "Active",
+    }
+    if shift_type:
+        assignment_filters["shift_type"] = shift_type
+
     assignment_locations = frappe.get_all(
         "Shift Assignment",
-        filters={
-            "employee": employee,
-            "shift_type": shift_type,
-            "start_date": ["<=", checkin_date],
-            "shift_location": ["is", "set"],
-            "docstatus": 1,
-            "status": "Active",
-        },
+        filters=assignment_filters,
         or_filters=[
             ["end_date", ">=", checkin_date],
             ["end_date", "is", "not set"],
