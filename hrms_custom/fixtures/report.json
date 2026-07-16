@@ -11,6 +11,76 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
+  "modified": "2026-07-11 09:56:02.816061",
+  "module": "HRMS custom",
+  "name": "Monthly Attendance Sheet Custom",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Attendance",
+  "reference_report": null,
+  "report_name": "Monthly Attendance Sheet Custom",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "System Manager"
+   },
+   {
+    "role": "HR User"
+   },
+   {
+    "role": "HR Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2026-07-13 12:31:09.068839",
+  "module": "HRMS custom",
+  "name": "Employee Checkin Summary",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Employee Checkin",
+  "reference_report": null,
+  "report_name": "Employee Checkin Summary",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "System Manager"
+   },
+   {
+    "role": "HR User"
+   },
+   {
+    "role": "HR Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
   "modified": "2026-06-23 10:15:46.974210",
   "module": "HRMS custom",
   "name": "Expiring Documents",
@@ -228,13 +298,13 @@
   "filters": [],
   "is_standard": "No",
   "javascript": null,
-  "json": null,
+  "json": "[{\"fieldname\": \"employee\", \"label\": \"Employee\", \"fieldtype\": \"Link\", \"options\": \"Employee\"}, {\"fieldname\": \"department\", \"label\": \"Department\", \"fieldtype\": \"Link\", \"options\": \"Department\"}, {\"fieldname\": \"claim_month\", \"label\": \"Claim Month\", \"fieldtype\": \"Select\", \"options\": \"\\nJanuary\\nFebruary\\nMarch\\nApril\\nMay\\nJune\\nJuly\\nAugust\\nSeptember\\nOctober\\nNovember\\nDecember\"}, {\"fieldname\": \"claim_year\", \"label\": \"Claim Year\", \"fieldtype\": \"Select\", \"options\": \"\\n2025\\n2026\\n2027\\n2028\"}, {\"fieldname\": \"status\", \"label\": \"Status\", \"fieldtype\": \"Select\", \"options\": \"\\nDraft\\nPending RM Approval\\nRM Rejected\\nPending Admin Verification\\nAdmin Rejected\\nPending Accounts Processing\\nOn Hold\\nProcessed\\nAccounts Rejected\"}]",
   "letter_head": null,
-  "modified": "2026-07-09 17:30:02.918589",
+  "modified": "2026-07-16 16:37:18.464395",
   "module": "HRMS custom",
   "name": "TA Reimbursement Claim Summary",
   "prepared_report": 0,
-  "query": "SELECT\r\n    trc.name AS \"Claim ID:Link/TA Reimbursement Claim:150\",\r\n    trc.employee AS \"Employee:Link/Employee:120\",\r\n    trc.employee_name AS \"Employee Name:Data:150\",\r\n    trc.department AS \"Department:Link/Department:150\",\r\n    trc.reporting_manager AS \"Reporting Manager:Link/Employee:150\",\r\n    trc.claim_month AS \"Claim Month:Data:100\",\r\n    trc.claim_year AS \"Claim Year:Data:80\",\r\n    trc.status AS \"Status:Data:150\",\r\n    trc.total_amount AS \"Total Amount:Currency:120\",\r\n    trc.remarks AS \"Remarks:Small Text:200\",\r\n    trc.modified AS \"Last Updated:Datetime:150\"\r\nFROM\r\n    `tabTA Reimbursement Claim` trc\r\nWHERE\r\n    trc.docstatus != 2\r\nORDER BY\r\n    trc.claim_year DESC, trc.claim_month DESC, trc.modified DESC",
+  "query": "SELECT\n    trc.name AS \"Claim ID:Link/TA Reimbursement Claim:150\",\n    trc.employee AS \"Employee:Link/Employee:120\",\n    trc.employee_name AS \"Employee Name:Data:150\",\n    trc.designation AS \"Designation:Data:150\",\n    trc.office_location AS \"Office Location:Data:150\",\n    trc.department AS \"Department:Link/Department:150\",\n    trc.reporting_manager AS \"Reporting Manager:Link/Employee:150\",\n    trc.claim_month AS \"Claim Month:Data:100\",\n    trc.claim_year AS \"Claim Year:Data:80\",\n    trc.status AS \"Status:Data:150\",\n    trc.total_amount AS \"Total Amount:Currency:120\",\n    trc.remarks AS \"Remarks:Small Text:200\",\n    trc.modified AS \"Last Updated:Datetime:150\"\nFROM\n    `tabTA Reimbursement Claim` trc\nWHERE\n    trc.docstatus != 2\nORDER BY\n    trc.claim_year DESC, trc.claim_month DESC, trc.modified DESC",
   "ref_doctype": "TA Reimbursement Claim",
   "reference_report": null,
   "report_name": "TA Reimbursement Claim Summary",

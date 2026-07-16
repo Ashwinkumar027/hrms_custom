@@ -2,6 +2,62 @@
  {
   "docstatus": 0,
   "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:46:53.584768",
+  "name": "Submit for HR Approval",
+  "workflow_action_name": "Submit for HR Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:47:11.636904",
+  "name": "HR Approve",
+  "workflow_action_name": "HR Approve"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:47:11.641351",
+  "name": "HR Reject",
+  "workflow_action_name": "HR Reject"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:47:11.647840",
+  "name": "Final Approve",
+  "workflow_action_name": "Final Approve"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-05 16:47:11.653928",
+  "name": "Final Reject",
+  "workflow_action_name": "Final Reject"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-12 07:29:58.069378",
+  "name": "Assign to Manager",
+  "workflow_action_name": "Assign to Manager"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-12 07:29:58.094722",
+  "name": "Submit Activities",
+  "workflow_action_name": "Submit Activities"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-12 07:29:58.098727",
+  "name": "HR Approve & Start",
+  "workflow_action_name": "HR Approve & Start"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
   "modified": "2026-07-09 16:58:06.066371",
   "name": "Verify",
   "workflow_action_name": "Verify"

@@ -16,21 +16,21 @@ def get_permission_query_conditions(user):
         OR `tabTA Reimbursement Claim`.reporting_manager = {frappe.db.escape(employee)})"""
 
 
-def has_permission(doc, user):
-    if not user:
-        user = frappe.session.user
+def has_permission(doc, ptype="read", user=None):
+	if not user:
+		user = frappe.session.user
 
-    if "System Manager" in frappe.get_roles(user) or "HR Manager" in frappe.get_roles(user):
-        return True
+	if "System Manager" in frappe.get_roles(user) or "HR Manager" in frappe.get_roles(user):
+		return True
 
-    employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
-    if not employee:
-        return False
+	employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+	if not employee:
+		return False
 
-    if doc.employee == employee:
-        return True
+	if doc.employee == employee:
+		return True
 
-    if doc.reporting_manager == employee:
-        return True
+	if doc.reporting_manager == employee:
+		return True
 
-    return False
+	return False

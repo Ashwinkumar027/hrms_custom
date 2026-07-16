@@ -53,7 +53,8 @@ fixtures = [
             "Attendance Request Approval",
             "TA Reimbursement Workflow",
             "Employee Onboarding Workflow",
-            "Manpower Requisition Flow"
+            "Manpower Requisition Flow",
+	    "Client Visit Proposal Approval"
         ]]],
     },
     {

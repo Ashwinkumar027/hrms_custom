@@ -3,10 +3,28 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2026-07-09 16:56:08.367819",
-  "name": "Pending RM Approval",
-  "style": "",
-  "workflow_state_name": "Pending RM Approval"
+  "modified": "2026-05-12 07:29:57.574386",
+  "name": "Pending Manager Input",
+  "style": "Warning",
+  "workflow_state_name": "Pending Manager Input"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:58.055424",
+  "name": "Onboarding In Progress",
+  "style": "Primary",
+  "workflow_state_name": "Onboarding In Progress"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:58.049331",
+  "name": "Pending HR Review",
+  "style": "Warning",
+  "workflow_state_name": "Pending HR Review"
  },
  {
   "docstatus": 0,
@@ -39,28 +57,10 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2026-07-09 16:56:44.696807",
-  "name": "Pending Accounts Processing",
-  "style": "",
-  "workflow_state_name": "Pending Accounts Processing"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
   "modified": "2026-07-09 16:56:59.233750",
   "name": "On Hold",
   "style": "",
   "workflow_state_name": "On Hold"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
-  "modified": "2026-07-09 16:57:08.517570",
-  "name": "Processed",
-  "style": "",
-  "workflow_state_name": "Processed"
  },
  {
   "docstatus": 0,
@@ -106,5 +106,50 @@
   "name": "Rejected",
   "style": "Danger",
   "workflow_state_name": "Rejected"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-20 15:59:14.650142",
+  "name": "Pending Final Approval",
+  "style": "",
+  "workflow_state_name": "Pending Final Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-05 16:10:49.238843",
+  "name": "Pending Hr Approval",
+  "style": "",
+  "workflow_state_name": "Pending Hr Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-07-09 16:56:44.696807",
+  "name": "Pending Accounts Processing",
+  "style": "",
+  "workflow_state_name": "Pending Accounts Processing"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-07-09 16:57:08.517570",
+  "name": "Processed",
+  "style": "",
+  "workflow_state_name": "Processed"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-07-09 16:56:08.367819",
+  "name": "Pending RM Approval",
+  "style": "",
+  "workflow_state_name": "Pending RM Approval"
  }
 ]

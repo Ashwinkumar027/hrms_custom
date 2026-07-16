@@ -6,16 +6,24 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "client_code",
   "client_name",
+  "client_contact_number",
   "visit_date",
+  "rate_per_km",
   "column_break_yolu",
+  "client_mail_id",
+  "location_from_to",
+  "location_type",
   "purpose_of_visit",
   "section_break_myfv",
   "mode_of_travel",
   "distance",
   "column_break_jylx",
   "amount",
-  "supporting_document"
+  "supporting_document",
+  "section_break_pzxb",
+  "remarks"
  ],
  "fields": [
   {
@@ -39,6 +47,7 @@
   {
    "fieldname": "purpose_of_visit",
    "fieldtype": "Small Text",
+   "in_list_view": 1,
    "label": "Purpose of Visit",
    "reqd": 1
   },
@@ -49,12 +58,14 @@
   {
    "fieldname": "mode_of_travel",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Mode of Travel",
    "options": "Car\nBike\nPublic Transport\nFlight\nTrain\nOther"
   },
   {
    "fieldname": "distance",
    "fieldtype": "Float",
+   "in_list_view": 1,
    "label": "Distance"
   },
   {
@@ -64,20 +75,71 @@
   {
    "fieldname": "amount",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Amount",
    "reqd": 1
   },
   {
    "fieldname": "supporting_document",
    "fieldtype": "Attach",
+   "in_list_view": 1,
    "label": "Supporting Document"
+  },
+  {
+   "fieldname": "client_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Client Code"
+  },
+  {
+   "fieldname": "client_contact_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Client Contact Number"
+  },
+  {
+   "fieldname": "client_mail_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Client Mail Id",
+   "options": "Email"
+  },
+  {
+   "description": "e.g. \"Royapettah Office - Mylapore\"",
+   "fieldname": "location_from_to",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Location (From To)"
+  },
+  {
+   "fieldname": "location_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Location Type",
+   "options": "Metro\nNon Metro"
+  },
+  {
+   "fieldname": "rate_per_km",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Rate/KM"
+  },
+  {
+   "fieldname": "section_break_pzxb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Remarks"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-09 12:46:18.517301",
+ "modified": "2026-07-16 16:18:35.721624",
  "modified_by": "Administrator",
  "module": "HRMS custom",
  "name": "TA Client Visit Entry",

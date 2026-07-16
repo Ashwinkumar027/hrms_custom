@@ -9,7 +9,9 @@
   "amended_from",
   "employee",
   "employee_name",
+  "designation",
   "column_break_ntin",
+  "office_location",
   "department",
   "reporting_manager",
   "status",
@@ -120,11 +122,12 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nPending RM Approval\nRM Rejected\nPending Admin Verification\nAdmin Rejected\nPending Accounts Processing\nOnHold\nProcessed\nAccounts Rejected",
+   "options": "Draft\nPending RM Approval\nRM Rejected\nPending Admin Verification\nAdmin Rejected\nPending Accounts Processing\nOn Hold\nProcessed\nAccounts Rejected",
    "read_only": 1
   },
   {
@@ -132,17 +135,32 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_on_submit": 1,
    "description": "For rejection/hold comments",
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.branch",
+   "fieldname": "office_location",
+   "fieldtype": "Data",
+   "label": "Office Location",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-09 13:22:31.733816",
+ "modified": "2026-07-16 16:09:43.946392",
  "modified_by": "Administrator",
  "module": "HRMS custom",
  "name": "TA Reimbursement Claim",
