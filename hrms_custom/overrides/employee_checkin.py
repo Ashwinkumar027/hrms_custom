@@ -89,12 +89,17 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
             location = frappe.db.get_value(
                 "Shift Location",
                 location_name,
-                ["checkin_radius", "latitude", "longitude"],
+                ["checkin_radius", "latitude", "longitude", "custom_no_geofence"],
                 as_dict=True,
             )
 
             if not location:
                 continue
+
+            if location.custom_no_geofence:
+                if frappe.get_meta("Employee Checkin").has_field("custom_validated_shift_location"):
+                    self.custom_validated_shift_location = location_name
+                return
 
             if location.latitude in (None, "") or location.longitude in (None, ""):
                 continue
