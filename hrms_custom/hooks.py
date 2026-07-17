@@ -20,6 +20,10 @@ fixtures = [
     },
     "Onboarding Task Contact",
     {
+        "dt": "DocType",
+        "filters": [["module", "=", "HRMS custom"]],
+    },
+    {
         "dt": "Custom Field",
         "filters": [["module", "=", "HRMS custom"]],
     },
@@ -141,7 +145,15 @@ fixtures = [
             "Joining Reminder 1 Day",
             "Joining Reminder 10 Days",
             "Joining Reminder 45 Days",
-            "Notify Director After BH Approval"
+            "Notify Director After BH Approval",
+            "TA Claim Submitted - Notify RM",
+            "TA Claim RM Approved - Notify Admin",
+            "TA Claim RM Rejected - Notify Employee",
+            "TA Claim Admin Verified - Notify Accounts",
+            "TA Claim Admin Rejected - Notify Employee",
+            "TA Claim Processed - Notify Employee",
+            "TA Claim On Hold - Notify Employee",
+            "TA Claim Accounts Rejected - Notify Employee",
         ]]],
     },
     {

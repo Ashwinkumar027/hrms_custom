@@ -10,7 +10,7 @@ class TAReimbursementClaim(Document):
 
 	def calculate_total_amount(self):
 		total = 0
-		for row in self.client_visits:
+		for row in self.travel_claim_details:
 			total += row.amount or 0
 		self.total_amount = total
 
