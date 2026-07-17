@@ -9,11 +9,14 @@
   "amended_from",
   "employee",
   "employee_name",
+  "employee_email",
   "designation",
   "column_break_ntin",
   "office_location",
   "department",
   "reporting_manager",
+  "reporting_manager_name",
+  "reporting_manager_email",
   "status",
   "section_break_wryk",
   "claim_month",
@@ -162,6 +165,30 @@
    "label": "Travel & Claim Details",
    "options": "TA Travel Claim Detail",
    "reqd": 1
+  },
+  {
+   "fieldname": "reporting_manager_email",
+   "fieldtype": "Data",
+   "label": "Reporting Manager Email",
+   "fetch_from": "reporting_manager.user_id",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee_email",
+   "fieldtype": "Data",
+   "label": "Employee Email",
+   "fetch_from": "employee.user_id",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "reporting_manager_name",
+   "fieldtype": "Data",
+   "label": "Reporting Manager Name",
+   "fetch_from": "reporting_manager.employee_name",
+   "hidden": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -193,5 +220,7 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "track_changes": 1
+ "track_changes": 1,
+ "autoname": "TA-.YYYY.-.#####",
+ "naming_rule": "Expression"
 }

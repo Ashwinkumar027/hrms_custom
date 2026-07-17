@@ -152,11 +152,11 @@
   "filters": null,
   "from_attach_field": null,
   "is_standard": 0,
-  "message": "Hi {{ doc.reporting_manager }},<br><br>{{ doc.employee_name }} has submitted a TA Reimbursement Claim for {{ doc.claim_month }} {{ doc.claim_year }} amounting to ₹{{ doc.total_amount }}.<br><br>Please review and approve/reject: {{ doc.name }}",
+  "message": "Hi {{ doc.reporting_manager_name }},<br><br>\nA new TA Reimbursement Claim requires your approval.<br><br>\n<b>Employee:</b> {{ doc.employee_name }}<br>\n<b>Department:</b> {{ doc.department }}<br>\n<b>Claim Period:</b> {{ doc.claim_month }} {{ doc.claim_year }}<br>\n<b>Amount:</b> ₹{{ doc.total_amount }}<br>\n<b>Status:</b> {{ doc.status }}<br><br>\n<a href=\"{{ frappe.utils.get_url() }}/app/ta-reimbursement-claim/{{ doc.name }}\" style=\"color:#2490ef;\">View Claim: {{ doc.name }}</a>",
   "message_type": "Markdown",
   "method": null,
   "minutes_offset": 0,
-  "modified": "2026-07-17 10:47:32.061762",
+  "modified": "2026-07-17 15:26:59.573578",
   "module": "HRMS custom",
   "name": "TA Claim Submitted - Notify RM",
   "print_format": null,
@@ -166,7 +166,7 @@
     "bcc": null,
     "cc": null,
     "condition": null,
-    "receiver_by_document_field": "reporting_manager",
+    "receiver_by_document_field": "reporting_manager_email",
     "receiver_by_role": null
    }
   ],
@@ -176,7 +176,7 @@
   "sender_email": null,
   "set_property_after_alert": null,
   "slack_webhook_url": null,
-  "subject": "TA Claim Submitted for Approval - {{ doc.name }}",
+  "subject": "Action Required: TA Claim Awaiting Your Approval - {{ doc.name }}",
   "value_changed": "status"
  },
  {
@@ -197,11 +197,11 @@
   "filters": null,
   "from_attach_field": null,
   "is_standard": 0,
-  "message": "A TA Reimbursement Claim from {{ doc.employee_name }} ({{ doc.department }}) for {{ doc.claim_month }} {{ doc.claim_year }} has been approved by the Reporting Manager and is awaiting Admin verification.<br><br>Amount: ₹{{ doc.total_amount }}<br>Claim: {{ doc.name }}",
+  "message": "Hi,<br><br>\nA TA Reimbursement Claim has been approved by the Reporting Manager and now requires Admin verification.<br><br>\n<b>Employee:</b> {{ doc.employee_name }}<br>\n<b>Department:</b> {{ doc.department }}<br>\n<b>Reporting Manager:</b> {{ doc.reporting_manager_name }}<br>\n<b>Claim Period:</b> {{ doc.claim_month }} {{ doc.claim_year }}<br>\n<b>Amount:</b> ₹{{ doc.total_amount }}<br>\n<b>Status:</b> {{ doc.status }}<br><br>\n<a href=\"{{ frappe.utils.get_url() }}/app/ta-reimbursement-claim/{{ doc.name }}\" style=\"color:#2490ef;\">View Claim: {{ doc.name }}</a>",
   "message_type": "Markdown",
   "method": null,
   "minutes_offset": 0,
-  "modified": "2026-07-17 10:47:32.200737",
+  "modified": "2026-07-17 15:26:59.576581",
   "module": "HRMS custom",
   "name": "TA Claim RM Approved - Notify Admin",
   "print_format": null,
@@ -221,7 +221,7 @@
   "sender_email": null,
   "set_property_after_alert": null,
   "slack_webhook_url": null,
-  "subject": "TA Claim Pending Admin Verification - {{ doc.name }}",
+  "subject": "Action Required: TA Claim Awaiting Admin Verification - {{ doc.name }}",
   "value_changed": "status"
  },
  {
@@ -242,11 +242,11 @@
   "filters": null,
   "from_attach_field": null,
   "is_standard": 0,
-  "message": "Hi {{ doc.employee_name }},<br><br>Your TA Reimbursement Claim for {{ doc.claim_month }} {{ doc.claim_year }} was rejected by your Reporting Manager.<br><br>Reason: {{ doc.remarks }}<br><br>Please correct and resubmit: {{ doc.name }}",
+  "message": "Hi {{ doc.employee_name }},<br><br>\nYour TA Reimbursement Claim was rejected by your Reporting Manager and needs correction.<br><br>\n<b>Claim Period:</b> {{ doc.claim_month }} {{ doc.claim_year }}<br>\n<b>Amount:</b> ₹{{ doc.total_amount }}<br>\n<b>Status:</b> {{ doc.status }}<br>\n<b>Reason:</b> {{ doc.remarks }}<br><br>\n<a href=\"{{ frappe.utils.get_url() }}/app/ta-reimbursement-claim/{{ doc.name }}\" style=\"color:#2490ef;\">View Claim: {{ doc.name }}</a>",
   "message_type": "Markdown",
   "method": null,
   "minutes_offset": 0,
-  "modified": "2026-07-17 10:47:32.211513",
+  "modified": "2026-07-17 15:26:59.578852",
   "module": "HRMS custom",
   "name": "TA Claim RM Rejected - Notify Employee",
   "print_format": null,
@@ -256,7 +256,7 @@
     "bcc": null,
     "cc": null,
     "condition": null,
-    "receiver_by_document_field": "employee",
+    "receiver_by_document_field": "employee_email",
     "receiver_by_role": null
    }
   ],
@@ -266,7 +266,7 @@
   "sender_email": null,
   "set_property_after_alert": null,
   "slack_webhook_url": null,
-  "subject": "Your TA Claim Was Rejected by Reporting Manager - {{ doc.name }}",
+  "subject": "Your TA Claim Needs Correction - {{ doc.name }}",
   "value_changed": "status"
  },
  {
@@ -287,11 +287,11 @@
   "filters": null,
   "from_attach_field": null,
   "is_standard": 0,
-  "message": "A TA Reimbursement Claim from {{ doc.employee_name }} ({{ doc.department }}) for {{ doc.claim_month }} {{ doc.claim_year }} has been verified by Admin and is awaiting Accounts processing.<br><br>Amount: ₹{{ doc.total_amount }}<br>Claim: {{ doc.name }}",
+  "message": "Hi,<br><br>\nA TA Reimbursement Claim has been verified by Admin and now requires Accounts processing.<br><br>\n<b>Employee:</b> {{ doc.employee_name }}<br>\n<b>Department:</b> {{ doc.department }}<br>\n<b>Reporting Manager:</b> {{ doc.reporting_manager_name }}<br>\n<b>Claim Period:</b> {{ doc.claim_month }} {{ doc.claim_year }}<br>\n<b>Amount:</b> ₹{{ doc.total_amount }}<br>\n<b>Status:</b> {{ doc.status }}<br><br>\n<a href=\"{{ frappe.utils.get_url() }}/app/ta-reimbursement-claim/{{ doc.name }}\" style=\"color:#2490ef;\">View Claim: {{ doc.name }}</a>",
   "message_type": "Markdown",
   "method": null,
   "minutes_offset": 0,
-  "modified": "2026-07-17 10:47:32.226232",
+  "modified": "2026-07-17 15:26:59.581448",
   "module": "HRMS custom",
   "name": "TA Claim Admin Verified - Notify Accounts",
   "print_format": null,
@@ -311,7 +311,7 @@
   "sender_email": null,
   "set_property_after_alert": null,
   "slack_webhook_url": null,
-  "subject": "TA Claim Pending Accounts Processing - {{ doc.name }}",
+  "subject": "Action Required: TA Claim Awaiting Accounts Processing - {{ doc.name }}",
   "value_changed": "status"
  },
  {
@@ -332,11 +332,11 @@
   "filters": null,
   "from_attach_field": null,
   "is_standard": 0,
-  "message": "Hi {{ doc.employee_name }},<br><br>Your TA Reimbursement Claim for {{ doc.claim_month }} {{ doc.claim_year }} was rejected during Admin verification.<br><br>Reason: {{ doc.remarks }}<br><br>Please correct and resubmit: {{ doc.name }}",
+  "message": "Hi {{ doc.employee_name }},<br><br>\nYour TA Reimbursement Claim was rejected during Admin verification and needs correction.<br><br>\n<b>Claim Period:</b> {{ doc.claim_month }} {{ doc.claim_year }}<br>\n<b>Amount:</b> ₹{{ doc.total_amount }}<br>\n<b>Status:</b> {{ doc.status }}<br>\n<b>Reason:</b> {{ doc.remarks }}<br><br>\n<a href=\"{{ frappe.utils.get_url() }}/app/ta-reimbursement-claim/{{ doc.name }}\" style=\"color:#2490ef;\">View Claim: {{ doc.name }}</a>",
   "message_type": "Markdown",
   "method": null,
   "minutes_offset": 0,
-  "modified": "2026-07-17 10:47:32.238372",
+  "modified": "2026-07-17 15:26:59.583559",
   "module": "HRMS custom",
   "name": "TA Claim Admin Rejected - Notify Employee",
   "print_format": null,
@@ -346,7 +346,7 @@
     "bcc": null,
     "cc": null,
     "condition": null,
-    "receiver_by_document_field": "employee",
+    "receiver_by_document_field": "employee_email",
     "receiver_by_role": null
    }
   ],
@@ -356,7 +356,7 @@
   "sender_email": null,
   "set_property_after_alert": null,
   "slack_webhook_url": null,
-  "subject": "Your TA Claim Was Rejected by Admin - {{ doc.name }}",
+  "subject": "Your TA Claim Needs Correction - {{ doc.name }}",
   "value_changed": "status"
  },
  {
@@ -377,11 +377,11 @@
   "filters": null,
   "from_attach_field": null,
   "is_standard": 0,
-  "message": "Hi {{ doc.employee_name }},<br><br>Good news — your TA Reimbursement Claim for {{ doc.claim_month }} {{ doc.claim_year }} has been processed.<br><br>Amount reimbursed: ₹{{ doc.total_amount }}<br>Claim: {{ doc.name }}",
+  "message": "Hi {{ doc.employee_name }},<br><br>\nYour TA Reimbursement Claim has been processed.<br><br>\n<b>Claim Period:</b> {{ doc.claim_month }} {{ doc.claim_year }}<br>\n<b>Amount Reimbursed:</b> ₹{{ doc.total_amount }}<br>\n<b>Status:</b> {{ doc.status }}<br><br>\n<a href=\"{{ frappe.utils.get_url() }}/app/ta-reimbursement-claim/{{ doc.name }}\" style=\"color:#2490ef;\">View Claim: {{ doc.name }}</a>",
   "message_type": "Markdown",
   "method": null,
   "minutes_offset": 0,
-  "modified": "2026-07-17 10:47:32.249438",
+  "modified": "2026-07-17 15:26:59.585520",
   "module": "HRMS custom",
   "name": "TA Claim Processed - Notify Employee",
   "print_format": null,
@@ -391,7 +391,7 @@
     "bcc": null,
     "cc": null,
     "condition": null,
-    "receiver_by_document_field": "employee",
+    "receiver_by_document_field": "employee_email",
     "receiver_by_role": null
    }
   ],
@@ -422,11 +422,11 @@
   "filters": null,
   "from_attach_field": null,
   "is_standard": 0,
-  "message": "Hi {{ doc.employee_name }},<br><br>Your TA Reimbursement Claim for {{ doc.claim_month }} {{ doc.claim_year }} has been placed on hold by Accounts pending clarification.<br><br>Reason: {{ doc.remarks }}<br><br>Claim: {{ doc.name }}",
+  "message": "Hi {{ doc.employee_name }},<br><br>\nYour TA Reimbursement Claim has been placed on hold pending clarification.<br><br>\n<b>Claim Period:</b> {{ doc.claim_month }} {{ doc.claim_year }}<br>\n<b>Amount:</b> ₹{{ doc.total_amount }}<br>\n<b>Status:</b> {{ doc.status }}<br>\n<b>Reason:</b> {{ doc.remarks }}<br><br>\n<a href=\"{{ frappe.utils.get_url() }}/app/ta-reimbursement-claim/{{ doc.name }}\" style=\"color:#2490ef;\">View Claim: {{ doc.name }}</a>",
   "message_type": "Markdown",
   "method": null,
   "minutes_offset": 0,
-  "modified": "2026-07-17 10:47:32.258848",
+  "modified": "2026-07-17 15:26:59.588869",
   "module": "HRMS custom",
   "name": "TA Claim On Hold - Notify Employee",
   "print_format": null,
@@ -436,7 +436,7 @@
     "bcc": null,
     "cc": null,
     "condition": null,
-    "receiver_by_document_field": "employee",
+    "receiver_by_document_field": "employee_email",
     "receiver_by_role": null
    }
   ],
@@ -467,11 +467,11 @@
   "filters": null,
   "from_attach_field": null,
   "is_standard": 0,
-  "message": "Hi {{ doc.employee_name }},<br><br>Your TA Reimbursement Claim for {{ doc.claim_month }} {{ doc.claim_year }} was rejected by Accounts.<br><br>Reason: {{ doc.remarks }}<br><br>Please correct and resubmit: {{ doc.name }}",
+  "message": "Hi {{ doc.employee_name }},<br><br>\nYour TA Reimbursement Claim was rejected by Accounts and needs correction.<br><br>\n<b>Claim Period:</b> {{ doc.claim_month }} {{ doc.claim_year }}<br>\n<b>Amount:</b> ₹{{ doc.total_amount }}<br>\n<b>Status:</b> {{ doc.status }}<br>\n<b>Reason:</b> {{ doc.remarks }}<br><br>\n<a href=\"{{ frappe.utils.get_url() }}/app/ta-reimbursement-claim/{{ doc.name }}\" style=\"color:#2490ef;\">View Claim: {{ doc.name }}</a>",
   "message_type": "Markdown",
   "method": null,
   "minutes_offset": 0,
-  "modified": "2026-07-17 10:47:32.268976",
+  "modified": "2026-07-17 15:26:59.591597",
   "module": "HRMS custom",
   "name": "TA Claim Accounts Rejected - Notify Employee",
   "print_format": null,
@@ -481,7 +481,7 @@
     "bcc": null,
     "cc": null,
     "condition": null,
-    "receiver_by_document_field": "employee",
+    "receiver_by_document_field": "employee_email",
     "receiver_by_role": null
    }
   ],
@@ -491,7 +491,7 @@
   "sender_email": null,
   "set_property_after_alert": null,
   "slack_webhook_url": null,
-  "subject": "Your TA Claim Was Rejected by Accounts - {{ doc.name }}",
+  "subject": "Your TA Claim Needs Correction - {{ doc.name }}",
   "value_changed": "status"
  }
 ]
