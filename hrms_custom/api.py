@@ -681,8 +681,14 @@ def send_onboarding_forms_to_employee(dispatch_name):
     doc.save()
     frappe.db.commit()
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def open_onboarding_form(doctype, route, employee):
+    if frappe.session.user == "Guest":
+        current_url = frappe.request.url
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"/login?redirect-to={urllib.parse.quote(current_url)}"
+        return
+
     tracker = frappe.db.get_value(
         "Form Fill Tracker",
         {"employee": employee, "form_doctype": doctype},
