@@ -20,10 +20,6 @@ fixtures = [
     },
     "Onboarding Task Contact",
     {
-        "dt": "DocType",
-        "filters": [["module", "=", "HRMS custom"]],
-    },
-    {
         "dt": "Custom Field",
         "filters": [["module", "=", "HRMS custom"]],
     },
