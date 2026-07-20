@@ -27,6 +27,8 @@ def has_permission(doc, ptype="read", user=None):
 	if not employee:
 		return False
 
+	if ptype == "create":
+		return True
 	if doc.employee == employee:
 		return True
 
