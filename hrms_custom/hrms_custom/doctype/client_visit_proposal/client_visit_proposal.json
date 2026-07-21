@@ -10,7 +10,9 @@
   "amended_from",
   "employee",
   "employee_name",
+  "employee_email",
   "reporting_manager",
+  "reporting_manager_email",
   "status",
   "column_break_mvbw",
   "client_name",
@@ -97,6 +99,22 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "fieldname": "reporting_manager_email",
+   "fieldtype": "Data",
+   "label": "Reporting Manager Email",
+   "fetch_from": "reporting_manager.user_id",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee_email",
+   "fieldtype": "Data",
+   "label": "Employee Email",
+   "fetch_from": "employee.user_id",
+   "hidden": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
