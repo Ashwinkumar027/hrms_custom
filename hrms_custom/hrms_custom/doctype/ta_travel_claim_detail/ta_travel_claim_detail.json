@@ -1,14 +1,17 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-07-17 10:00:00.000000",
+ "creation": "2026-07-17 10:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "client_code",
   "mode_of_travel",
   "distance",
   "location_type",
+  "starting_location",
+  "end_location",
   "column_break_1",
   "rate_per_km",
   "amount",
@@ -18,71 +21,94 @@
  ],
  "fields": [
   {
+   "columns": 2,
    "fieldname": "mode_of_travel",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Mode of Travel",
-   "options": "Car\nBike\nPublic Transport\nFlight\nTrain\nOther",
-   "columns": 2
+   "options": "Car\nBike\nPublic Transport\nFlight\nTrain\nOther"
   },
   {
+   "columns": 1,
    "fieldname": "distance",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Distance",
-   "columns": 1
+   "label": "Distance"
   },
   {
+   "columns": 2,
    "fieldname": "location_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Location Type",
-   "options": "Metro\nNon Metro",
-   "columns": 2
+   "options": "Metro\nNon Metro"
   },
   {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
   },
   {
+   "columns": 2,
    "fieldname": "rate_per_km",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Rate/KM",
-   "columns": 2
+   "label": "Rate/KM"
   },
   {
+   "columns": 2,
    "fieldname": "amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Amount",
-   "reqd": 1,
-   "columns": 2
+   "reqd": 1
   },
   {
+   "columns": 4,
    "fieldname": "supporting_document",
    "fieldtype": "Attach",
    "in_list_view": 1,
-   "label": "Supporting Document",
-   "columns": 4
+   "label": "Supporting Document"
   },
   {
    "fieldname": "section_break_1",
    "fieldtype": "Section Break"
   },
   {
+   "columns": 3,
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "in_list_view": 1,
-   "label": "Remarks",
-   "columns": 3
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "client_code",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Client Code",
+   "reqd": 1
+  },
+  {
+   "description": "From\" Aionion office \"",
+   "fieldname": "starting_location",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Starting Location ",
+   "reqd": 1
+  },
+  {
+   "description": "To\" Madurai\"",
+   "fieldname": "end_location",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "End Location ",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-17 10:00:00.000000",
+ "modified": "2026-07-27 13:28:03.798147",
  "modified_by": "Administrator",
  "module": "HRMS custom",
  "name": "TA Travel Claim Detail",

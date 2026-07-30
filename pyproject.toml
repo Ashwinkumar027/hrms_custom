@@ -59,3 +59,12 @@ typing-modules = ["frappe.types.DF"]
 quote-style = "double"
 indent-style = "tab"
 docstring-code-format = true
+# -------------------------
+# Add this at the end
+# -------------------------
+[deploy.dependencies.apt]
+packages = [
+    "libnss3",
+    "libnspr4",
+    "libasound2",
+]
