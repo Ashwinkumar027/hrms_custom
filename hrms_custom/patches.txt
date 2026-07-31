@@ -6,3 +6,6 @@
 hrms_custom.patches.v1_0.add_job_applicant_onboarding_fields
 hrms_custom.patches.v1_0.add_employee_onboarding_fields
 hrms_custom.patches.v1_0.add_employee_document_management
+hrms_custom.patches.v1_0.backfill_attendance_request_reason
+hrms_custom.patches.v1_0.convert_attendance_request_time_fields_to_datetime
+hrms_custom.patches.v1_0.delete_attendance_request_from_date_label

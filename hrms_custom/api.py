@@ -809,3 +809,37 @@ def download_onboarding_documents(employee):
     )
 
 
+# ----------------------------------------------------------------------
+# Employee PWA field visibility overrides
+# ----------------------------------------------------------------------
+# hrms.api.get_doctype_fields drives what the employee PWA renders for a
+# doctype form. It filters by fieldtype only — it does not consult hidden
+# or depends_on, so fields hidden on Desk still show up there. This
+# override strips fields that must never reach the PWA, per doctype.
+
+PWA_HIDDEN_FIELDS = {
+    "Attendance Request": {
+        "custom_request_type",
+        "custom_permission_type",
+        "half_day",
+        "half_day_date",
+        "shift",
+        "custom_permission_from_time",
+        "custom_permission_to_time",
+        "custom_permission_hours",
+        "include_holidays",
+    },
+}
+
+
+@frappe.whitelist()
+def get_doctype_fields(doctype: str) -> list[dict]:
+    from hrms.api import get_doctype_fields as hrms_get_doctype_fields
+
+    fields = hrms_get_doctype_fields(doctype)
+    hidden = PWA_HIDDEN_FIELDS.get(doctype)
+    if not hidden:
+        return fields
+    return [field for field in fields if field.fieldname not in hidden]
+
+

@@ -3,26 +3,21 @@ from datetime import date, timedelta
 
 import frappe
 from frappe import _
-from frappe.utils import flt, get_datetime, getdate, time_diff_in_hours
+from frappe.utils import flt, get_datetime, get_datetime_str, getdate, time_diff_in_hours
 
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
 
 
 class CustomAttendanceRequest(AttendanceRequest):
     def validate(self):
-        self._clean_request_type_fields()
+        self._validate_single_date()
         self._validate_not_future_date()
 
         if self._is_permission():
-            self._validate_single_date()
-            self._set_permission_hours_from_actual_gap()
-            self._validate_permission_fields()
+            self._set_permission_window_from_actual_gap()
             self._validate_no_duplicate_permission()
-            self._validate_permission_gap()
-        elif self.reason == "Missed Check-In or Check-Out":
-            self._validate_single_date()
-            super().validate()
         else:
+            self._resolve_shift()
             super().validate()
 
     def _validate_not_future_date(self):
@@ -54,17 +49,8 @@ class CustomAttendanceRequest(AttendanceRequest):
     # ------------------------------------------------------------------
 
     def _is_permission(self):
-        return self.get("custom_request_type") == "Permission Request"
-
-    def _clean_request_type_fields(self):
-        if self.get("custom_request_type") == "Attendance Request":
-            self.custom_permission_type = None
-
-            if self.meta.has_field("custom_permission_hours"):
-                self.custom_permission_hours = 0
-
-        elif self.get("custom_request_type") == "Permission Request":
-            self.reason = None
+        reason_type = _get_reason_type_doc(self)
+        return bool(reason_type) and reason_type.attendance_behavior == "Tags Existing Attendance"
 
     def _validate_single_date(self):
         if self.from_date != self.to_date:
@@ -75,50 +61,48 @@ class CustomAttendanceRequest(AttendanceRequest):
                 )
             )
 
-    def _set_permission_hours_from_actual_gap(self):
-        if flt(self.get("custom_permission_hours")) > 0:
-            return
+    def _resolve_shift(self):
+        """Shift is hidden on the employee PWA, so it's never set from that
+        form. Resolve it server-side from the employee's active Shift
+        Assignment for the date, same as the shift lookups already used for
+        the permission-gap and half-day-threshold calculations. Desk users
+        who pick a shift explicitly are left alone."""
+        shift_doc = _get_shift_doc(self.employee, self.from_date)
+        if not self.shift:
+            self.shift = shift_doc.name
+        return shift_doc
 
-        self.custom_permission_hours = _get_actual_gap(self)
+    def _set_permission_window_from_actual_gap(self):
+        """Late In / Early Out are always computed from real Employee
+        Checkin data, never from user input — From Time / To Time / Hours
+        are overwritten here regardless of what was submitted."""
+        window = _get_actual_window(self.employee, self.from_date, self.reason)
+        self.custom_permission_from_time = window["from_time"]
+        self.custom_permission_to_time = window["to_time"]
+        self.custom_permission_hours = window["hours"]
 
-    def _validate_permission_fields(self):
-        if not self.get("custom_permission_type"):
-            frappe.throw(_("Permission Type (Late In / Early Out) is required."))
-
-        hours = flt(self.get("custom_permission_hours"))
-        if hours <= 0:
-            frappe.throw(_("Permission hours must be greater than zero."))
-        if hours > 2:
-            frappe.throw(_("Permission cannot exceed 2 hours."))
-
-    def _validate_permission_gap(self):
-        gap = _get_actual_gap(self)
-        if gap <= 0:
+        if window["hours"] <= 0:
             frappe.throw(
                 _("No late check-in or early check-out gap found for {0}.").format(
                     self.from_date
                 )
             )
 
-        if flt(self.get("custom_permission_hours")) > gap:
-            frappe.throw(
-                _(
-                    "Permission hours ({0}) exceed actual gap ({1} hrs). "
-                    "Please correct the hours."
-                ).format(
-                    self.get("custom_permission_hours"),
-                    round(gap, 2),
-                )
-            )
-
     def _validate_no_duplicate_permission(self):
         """Block duplicate Permission requests for the same employee and date (any type)."""
+        reason_type = _get_reason_type_doc(self)
+        sibling_reasons = frappe.get_all(
+            "Attendance Reason Type Detail",
+            filters={"parent": reason_type.name},
+            pluck="reason",
+        )
+
         existing = frappe.db.get_value(
             "Attendance Request",
             {
                 "employee": self.employee,
                 "from_date": self.from_date,
-                "custom_request_type": "Permission Request",
+                "reason": ["in", sibling_reasons],
                 "docstatus": ["!=", 2],
                 "name": ["!=", self.name or ""],
             },
@@ -140,7 +124,7 @@ class CustomAttendanceRequest(AttendanceRequest):
 
     def _smart_create_or_regularize_attendance(self):
         """
-        For 'Creates Attendance' type reasons (e.g. Missed Check-In or Check-Out):
+        For 'Creates Attendance' type reasons (e.g. Regularization):
           - If an Absent record already exists for a date → update it to Present.
           - If no record exists yet (future / unprocessed date) → let parent
             create a fresh Present record via super().on_submit().
@@ -290,7 +274,7 @@ class CustomAttendanceRequest(AttendanceRequest):
         }
 
         if attendance_meta.has_field("custom_permission_type"):
-            update["custom_permission_type"] = self.get("custom_permission_type")
+            update["custom_permission_type"] = self.reason
 
         if attendance_meta.has_field("custom_attendance_request"):
             update["custom_attendance_request"] = self.name
@@ -301,9 +285,9 @@ class CustomAttendanceRequest(AttendanceRequest):
         if attendance_meta.has_field("custom_permission_regularized"):
             update["custom_permission_regularized"] = 1
 
-        if self.get("custom_permission_type") == "Late In":
+        if self.reason == "Late In":
             update["late_entry"] = 1
-        elif self.get("custom_permission_type") == "Early Out":
+        elif self.reason == "Early Out":
             update["early_exit"] = 1
 
         frappe.db.set_value("Attendance", attendance, update, update_modified=False)
@@ -313,7 +297,7 @@ class CustomAttendanceRequest(AttendanceRequest):
                 "Attendance tagged with <b>{0}</b> permission of "
                 "<b>{1} hour(s)</b> on {2}."
             ).format(
-                self.get("custom_permission_type"),
+                self.reason,
                 self.get("custom_permission_hours"),
                 self.from_date,
             ),
@@ -429,10 +413,7 @@ def _get_attendance_behavior(doc):
 
 
 def _get_reason_type_doc(doc):
-    if doc.get("custom_request_type") == "Permission Request":
-        lookup = doc.get("custom_permission_type")
-    else:
-        lookup = doc.reason
+    lookup = doc.reason
 
     if not lookup:
         return None
@@ -572,31 +553,17 @@ def _count_period_usage(doc, reason_type, allocation):
         pluck="reason",
     )
 
-    if doc.get("custom_request_type") == "Permission Request":
-        existing = frappe.get_all(
-            "Attendance Request",
-            filters={
-                "employee": doc.employee,
-                "custom_request_type": "Permission Request",
-                "custom_permission_type": ["in", reasons],
-                "from_date": ["between", [window_start, window_end]],
-                "docstatus": 1,
-                "name": ["!=", doc.name],
-            },
-            fields=["from_date", "to_date"],
-        )
-    else:
-        existing = frappe.get_all(
-            "Attendance Request",
-            filters={
-                "employee": doc.employee,
-                "reason": ["in", reasons],
-                "from_date": ["between", [window_start, window_end]],
-                "docstatus": 1,
-                "name": ["!=", doc.name],
-            },
-            fields=["from_date", "to_date"],
-        )
+    existing = frappe.get_all(
+        "Attendance Request",
+        filters={
+            "employee": doc.employee,
+            "reason": ["in", reasons],
+            "from_date": ["between", [window_start, window_end]],
+            "docstatus": 1,
+            "name": ["!=", doc.name],
+        },
+        fields=["from_date", "to_date"],
+    )
 
     total_days = 0
     for req in existing:
@@ -608,10 +575,13 @@ def _count_period_usage(doc, reason_type, allocation):
     return total_days, current_days
 
 
-def _get_actual_gap(doc):
-    shift_start, shift_end = _get_shift_window(doc.employee, doc.from_date)
-    shift_doc = _get_shift_doc(doc.employee, doc.from_date)
-    ptype = doc.get("custom_permission_type")
+def _get_actual_window(employee, permission_date, ptype):
+    """Authoritative Late In / Early Out window: From Time, To Time, and
+    Hours (clamped to 2) derived from the shift and real Employee Checkin
+    data. Used both to populate the Attendance Request fields in validate()
+    and (via get_permission_details) for the Desk live-preview call."""
+    shift_start, shift_end = _get_shift_window(employee, permission_date)
+    shift_doc = _get_shift_doc(employee, permission_date)
 
     def clamp_gap(value):
         return min(max(flt(value), 0.0), 2.0)
@@ -627,13 +597,13 @@ def _get_actual_gap(doc):
         rows = frappe.get_all(
             "Employee Checkin",
             filters={
-                "employee": doc.employee,
+                "employee": employee,
                 "log_type": "IN",
                 "time": [
                     "between",
                     [
-                        f"{doc.from_date} 00:00:00",
-                        f"{doc.from_date} 23:59:59",
+                        f"{permission_date} 00:00:00",
+                        f"{permission_date} 23:59:59",
                     ],
                 ],
             },
@@ -643,11 +613,23 @@ def _get_actual_gap(doc):
         )
 
         if not rows:
-            return 0.0
+            return {
+                "from_time": get_datetime_str(allowed_in_time),
+                "to_time": get_datetime_str(allowed_in_time),
+                "hours": 0.0,
+                "raw_hours": 0.0,
+                "checkin_found": False,
+            }
 
         actual_in = get_datetime(rows[0].time)
-        gap = time_diff_in_hours(actual_in, allowed_in_time)
-        return clamp_gap(gap)
+        raw_gap = max(flt(time_diff_in_hours(actual_in, allowed_in_time)), 0.0)
+        return {
+            "from_time": get_datetime_str(allowed_in_time),
+            "to_time": get_datetime_str(actual_in),
+            "hours": clamp_gap(raw_gap),
+            "raw_hours": raw_gap,
+            "checkin_found": True,
+        }
 
     if ptype == "Early Out":
         grace_minutes = (
@@ -660,13 +642,13 @@ def _get_actual_gap(doc):
         rows = frappe.get_all(
             "Employee Checkin",
             filters={
-                "employee": doc.employee,
+                "employee": employee,
                 "log_type": "OUT",
                 "time": [
                     "between",
                     [
-                        f"{doc.from_date} 00:00:00",
-                        f"{doc.from_date} 23:59:59",
+                        f"{permission_date} 00:00:00",
+                        f"{permission_date} 23:59:59",
                     ],
                 ],
             },
@@ -676,19 +658,36 @@ def _get_actual_gap(doc):
         )
 
         if not rows:
-            return 0.0
+            return {
+                "from_time": get_datetime_str(allowed_out_time),
+                "to_time": get_datetime_str(allowed_out_time),
+                "hours": 0.0,
+                "raw_hours": 0.0,
+                "checkin_found": False,
+            }
 
         actual_out = get_datetime(rows[0].time)
-        gap = time_diff_in_hours(allowed_out_time, actual_out)
-        return clamp_gap(gap)
+        raw_gap = max(flt(time_diff_in_hours(allowed_out_time, actual_out)), 0.0)
+        return {
+            "from_time": get_datetime_str(actual_out),
+            "to_time": get_datetime_str(allowed_out_time),
+            "hours": clamp_gap(raw_gap),
+            "raw_hours": raw_gap,
+            "checkin_found": True,
+        }
 
-    return 0.0
+    return {
+        "from_time": None,
+        "to_time": None,
+        "hours": 0.0,
+        "raw_hours": 0.0,
+        "checkin_found": False,
+    }
 
 
 def _get_shift_doc(employee, attendance_date):
     attendance_date = getdate(attendance_date)
 
-    shift = None
     assignments = frappe.get_all(
         "Shift Assignment",
         filters={
@@ -700,19 +699,29 @@ def _get_shift_doc(employee, attendance_date):
         order_by="start_date desc",
     )
 
-    for assignment in assignments:
-        if not assignment.end_date or getdate(assignment.end_date) >= attendance_date:
-            shift = assignment.shift_type
-            break
+    active = [
+        a for a in assignments
+        if not a.end_date or getdate(a.end_date) >= attendance_date
+    ]
 
-    if not shift:
-        shift = frappe.db.get_value("Employee", employee, "default_shift")
+    if len(active) > 1:
+        frappe.throw(
+            _(
+                "Employee <b>{0}</b> has multiple overlapping Shift "
+                "Assignments active on <b>{1}</b>. Please contact HR to "
+                "resolve this before submitting this request."
+            ).format(employee, attendance_date)
+        )
+
+    shift = active[0].shift_type if active else frappe.db.get_value(
+        "Employee", employee, "default_shift"
+    )
 
     if not shift:
         frappe.throw(
             _(
                 "No Shift Assignment or Default Shift found for employee <b>{0}</b>. "
-                "Please assign a shift before applying permission."
+                "Please assign a shift before submitting this request."
             ).format(employee)
         )
 
@@ -732,70 +741,26 @@ def _get_shift_window(employee, attendance_date):
 
 @frappe.whitelist()
 def get_permission_details(employee, permission_date, permission_type):
+    window = _get_actual_window(employee, permission_date, permission_type)
     shift_start, shift_end = _get_shift_window(employee, permission_date)
 
-    if permission_type == "Late In":
-        rows = frappe.get_all(
-            "Employee Checkin",
-            filters={
-                "employee": employee,
-                "log_type": "IN",
-                "time": [
-                    "between",
-                    [
-                        f"{permission_date} 00:00:00",
-                        f"{permission_date} 23:59:59",
-                    ],
-                ],
-            },
-            fields=["time"],
-            order_by="time asc",
-            limit=1,
+    message = None
+    if not window["checkin_found"]:
+        message = _(
+            "No check-in recorded yet — available hours will be calculated "
+            "once the day's check-in data arrives."
         )
-
-        from_t = shift_start.strftime("%H:%M:%S")
-
-        if rows:
-            actual_in = get_datetime(rows[0].time)
-            gap_hours = min(time_diff_in_hours(actual_in, shift_start), 2.0)
-            to_t = actual_in.strftime("%H:%M:%S")
-        else:
-            gap_hours = 2.0
-            to_t = (shift_start + timedelta(hours=2)).strftime("%H:%M:%S")
-
-    else:
-        rows = frappe.get_all(
-            "Employee Checkin",
-            filters={
-                "employee": employee,
-                "log_type": "OUT",
-                "time": [
-                    "between",
-                    [
-                        f"{permission_date} 00:00:00",
-                        f"{permission_date} 23:59:59",
-                    ],
-                ],
-            },
-            fields=["time"],
-            order_by="time desc",
-            limit=1,
-        )
-
-        to_t = shift_end.strftime("%H:%M:%S")
-
-        if rows:
-            actual_out = get_datetime(rows[0].time)
-            gap_hours = min(time_diff_in_hours(shift_end, actual_out), 2.0)
-            from_t = actual_out.strftime("%H:%M:%S")
-        else:
-            gap_hours = 2.0
-            from_t = (shift_end - timedelta(hours=2)).strftime("%H:%M:%S")
+    elif window["raw_hours"] > 2:
+        message = _(
+            "Actual gap is {0} hours — permission will be capped at the "
+            "2-hour limit."
+        ).format(round(window["raw_hours"], 2))
 
     return {
-        "permission_from_time": from_t,
-        "permission_to_time": to_t,
-        "permission_hours": round(flt(gap_hours), 2),
+        "permission_from_time": window["from_time"],
+        "permission_to_time": window["to_time"],
+        "permission_hours": round(flt(window["hours"]), 2),
         "shift_start": shift_start.strftime("%H:%M:%S"),
         "shift_end": shift_end.strftime("%H:%M:%S"),
+        "message": message,
     }

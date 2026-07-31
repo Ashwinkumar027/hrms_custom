@@ -175,7 +175,9 @@ override_doctype_class = {
 
 override_whitelisted_methods = {
     "erpnext.setup.doctype.employee.employee.deactivate_sales_person":
-    "hrms_custom.overrides.employee.deactivate_sales_person"
+    "hrms_custom.overrides.employee.deactivate_sales_person",
+    "hrms.api.get_doctype_fields":
+    "hrms_custom.api.get_doctype_fields"
 }
 
 permission_query_conditions = {
