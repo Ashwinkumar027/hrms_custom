@@ -25,10 +25,15 @@ a[href^="/hrms/employee-advances"] { display: none !important; }
 # Watch for that when editing this block.
 #
 # FRAGILITY: this gates on stock HRMS UI text ("Latitude" in the coordinate
-# span, "Confirm Check" in the button label). If a future hrms/Frappe HR
-# upgrade changes that wording or adds translations, the match silently
-# stops working and the confirm button stays disabled forever — it fails
-# closed (safe), not open. Re-check this block after any hrms app upgrade.
+# span, "Unable to retrieve your location" for the geolocation-error state,
+# "Confirm Check" in the button label). If a future hrms/Frappe HR upgrade
+# changes any of that wording or adds translations, the corresponding match
+# silently stops firing. For "Latitude" or "Confirm Check" this fails closed
+# (safe) — the confirm button stays disabled forever. For the error string,
+# it degrades rather than breaks: the error branch just never fires and the
+# button falls through to the generic "Fetching your location…" state
+# instead of the more specific enable-location message. Re-check this block
+# after any hrms app upgrade.
 GATE_JS = """
 <script>
 (function () {
@@ -77,15 +82,39 @@ GATE_JS = """
 		return el;
 	}
 
-	function applyGate() {
+	// Three states share the same span (span.font-medium.text-gray-500.text-sm),
+	// distinguished only by text. "resolved" takes priority over "error" in
+	// case both substrings somehow co-occur; anything unrecognised (including
+	// the literal "Locating...") falls into "locating".
+	function findGeoState() {
 		var spans = findCoordSpans();
-		var located = false;
 		for (var i = 0; i < spans.length; i++) {
-			if (spans[i].textContent && spans[i].textContent.indexOf("Latitude") !== -1) {
-				located = true;
-				break;
+			var text = spans[i].textContent || "";
+			if (text.indexOf("Latitude") !== -1) {
+				return "resolved";
 			}
 		}
+		for (var i = 0; i < spans.length; i++) {
+			var text = spans[i].textContent || "";
+			if (text.indexOf("Unable to retrieve your location") !== -1) {
+				return "error";
+			}
+		}
+		return "locating";
+	}
+
+	function errorLabelFor(original) {
+		if (original.indexOf("Check In") !== -1) {
+			return "Enable location to check in";
+		}
+		if (original.indexOf("Check Out") !== -1) {
+			return "Enable location to check out";
+		}
+		return "Enable location access";
+	}
+
+	function applyGate() {
+		var state = findGeoState();
 
 		var buttons = findConfirmButtons();
 		for (var j = 0; j < buttons.length; j++) {
@@ -114,9 +143,13 @@ GATE_JS = """
 			}
 			var original = btn.getAttribute(ORIGINAL_LABEL_ATTR);
 
-			if (located) {
+			if (state === "resolved") {
 				if (btn.disabled) btn.disabled = false;
 				if (labelNode.textContent !== original) labelNode.textContent = original;
+			} else if (state === "error") {
+				if (!btn.disabled) btn.disabled = true;
+				var errorLabel = errorLabelFor(original);
+				if (labelNode.textContent !== errorLabel) labelNode.textContent = errorLabel;
 			} else {
 				if (!btn.disabled) btn.disabled = true;
 				if (labelNode.textContent !== FETCHING_LABEL) labelNode.textContent = FETCHING_LABEL;
