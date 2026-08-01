@@ -623,10 +623,12 @@ def _get_actual_window(employee, permission_date, ptype):
 
         actual_in = get_datetime(rows[0].time)
         raw_gap = max(flt(time_diff_in_hours(actual_in, allowed_in_time)), 0.0)
+        capped_hours = clamp_gap(raw_gap)
+        capped_to_time = allowed_in_time + timedelta(hours=capped_hours)
         return {
             "from_time": get_datetime_str(allowed_in_time),
-            "to_time": get_datetime_str(actual_in),
-            "hours": clamp_gap(raw_gap),
+            "to_time": get_datetime_str(capped_to_time),
+            "hours": capped_hours,
             "raw_hours": raw_gap,
             "checkin_found": True,
         }
@@ -668,10 +670,12 @@ def _get_actual_window(employee, permission_date, ptype):
 
         actual_out = get_datetime(rows[0].time)
         raw_gap = max(flt(time_diff_in_hours(allowed_out_time, actual_out)), 0.0)
+        capped_hours = clamp_gap(raw_gap)
+        capped_from_time = allowed_out_time - timedelta(hours=capped_hours)
         return {
-            "from_time": get_datetime_str(actual_out),
+            "from_time": get_datetime_str(capped_from_time),
             "to_time": get_datetime_str(allowed_out_time),
-            "hours": clamp_gap(raw_gap),
+            "hours": capped_hours,
             "raw_hours": raw_gap,
             "checkin_found": True,
         }
