@@ -12,6 +12,7 @@ class CustomAttendanceRequest(AttendanceRequest):
     def validate(self):
         self._validate_single_date()
         self._validate_not_future_date()
+        self._set_notification_emails()
 
         if self._is_permission():
             self._set_permission_window_from_actual_gap()
@@ -59,6 +60,27 @@ class CustomAttendanceRequest(AttendanceRequest):
                     "This request type is allowed only for a single date. "
                     "From Date and To Date must be the same."
                 )
+            )
+
+    def _set_notification_emails(self):
+        """Snapshot recipient addresses at save time for the Value Change
+        notifications on workflow_state. If the reporting manager changes
+        before approval, the mail still goes to whoever was the manager
+        when this was last saved — same trade-off TA Claims already
+        accepts. Missing reports_to (46/250 employees) or a missing
+        user_id is not an error: the field is simply left empty and that
+        notification recipient doesn't fire."""
+        employee = frappe.db.get_value(
+            "Employee", self.employee, ["user_id", "reports_to"], as_dict=True
+        )
+        if not employee:
+            return
+
+        self.custom_employee_email = employee.user_id
+
+        if employee.reports_to:
+            self.custom_reporting_manager_email = frappe.db.get_value(
+                "Employee", employee.reports_to, "user_id"
             )
 
     def _resolve_shift(self):

@@ -828,6 +828,8 @@ PWA_HIDDEN_FIELDS = {
         "custom_permission_to_time",
         "custom_permission_hours",
         "include_holidays",
+        "custom_employee_email",
+        "custom_reporting_manager_email",
     },
 }
 

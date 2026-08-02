@@ -150,6 +150,9 @@ fixtures = [
             "TA Claim Processed - Notify Employee",
             "TA Claim On Hold - Notify Employee",
             "TA Claim Accounts Rejected - Notify Employee",
+            "Attendance Request Submitted - Notify Manager",
+            "Attendance Request Approved - Notify Employee",
+            "Attendance Request Rejected - Notify Employee",
         ]]],
     },
     {
