@@ -7,6 +7,8 @@ from frappe.utils import flt, get_datetime, get_datetime_str, getdate, time_diff
 
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
 
+from hrms_custom.utils.email_utils import get_hr_sender
+
 
 class CustomAttendanceRequest(AttendanceRequest):
     def validate(self):
@@ -45,6 +47,9 @@ class CustomAttendanceRequest(AttendanceRequest):
         else:
             self._smart_cancel_attendance()
 
+    def on_update(self):
+        self._send_workflow_notification()
+
     # ------------------------------------------------------------------
     # helpers
     # ------------------------------------------------------------------
@@ -82,6 +87,78 @@ class CustomAttendanceRequest(AttendanceRequest):
             self.custom_reporting_manager_email = frappe.db.get_value(
                 "Employee", employee.reports_to, "user_id"
             )
+
+    def _send_workflow_notification(self):
+        """Notify on a workflow_state transition to Pending Approval /
+        Approved / Rejected. Code-triggered rather than a Notification
+        doctype record so the sender reads HR Settings live via
+        get_hr_sender() on every send, matching how LOP / Missing
+        Attendance / Holiday mail already works — Notification.sender is
+        a static Link to Email Account captured at save time, so it
+        would not pick up a later change to HR Settings' sender address.
+
+        has_value_changed() returns True unconditionally on first insert
+        (no prior save to compare against), but the initial workflow_state
+        is always Draft, which matches none of the branches below, so
+        nothing sends on creation - only on an actual transition into one
+        of the three notified states."""
+        if not self.has_value_changed("workflow_state"):
+            return
+
+        if not frappe.db.get_single_value("HR Settings", "custom_enable_attendance_request_email"):
+            return
+
+        link = f"{frappe.utils.get_url()}/app/attendance-request/{self.name}"
+        explanation = self.explanation or "—"
+
+        if self.workflow_state == "Pending Approval":
+            recipient = self.custom_reporting_manager_email
+            subject = f"Action Required: {self.reason} Request Awaiting Your Approval - {self.employee_name}"
+            message = (
+                f"A new {self.reason} request requires your approval.<br><br>\n"
+                f"<b>Employee:</b> {self.employee_name}<br>\n"
+                f"<b>Request Type:</b> {self.reason}<br>\n"
+                f"<b>From Date:</b> {self.from_date}<br>\n"
+                f"<b>To Date:</b> {self.to_date}<br>\n"
+                f"<b>Explanation:</b> {explanation}<br><br>\n"
+                f'<a href="{link}" style="color:#2490ef;">View Request: {self.name}</a>'
+            )
+        elif self.workflow_state == "Approved":
+            recipient = self.custom_employee_email
+            subject = f"Your {self.reason} Request Has Been Approved - {self.name}"
+            message = (
+                f"Hi {self.employee_name},<br><br>\n"
+                f"Your {self.reason} request has been <b>approved</b>.<br><br>\n"
+                f"<b>Request Type:</b> {self.reason}<br>\n"
+                f"<b>From Date:</b> {self.from_date}<br>\n"
+                f"<b>To Date:</b> {self.to_date}<br>\n"
+                f"<b>Explanation:</b> {explanation}<br><br>\n"
+                f'<a href="{link}" style="color:#2490ef;">View Request: {self.name}</a>'
+            )
+        elif self.workflow_state == "Rejected":
+            recipient = self.custom_employee_email
+            subject = f"Your {self.reason} Request Has Been Rejected - {self.name}"
+            message = (
+                f"Hi {self.employee_name},<br><br>\n"
+                f"Your {self.reason} request has been <b>rejected</b>.<br><br>\n"
+                f"<b>Request Type:</b> {self.reason}<br>\n"
+                f"<b>From Date:</b> {self.from_date}<br>\n"
+                f"<b>To Date:</b> {self.to_date}<br>\n"
+                f"<b>Explanation:</b> {explanation}<br><br>\n"
+                f'<a href="{link}" style="color:#2490ef;">View Request: {self.name}</a>'
+            )
+        else:
+            return
+
+        if not recipient:
+            return
+
+        frappe.sendmail(
+            recipients=[recipient],
+            sender=get_hr_sender(),
+            subject=subject,
+            message=message,
+        )
 
     def _resolve_shift(self):
         """Shift is hidden on the employee PWA, so it's never set from that
