@@ -3,88 +3,77 @@
   "company": "TestCompany",
   "docstatus": 0,
   "doctype": "Onboarding Task Contact",
-  "email": "ashwinkumar.k@quanticustech.com",
-  "modified": "2026-07-08 10:10:54.121978",
-  "name": "k2tqoitj99",
-  "task_type": "IT Setup",
-  "team": "Onboarding Test Team",
-  "user": null
- },
- {
-  "company": "TestCompany",
-  "docstatus": 0,
-  "doctype": "Onboarding Task Contact",
-  "email": "ashwinkumar.k@quanticustech.com",
-  "modified": "2026-07-08 10:10:54.129751",
-  "name": "k2t9dv689t",
-  "task_type": "Software Access",
-  "team": "Onboarding Test Team",
-  "user": null
- },
- {
-  "company": "TestCompany",
-  "docstatus": 0,
-  "doctype": "Onboarding Task Contact",
-  "email": "ashwinpooja586@gmail.com",
-  "modified": "2026-07-08 10:44:18.624057",
-  "name": "k2ttokkgam",
-  "task_type": "ID Card",
-  "team": "Onboarding Test Team",
-  "user": "ashwinpooja586@gmail.com"
- },
- {
-  "company": "TestCompany",
-  "docstatus": 0,
-  "doctype": "Onboarding Task Contact",
-  "email": "ashwinkumar.k@quanticustech.com",
-  "modified": "2026-07-08 10:10:54.132047",
-  "name": "k2tt21d6u1",
-  "task_type": "Business Card",
-  "team": "Onboarding Test Team",
-  "user": null
- },
- {
-  "company": "TestCompany",
-  "docstatus": 0,
-  "doctype": "Onboarding Task Contact",
-  "email": "ashwinpooja586@gmail.com",
-  "modified": "2026-07-08 10:56:14.615521",
-  "name": "7g59iqnsf9",
-  "task_type": "ID Card Design",
-  "team": "Onboarding Test Team",
-  "user": "ashwinpooja586@gmail.com"
- },
- {
-  "company": "TestCompany",
-  "docstatus": 0,
-  "doctype": "Onboarding Task Contact",
-  "email": "22g144ashwinkumar@gmail.com",
-  "modified": "2026-07-08 10:56:04.789714",
-  "name": "af1ergqd0o",
-  "task_type": "ID Card Design",
-  "team": "Onboarding Test Team",
-  "user": "22g144ashwinkumar@gmail.com"
- },
- {
-  "company": "TestCompany",
-  "docstatus": 0,
-  "doctype": "Onboarding Task Contact",
-  "email": "ashwinpooja586@gmail.com",
-  "modified": "2026-06-24 16:49:41.143998",
-  "name": "p83lt4v9f3",
+  "email": "ashwinkumark59@gmail.com",
+  "modified": "2026-07-28 12:56:25.102081",
+  "name": "02biff5api",
   "task_type": "SIM Card",
-  "team": null,
-  "user": "ashwinpooja586@gmail.com"
+  "team": "Test Team",
+  "user": null
  },
  {
   "company": "TestCompany",
   "docstatus": 0,
   "doctype": "Onboarding Task Contact",
   "email": "ashwinkumar.k@quanticustech.com",
-  "modified": "2026-06-24 16:49:55.749399",
-  "name": "pclgaug7rj",
+  "modified": "2026-07-28 12:56:25.117456",
+  "name": "02b8o8riq1",
+  "task_type": "IT Setup",
+  "team": "Test Team",
+  "user": null
+ },
+ {
+  "company": "TestCompany",
+  "docstatus": 0,
+  "doctype": "Onboarding Task Contact",
+  "email": "ashwinkumar.k@quanticustech.com",
+  "modified": "2026-07-28 12:56:25.119121",
+  "name": "02b47mfns4",
   "task_type": "Email ID",
-  "team": null,
-  "user": "ashwinkumar.k@quanticustech.com"
+  "team": "Test Team",
+  "user": null
+ },
+ {
+  "company": "TestCompany",
+  "docstatus": 0,
+  "doctype": "Onboarding Task Contact",
+  "email": "ashwinkumar.k@quanticustech.com",
+  "modified": "2026-07-28 12:56:25.121376",
+  "name": "02b3jublo1",
+  "task_type": "Software Access",
+  "team": "Test Team",
+  "user": null
+ },
+ {
+  "company": "TestCompany",
+  "docstatus": 0,
+  "doctype": "Onboarding Task Contact",
+  "email": "ashwinpooja586@gmail.com",
+  "modified": "2026-07-28 12:56:25.124057",
+  "name": "02bsunet0t",
+  "task_type": "ID Card",
+  "team": "Test Team",
+  "user": null
+ },
+ {
+  "company": "TestCompany",
+  "docstatus": 0,
+  "doctype": "Onboarding Task Contact",
+  "email": "ashwinpooja586@gmail.com",
+  "modified": "2026-07-28 12:56:25.125446",
+  "name": "02bm9ogn5p",
+  "task_type": "Business Card",
+  "team": "Test Team",
+  "user": null
+ },
+ {
+  "company": "TestCompany",
+  "docstatus": 0,
+  "doctype": "Onboarding Task Contact",
+  "email": "ash9952945782@gmail.com",
+  "modified": "2026-07-28 12:56:25.126707",
+  "name": "02b8s4t5qd",
+  "task_type": "ID Card Design",
+  "team": "Test Team",
+  "user": null
  }
 ]
