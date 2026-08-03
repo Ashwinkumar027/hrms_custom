@@ -171,6 +171,7 @@ override_doctype_class = {
     "Attendance Request": "hrms_custom.overrides.attendance_request.CustomAttendanceRequest",
     "Employee Onboarding": "hrms_custom.overrides.employee_onboarding.CustomEmployeeOnboarding",
     "Shift Type": "hrms_custom.overrides.shift_type.CustomShiftType",
+    "Leave Application": "hrms_custom.overrides.leave_application.CustomLeaveApplication",
 }
 
 override_whitelisted_methods = {
