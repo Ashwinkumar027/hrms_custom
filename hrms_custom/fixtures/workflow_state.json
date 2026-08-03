@@ -3,15 +3,6 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2026-05-12 07:29:57.574386",
-  "name": "Pending Manager Input",
-  "style": "Warning",
-  "workflow_state_name": "Pending Manager Input"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
   "modified": "2026-05-12 07:29:58.055424",
   "name": "Onboarding In Progress",
   "style": "Primary",
@@ -92,15 +83,6 @@
  {
   "docstatus": 0,
   "doctype": "Workflow State",
-  "icon": "",
-  "modified": "2026-04-20 15:58:24.325750",
-  "name": "Draft",
-  "style": "",
-  "workflow_state_name": "Draft"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
   "icon": "remove",
   "modified": "2026-02-26 11:18:34.169759",
   "name": "Rejected",
@@ -151,5 +133,23 @@
   "name": "Pending RM Approval",
   "style": "",
   "workflow_state_name": "Pending RM Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:57.574386",
+  "name": "Pending Manager Input",
+  "style": "Warning",
+  "workflow_state_name": "Pending Manager Input"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-04-20 15:58:24.325750",
+  "name": "Draft",
+  "style": "",
+  "workflow_state_name": "Draft"
  }
 ]

@@ -32,6 +32,12 @@ frappe.ui.form.on("Employee Agreement", {
 	place(frm) {
 		render_agreement(frm);
 	},
+	custom_employee_ctc(frm) {
+		render_agreement(frm);
+	},
+	custom_roles__responsibilities(frm) {
+		render_agreement(frm);
+	},
 });
 
 function render_agreement(frm) {
@@ -86,8 +92,7 @@ function build_agreement_html(frm, company_name, settings) {
 	const full_address = esc(d.full_address);
 	const place = esc(d.place || "Chennai");
 	const doj = fmt_date(d.date_of_joining);
-	const ctc = d.ctc_amount ? format_currency(d.ctc_amount, frappe.defaults.get_default("currency")) : "____";
-	const ctc_words = esc(d.ctc_in_words);
+	const ctc = d.custom_employee_ctc ? format_currency(d.custom_employee_ctc, frappe.defaults.get_default("currency")) : "____";
 	const address = settings.registered_address || "";
 	const email = settings.compliance_email || "";
 	const cin = settings.cin_number || "";
@@ -170,13 +175,15 @@ function build_agreement_html(frm, company_name, settings) {
 		<p>8. The Employee shall work full time for the organization, devoting his/her time and attention and skill to the duties of his/her office and shall faithfully, efficiently, competently and diligently perform duties and exercise such powers as may from time to time be assigned to or vested in him and shall comply with all lawful directions given to him by or under the authority of the Board of Directors of the Employer and use his/her best endeavors to promote and extend the business of the Employer.</p>
 
 		<p>9. The Employee shall act diligently and to the best of his/her ability discharge of his/her duties and subject to any restricts or limitations imposed by the concerned officer or policy of the Employer in this regard. The Employee's responsibilities will include but not limited to the following;</p>
+		${d.custom_roles__responsibilities ? `<div class="sub">${d.custom_roles__responsibilities}</div>` : `
 		<p class="sub">a. Identify client needs, offer tailored solutions, and ensure customer satisfaction and retention.<br>
 		b. Meet sales targets through upselling, cross-selling, and effective client engagement.<br>
 		c. Maintain CRM records, resolve issues, and collaborate with internal teams.</p>
+		`}
 
 		<p>10. During the term of this Agreement, the Employee shall not directly or indirectly engage himself in any other business, occupation or employment whatsoever, without the approval of the Employer.</p>
 
-		<p>11. In consideration of the Employee's services to the Employer, the Employer shall pay to the Employee during the term of this Agreement, a CTC of ${ctc}${d.ctc_in_words ? " (" + ctc_words + ")" : ""} Per Annum, subject to deduction of tax at the source.</p>
+		<p>11. In consideration of the Employee's services to the Employer, the Employer shall pay to the Employee during the term of this Agreement, a CTC of ${ctc} Per Annum, subject to deduction of tax at the source.</p>
 
 		<p>12. Save and except as otherwise provided in this Agreement or as may be decided by the Board of Directors of the Employer from time to time, the Employee shall be entitled to all such benefits that may be available to him as per law and as per the polices of the Employer for its employees as in effect from time to time.</p>
 
@@ -247,3 +254,8 @@ function build_agreement_html(frm, company_name, settings) {
 	</div>
 	`;
 }
+
+
+
+
+
