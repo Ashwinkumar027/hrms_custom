@@ -1,7 +1,20 @@
 frappe.ui.form.on("Employee Agreement", {
 	refresh(frm) {
 		render_agreement(frm);
+
+		frm.add_custom_button(__("Download PDF"), function () {
+			const url = frappe.urllib.get_full_url(
+				"/api/method/frappe.utils.print_format.download_pdf"
+				+ "?doctype=" + encodeURIComponent("Employee Agreement")
+				+ "&name=" + encodeURIComponent(frm.doc.name)
+				+ "&format=" + encodeURIComponent("Employee Agreement - Print")
+				+ "&no_letterhead=0"
+				+ "&pdf_generator=chrome"
+			);
+			window.open(url, "_blank");
+		}, __("")).addClass("btn-primary");
 	},
+
 	company(frm) {
 		render_agreement(frm);
 	},

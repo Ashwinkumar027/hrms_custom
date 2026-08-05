@@ -130,6 +130,71 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             make_ticket(subject, table, task_type="Business Card")
             tickets_created += 1
 
+        # BIOMETRIC ACCESS
+        if self.custom_biometric_access == "Yes":
+            extra = "<tr><td><b>Biometric Access</b></td><td>Required</td></tr>"
+            table = base_table(extra)
+            subject = "Biometric Access Request - {}".format(self.employee_name)
+            make_ticket(subject, table, task_type="Biometric Access")
+            tickets_created += 1
+
+        # TECH EXCEL ACCESS
+        if self.custom_tech_excel_access == "Yes":
+            extra = "<tr><td><b>Tech Excel Access</b></td><td>Required</td></tr>"
+            table = base_table(extra)
+            subject = "Tech Excel Access Request - {}".format(self.employee_name)
+            make_ticket(subject, table, task_type="Tech Excel Access")
+            tickets_created += 1
+
+        # CRM PLATFORM ACCESS
+        if self.custom_crm_platform_access == "Yes":
+            extra = "<tr><td><b>CRM Platform Access</b></td><td>Required</td></tr>"
+            table = base_table(extra)
+            subject = "CRM Platform Access Request - {}".format(self.employee_name)
+            make_ticket(subject, table, task_type="CRM Platform Access")
+            tickets_created += 1
+
+        # 20 POINT SALES TRACKER ACCESS
+        if self.custom_sales_tracker_access == "Yes":
+            extra = "<tr><td><b>Sales Tracker Access</b></td><td>Required</td></tr>"
+            table = base_table(extra)
+            subject = "Sales Tracker Access Request - {}".format(self.employee_name)
+            make_ticket(subject, table, task_type="20 Point Sales Tracker Access")
+            tickets_created += 1
+
+        # PORTFOLIO PLUS ACCESS
+        if self.custom_portfolio_plus_access == "Yes":
+            extra = "<tr><td><b>Portfolio Plus Access</b></td><td>Required</td></tr>"
+            table = base_table(extra)
+            subject = "Portfolio Plus Access Request - {}".format(self.employee_name)
+            make_ticket(subject, table, task_type="Portfolio Plus Access")
+            tickets_created += 1
+
+        # KYC INDIVIDUAL LINK
+        if self.custom_kyc_individual_link == "Yes":
+            extra = "<tr><td><b>KYC Individual Link</b></td><td>Required</td></tr>"
+            table = base_table(extra)
+            subject = "KYC Individual Link Request - {}".format(self.employee_name)
+            make_ticket(subject, table, task_type="KYC Individual Link")
+            tickets_created += 1
+
+        # NOVAC ID / LOGIN
+        if self.custom_novac_id_login == "Yes":
+            extra = "<tr><td><b>Novac ID / Login</b></td><td>Required</td></tr>"
+            table = base_table(extra)
+            subject = "Novac ID / Login Request - {}".format(self.employee_name)
+            make_ticket(subject, table, task_type="Novac ID / Login")
+            tickets_created += 1
+
+        # OTHER TOOL REQUIRED
+        if self.custom_other_tool_required == "Yes":
+            tool_name = self.custom_other_tool_name or "Not Specified"
+            extra = "<tr><td><b>Other Tool</b></td><td>{}</td></tr>".format(tool_name)
+            table = base_table(extra)
+            subject = "Other Tool Request ({}) - {}".format(tool_name, self.employee_name)
+            make_ticket(subject, table, task_type="Other Tool Required")
+            tickets_created += 1
+
         # ID CARD DESIGN EMAIL ONLY
         self._send_idcard_design_email(IDCARD_DESIGNER_EMAIL)
 
