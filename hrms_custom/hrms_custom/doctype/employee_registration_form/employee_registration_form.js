@@ -4,15 +4,18 @@
 frappe.ui.form.on("Employee Registration Form", {
 	refresh(frm) {
 		frm.add_custom_button(__("Download PDF"), function () {
-			const url = frappe.urllib.get_full_url(
-				"/api/method/frappe.utils.print_format.download_pdf"
-				+ "?doctype=" + encodeURIComponent("Employee Registration Form")
-				+ "&name=" + encodeURIComponent(frm.doc.name)
-				+ "&format=" + encodeURIComponent("Employee Registration Form - Print")
-				+ "&no_letterhead=0"
-				+ "&pdf_generator=chrome"
-			);
-			window.open(url, "_blank");
+			frappe.db.get_value("Print Format", "Employee Registration Form - Print", "pdf_generator", (r) => {
+				const pdf_generator = r.pdf_generator || "wkhtmltopdf";
+				const url = frappe.urllib.get_full_url(
+					"/api/method/frappe.utils.print_format.download_pdf"
+					+ "?doctype=" + encodeURIComponent("Employee Registration Form")
+					+ "&name=" + encodeURIComponent(frm.doc.name)
+					+ "&format=" + encodeURIComponent("Employee Registration Form - Print")
+					+ "&no_letterhead=0"
+					+ "&pdf_generator=" + encodeURIComponent(pdf_generator)
+				);
+				window.open(url, "_blank");
+			});
 		}, __("")).addClass("btn-primary");
 	},
 });
