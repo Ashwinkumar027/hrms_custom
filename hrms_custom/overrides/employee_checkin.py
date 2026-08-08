@@ -14,7 +14,26 @@ from hrms.hr.utils import get_distance_between_coordinates
 
 class MultiLocationEmployeeCheckin(EmployeeCheckin):
 
+    def validate_shift_assigned(self):
+        if not self.employee:
+            return
+        has_sa = frappe.db.exists(
+            "Shift Assignment",
+            {
+                "employee": self.employee,
+                "docstatus": 1,
+                "status": "Active",
+                "start_date": ["<=", self.time],
+            },
+        )
+        if not has_sa:
+            frappe.throw(
+                _("No shift is assigned to you. Please contact HR."),
+                title=_("No Shift Assigned"),
+            )
+
     def validate(self):
+        self.validate_shift_assigned()
         super().validate()
         self.block_late_checkout()
 
