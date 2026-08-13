@@ -12,6 +12,18 @@ def send_preoffer_form(job_applicant):
     if not doc.email_id:
         frappe.throw("No email address found for this applicant!")
 
+    # Get HR Manager emails for CC
+    hr_manager_users = frappe.get_all(
+        "Has Role",
+        filters={"role": "HR Manager", "parenttype": "User"},
+        fields=["parent"]
+    )
+    hr_manager_emails = []
+    for u in hr_manager_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            hr_manager_emails.append(email)
+
     params = urllib.parse.urlencode({
         "applicant_name": doc.applicant_name or "",
         "email": doc.email_id or "",
@@ -68,6 +80,7 @@ def send_preoffer_form(job_applicant):
         sender=get_hr_sender(),
         subject=subject,
         message=message,
+        cc=hr_manager_emails,
         reference_doctype="Job Applicant",
         reference_name=doc.name,
     )
@@ -91,6 +104,18 @@ def send_offer_letter(job_offer):
 
     if not candidate_email:
         frappe.throw("No email found for this candidate!")
+
+    # Get HR Manager emails for CC
+    hr_manager_users = frappe.get_all(
+        "Has Role",
+        filters={"role": "HR Manager", "parenttype": "User"},
+        fields=["parent"]
+    )
+    hr_manager_emails = []
+    for u in hr_manager_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            hr_manager_emails.append(email)
 
     token = hashlib.md5(
         (doc.name + candidate_email + "aionion_secret_2026").encode()
@@ -189,6 +214,7 @@ def send_offer_letter(job_offer):
         subject="Offer Letter - " + (doc.designation or "") + " - " + (doc.company or ""),
         message=message,
         attachments=attachments,
+        cc=hr_manager_emails,
         reference_doctype="Job Offer",
         reference_name=doc.name,
     )
@@ -228,23 +254,23 @@ def respond_to_offer(token, response, offer):
     })
     frappe.db.commit()
 
-    hr_users = frappe.get_all("Has Role",
-        filters={"role": "HR User", "parenttype": "User"},
+    hr_manager_users = frappe.get_all("Has Role",
+        filters={"role": "HR Manager", "parenttype": "User"},
         fields=["parent"])
-    hr_emails = []
-    for u in hr_users:
+    hr_manager_emails = []
+    for u in hr_manager_users:
         email = frappe.db.get_value("User", u.parent, "email")
         if email:
-            hr_emails.append(email)
+            hr_manager_emails.append(email)
 
     candidate_name = frappe.db.get_value(
         "Job Applicant", job_offer.job_applicant, "applicant_name"
     )
 
-    if hr_emails:
+    if hr_manager_emails:
         color = "#0F6E56" if response == "Accepted" else "#A32D2D"
         frappe.sendmail(
-            recipients=hr_emails,
+            recipients=hr_manager_emails,
             sender=get_hr_sender(),
             subject="Offer " + response + " - " + (candidate_name or offer),
             message=(
@@ -485,29 +511,33 @@ def probation_action(employee, action):
 
 @frappe.whitelist()
 def get_last_employee_id(company):
+    import re
+
     result = frappe.get_all(
         "Employee",
         filters={"company": company},
-        fields=["name"],
-        order_by="creation desc",
-        limit=1
+        fields=["name"]
     )
-
     if not result:
         return {"last_id": None, "next_id": None}
 
-    last_id = result[0].name
+    parsed = []
+    for r in result:
+        match = re.match(r'^([A-Za-z]+)(\d+)$', r.name)
+        if match:
+            prefix = match.group(1)
+            number = int(match.group(2))
+            pad_length = len(match.group(2))
+            parsed.append((number, prefix, pad_length, r.name))
 
-    import re
-    match = re.match(r'^([A-Za-z]+)(\d+)$', last_id)
+    if not parsed:
+        return {"last_id": None, "next_id": None}
 
-    if not match:
-        return {"last_id": last_id, "next_id": None}
+    # Sort by numeric value of the ID, not creation date
+    parsed.sort(key=lambda x: x[0], reverse=True)
+    highest_number, prefix, pad_length, last_id = parsed[0]
 
-    prefix = match.group(1)
-    number = int(match.group(2))
-    pad_length = len(match.group(2))
-    next_number = number + 1
+    next_number = highest_number + 1
     next_id = prefix + str(next_number).zfill(pad_length)
 
     return {"last_id": last_id, "next_id": next_id}
@@ -583,6 +613,18 @@ def send_onboarding_forms_email(employee_onboarding):
     if not applicant_email:
         frappe.throw("No applicant/employee email found to send the forms to.")
 
+    # Get HR Manager emails for CC
+    hr_manager_users = frappe.get_all(
+        "Has Role",
+        filters={"role": "HR Manager", "parenttype": "User"},
+        fields=["parent"]
+    )
+    hr_manager_emails = []
+    for u in hr_manager_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            hr_manager_emails.append(email)
+
     base_url = get_url()
     employee = getattr(doc, "employee", None)
 
@@ -618,6 +660,7 @@ def send_onboarding_forms_email(employee_onboarding):
         sender=get_hr_sender(),
         subject=subject,
         message=message,
+        cc=hr_manager_emails,
         reference_doctype="Employee Onboarding",
         reference_name=doc.name,
     )
@@ -637,6 +680,19 @@ def send_onboarding_forms_to_employee(dispatch_name):
 
     if not doc.employee_email:
         frappe.throw("No email address set for this employee.")
+
+    # Get HR Manager emails for CC
+    hr_manager_users = frappe.get_all(
+        "Has Role",
+        filters={"role": "HR Manager", "parenttype": "User"},
+        fields=["parent"]
+    )
+    hr_manager_emails = []
+    for u in hr_manager_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            hr_manager_emails.append(email)
+
     base_url = get_url()
     employee = doc.employee
 
@@ -667,6 +723,7 @@ def send_onboarding_forms_to_employee(dispatch_name):
         sender=get_hr_sender(),
         subject=subject,
         message=message,
+        cc=hr_manager_emails,
         reference_doctype="Onboarding Form Dispatch",
         reference_name=doc.name,
     )
@@ -680,6 +737,7 @@ def send_onboarding_forms_to_employee(dispatch_name):
     doc.last_sent_on = now()
     doc.save()
     frappe.db.commit()
+    return {"success": True, "message": f"Onboarding forms sent to {doc.employee_email}"}
 
 @frappe.whitelist(allow_guest=True)
 def open_onboarding_form(doctype, route, employee):

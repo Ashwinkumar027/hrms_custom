@@ -123,7 +123,7 @@
   "document_type": "Job Requisition",
   "enable_action_confirmation": 0,
   "is_active": 1,
-  "modified": "2026-07-06 12:02:01.682469",
+  "modified": "2026-08-13 21:31:11.284127",
   "name": "Manpower Requisition Flow",
   "override_status": 0,
   "send_email_alert": 0,
@@ -173,7 +173,7 @@
    {
     "allow_edit": "HR Manager",
     "avoid_status_override": 0,
-    "doc_status": "1",
+    "doc_status": "0",
     "evaluate_as_expression": 0,
     "is_optional_state": 0,
     "message": null,

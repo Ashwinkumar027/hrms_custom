@@ -2,6 +2,17 @@
  {
   "docstatus": 0,
   "doctype": "Client Script",
+  "dt": "Employee",
+  "enabled": 1,
+  "modified": "2026-08-11 14:56:30.524261",
+  "module": "HRMS custom",
+  "name": "Employee Onboarding Field Setup",
+  "script": "frappe.ui.form.on('Employee', {\r\n    refresh: function(frm) {\r\n        \r\n        // ==========================================\r\n        // 1. RULES FOR HR MANAGERS / HR USERS\r\n        // ==========================================\r\n        if (frappe.user.has_role('HR User') || frappe.user.has_role('HR Manager') || frappe.user.has_role('System Manager')) {\r\n            \r\n            // HR MUST fill these core fields to create the profile\r\n            frm.set_df_property('first_name', 'reqd', 1);\r\n            frm.set_df_property('company', 'reqd', 1);\r\n            frm.set_df_property('date_of_joining', 'reqd', 1);\r\n            frm.set_df_property('designation', 'reqd', 1);\r\n            frm.set_df_property('department', 'reqd', 1);\r\n            frm.set_df_property('employment_type', 'reqd', 1);\r\n\r\n            // Make sure these are NOT mandatory for HR \r\n            // (Because the Employee will fill these later, or they are in your custom forms)\r\n            frm.set_df_property('cell_number', 'reqd', 0);\r\n            frm.set_df_property('personal_email', 'reqd', 0);\r\n            frm.set_df_property('current_address', 'reqd', 0);\r\n            frm.set_df_property('blood_group', 'reqd', 0);\r\n            frm.set_df_property('emergency_phone_number', 'reqd', 0);\r\n            frm.set_df_property('bank_name', 'reqd', 0);\r\n            frm.set_df_property('bank_ac_no', 'reqd', 0);\r\n            \r\n            // Optional: You can hide the Bio/Health tabs from HR to make the form cleaner\r\n            frm.set_df_property('bio', 'hidden', 1);\r\n            frm.set_df_property('health_details', 'hidden', 1);\r\n        } \r\n        \r\n        // ==========================================\r\n        // 2. RULES FOR THE NEW EMPLOYEE (Self Service)\r\n        // ==========================================\r\n        else if (frappe.user.has_role('Employee Self Service')) {\r\n            \r\n            // Lock down HR fields so the employee cannot change their own Job Title/Company\r\n            frm.set_df_property('company', 'read_only', 1);\r\n            frm.set_df_property('date_of_joining', 'read_only', 1);\r\n            frm.set_df_property('designation', 'read_only', 1);\r\n            frm.set_df_property('department', 'read_only', 1);\r\n            frm.set_df_property('employment_type', 'read_only', 1);\r\n\r\n            // Make basic contact info mandatory for the Employee to fill on their profile\r\n            frm.set_df_property('cell_number', 'reqd', 1);\r\n            frm.set_df_property('personal_email', 'reqd', 1);\r\n            frm.set_df_property('blood_group', 'reqd', 1);\r\n            frm.set_df_property('emergency_phone_number', 'reqd', 1);\r\n            frm.set_df_property('person_to_be_contacted', 'reqd', 1);\r\n            \r\n            // NOTE: Bank, PF, and ESI are NOT made mandatory here because your \r\n            // custom forms (Form 11, ESI Enrollment) handle that data collection!\r\n        }\r\n    }\r\n});\r\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
   "dt": "Job Offer",
   "enabled": 1,
   "modified": "2026-08-09 21:57:23.189764",
@@ -140,17 +151,6 @@
   "module": "HRMS custom",
   "name": "Attendance Reason Allocation",
   "script": "frappe.ui.form.on('Attendance Reason Allocation', {\r\n    refresh(frm) {\r\n        toggle_fields(frm);\r\n    },\r\n    applies_to(frm) {\r\n        frm.set_value('employee', '');\r\n        frm.set_value('employee_name', '');\r\n        frm.set_value('department', '');\r\n        toggle_fields(frm);\r\n    }\r\n});\r\n\r\nfunction toggle_fields(frm) {\r\n    let is_employee   = frm.doc.applies_to === 'Employee';\r\n    let is_department = frm.doc.applies_to === 'Department';\r\n\r\n    frm.set_df_property('employee',      'hidden', is_employee   ? 0 : 1);\r\n    frm.set_df_property('employee_name', 'hidden', is_employee   ? 0 : 1);\r\n    frm.set_df_property('department',    'hidden', is_department ? 0 : 1);\r\n\r\n    frm.fields_dict['employee']      && frm.fields_dict['employee'].refresh();\r\n    frm.fields_dict['employee_name'] && frm.fields_dict['employee_name'].refresh();\r\n    frm.fields_dict['department']    && frm.fields_dict['department'].refresh();\r\n}",
-  "view": "Form"
- },
- {
-  "docstatus": 0,
-  "doctype": "Client Script",
-  "dt": "Job Offer",
-  "enabled": 0,
-  "modified": "2026-05-13 09:26:48.506126",
-  "module": "HRMS custom",
-  "name": "Job Offer - Auto Fetch CTC",
-  "script": "frappe.ui.form.on(\"Job Offer\", {\n    job_applicant: function(frm) {\n        if (!frm.doc.job_applicant) {\n            console.warn(\"job_applicant is empty, skipping fetch.\");\n            return;\n        }\n\n        frappe.db.get_value(\"Job Applicant\", frm.doc.job_applicant, \n            [\"custom_expected_ctc\", \"custom_current_ctc\", \"custom_current_employer\", \n             \"custom_current_designation\", \"custom_notice_period\", \n             \"custom_current_location\", \"custom_preferred_location\"],\n            function(data) {\n                if (!data) return;\n\n                console.log(\"Fetched data:\", data);\n\n                // ✅ FIX: custom_expected_ctc is stored as \"1cr\", \"10L\" etc.\n                // Show the raw value directly — don't force parseFloat\n                if (data.custom_expected_ctc !== null && \n                    data.custom_expected_ctc !== undefined &&\n                    data.custom_expected_ctc !== \"\") {\n\n                    // Since custom_proposed_ctc is Currency type,\n                    // we need a clean number — strip all non-numeric chars\n                    let raw = String(data.custom_expected_ctc).trim();\n                    let numeric = parseFloat(raw.replace(/[^0-9.]/g, \"\"));\n\n                    if (!isNaN(numeric)) {\n                        frm.set_value(\"custom_proposed_ctc\", numeric);\n                        frm.refresh_field(\"custom_proposed_ctc\");\n                        console.log(\"Set proposed CTC to:\", numeric);\n                    } else {\n                        // Value like \"1cr\" can't be auto-converted — show warning\n                        frappe.show_alert({\n                            message: `Expected CTC is \"${raw}\" — please enter manually`,\n                            indicator: \"orange\"\n                        }, 5);\n                        console.warn(\"Cannot auto-convert CTC value:\", raw);\n                    }\n                }\n            }\n        );\n    }\n});",
   "view": "Form"
  },
  {
