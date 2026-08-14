@@ -536,6 +536,7 @@ def probation_action(employee, action):
 @frappe.whitelist()
 def get_last_employee_id(company):
     import re
+    from collections import defaultdict
 
     result = frappe.get_all(
         "Employee",
@@ -545,24 +546,30 @@ def get_last_employee_id(company):
     if not result:
         return {"last_id": None, "next_id": None}
 
-    parsed = []
+    # Group employees by their ID prefix (e.g. QSS, ACM)
+    prefix_groups = defaultdict(list)
     for r in result:
         match = re.match(r'^([A-Za-z]+)(\d+)$', r.name)
         if match:
             prefix = match.group(1)
             number = int(match.group(2))
             pad_length = len(match.group(2))
-            parsed.append((number, prefix, pad_length, r.name))
+            prefix_groups[prefix].append((number, pad_length, r.name))
 
-    if not parsed:
+    if not prefix_groups:
         return {"last_id": None, "next_id": None}
 
-    # Sort by numeric value of the ID, not creation date
-    parsed.sort(key=lambda x: x[0], reverse=True)
-    highest_number, prefix, pad_length, last_id = parsed[0]
+    # Pick the prefix with the MOST employees (the company's actual naming series)
+    # rather than just whichever number happens to be numerically highest
+    dominant_prefix = max(prefix_groups, key=lambda p: len(prefix_groups[p]))
+    group = prefix_groups[dominant_prefix]
+
+    # Within that correct prefix, find the highest number
+    group.sort(key=lambda x: x[0], reverse=True)
+    highest_number, pad_length, last_id = group[0]
 
     next_number = highest_number + 1
-    next_id = prefix + str(next_number).zfill(pad_length)
+    next_id = dominant_prefix + str(next_number).zfill(pad_length)
 
     return {"last_id": last_id, "next_id": next_id}
 
