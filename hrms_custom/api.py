@@ -237,15 +237,28 @@ def respond_to_offer(token, response, offer):
     ).hexdigest()
 
     if token != expected_token:
-        return "<h2 style='color:red;text-align:center;'>Invalid or expired link!</h2>"
+        frappe.respond_as_web_page(
+            title="Invalid Link",
+            html="""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2 style="color:#A32D2D;">Invalid or Expired Link</h2>
+                <p>This link is no longer valid. Please contact HR for assistance.</p>
+            </div>
+            """
+        )
+        return
 
     if job_offer.custom_offer_response in ["Accepted", "Rejected"]:
-        return (
-            "<div style='font-family:Arial;text-align:center;padding:50px;'>"
-            "<h2>You have already responded to this offer.</h2>"
-            "<p>Response: <b>" + job_offer.custom_offer_response + "</b></p>"
-            "</div>"
+        frappe.respond_as_web_page(
+            title="Already Responded",
+            html=f"""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2>You have already responded to this offer.</h2>
+                <p>Response: <strong>{job_offer.custom_offer_response}</strong></p>
+            </div>
+            """
         )
+        return
 
     frappe.db.set_value("Job Offer", offer, {
         "custom_offer_response": response,
@@ -269,41 +282,52 @@ def respond_to_offer(token, response, offer):
 
     if hr_manager_emails:
         color = "#0F6E56" if response == "Accepted" else "#A32D2D"
-        frappe.sendmail(
-            recipients=hr_manager_emails,
-            sender=get_hr_sender(),
-            subject="Offer " + response + " - " + (candidate_name or offer),
-            message=(
-                "<div style='font-family:Arial;padding:20px;'>"
-                "<h2 style='color:" + color + ";'>Offer " + response + "!</h2>"
-                "<p>Candidate <b>" + (candidate_name or "") + "</b> has "
-                "<b style='color:" + color + ";'>" + response + "</b> the offer.</p>"
-                "<p><b>Position:</b> " + (job_offer.designation or "") + "</p>"
-                "<p><b>Response Time:</b> " + now() + "</p>"
-                "</div>"
-            ),
-        )
+        try:
+            frappe.sendmail(
+                recipients=hr_manager_emails,
+                sender=get_hr_sender(),
+                subject="Offer " + response + " - " + (candidate_name or offer),
+                message=(
+                    "<div style='font-family:Arial;padding:20px;'>"
+                    "<h2 style='color:" + color + ";'>Offer " + response + "!</h2>"
+                    "<p>Candidate <b>" + (candidate_name or "") + "</b> has "
+                    "<b style='color:" + color + ";'>" + response + "</b> the offer.</p>"
+                    "<p><b>Position:</b> " + (job_offer.designation or "") + "</p>"
+                    "<p><b>Response Time:</b> " + now() + "</p>"
+                    "</div>"
+                ),
+            )
+        except Exception as e:
+            frappe.log_error(str(e), "Offer Response Notification Error")
+    else:
+        frappe.log_error("No HR Manager emails found to notify", "Offer Response Notification Error")
 
     if response == "Accepted":
-        return (
-            "<div style='font-family:Arial,sans-serif;text-align:center;padding:50px;"
-            "max-width:500px;margin:0 auto;'>"
-            "<div style='color:#0F6E56;font-size:60px;'>✓</div>"
-            "<h2 style='color:#0F6E56;'>Offer Accepted!</h2>"
-            "<p>Thank you for accepting our offer, <b>" + (candidate_name or "") + "</b>!</p>"
-            "<p>Our HR team will contact you shortly with further details.</p>"
-            "<p>We look forward to welcoming you to <b>Aionion Capital</b>!</p>"
-            "</div>"
+        frappe.respond_as_web_page(
+            title="Offer Accepted",
+            html=f"""
+            <div style='font-family:Arial,sans-serif;text-align:center;padding:50px;
+            max-width:500px;margin:0 auto;'>
+            <div style='color:#0F6E56;font-size:60px;'>&#10003;</div>
+            <h2 style='color:#0F6E56;'>Offer Accepted!</h2>
+            <p>Thank you for accepting our offer, <strong>{candidate_name or ""}</strong>!</p>
+            <p>Our HR team will contact you shortly with further details.</p>
+            <p>We look forward to welcoming you to <strong>Aionion Capital</strong>!</p>
+            </div>
+            """
         )
     else:
-        return (
-            "<div style='font-family:Arial,sans-serif;text-align:center;padding:50px;"
-            "max-width:500px;margin:0 auto;'>"
-            "<div style='color:#A32D2D;font-size:60px;'>✗</div>"
-            "<h2 style='color:#A32D2D;'>Offer Declined</h2>"
-            "<p>Thank you for letting us know, <b>" + (candidate_name or "") + "</b>.</p>"
-            "<p>We appreciate your time and wish you all the best.</p>"
-            "</div>"
+        frappe.respond_as_web_page(
+            title="Offer Declined",
+            html=f"""
+            <div style='font-family:Arial,sans-serif;text-align:center;padding:50px;
+            max-width:500px;margin:0 auto;'>
+            <div style='color:#A32D2D;font-size:60px;'>&#10007;</div>
+            <h2 style='color:#A32D2D;'>Offer Declined</h2>
+            <p>Thank you for letting us know, <strong>{candidate_name or ""}</strong>.</p>
+            <p>We appreciate your time and wish you all the best.</p>
+            </div>
+            """
         )
 
 
