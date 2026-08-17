@@ -167,6 +167,7 @@ fixtures = [
 ]
 
 override_doctype_class = {
+	"Job Applicant": "hrms_custom.overrides.job_applicant.CustomJobApplicant",
     "Employee Checkin": "hrms_custom.overrides.employee_checkin.MultiLocationEmployeeCheckin",
     "Attendance Request": "hrms_custom.overrides.attendance_request.CustomAttendanceRequest",
     "Employee Onboarding": "hrms_custom.overrides.employee_onboarding.CustomEmployeeOnboarding",
@@ -253,5 +254,8 @@ doc_events = {
     },
     "Form 11": {
         "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
+    },
+    "Interview": {
+        "before_insert": "hrms_custom.api.interview.generate_token"
     }
 }

@@ -1,0 +1,138 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Interview Response{% endblock %}
+
+{% block page_content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    
+                    {% if error_message %}
+                        <div class="alert alert-danger text-center">
+                            <h4>Error</h4>
+                            <p>{{ error_message }}</p>
+                        </div>
+                    {% else %}
+                        
+                        {% if action == "accept" %}
+                            <div id="accept-container" class="text-center">
+                                <h3 class="mb-4">Confirm Interview Acceptance</h3>
+                                <p>You are about to accept the interview schedule for <b>{{ interview.job_applicant }}</b>.</p>
+                                <p class="mb-4">
+                                    Date: <b>{{ frappe.utils.formatdate(interview.scheduled_on) }}</b><br>
+                                    Time: <b>{{ interview.from_time }} - {{ interview.to_time }}</b>
+                                </p>
+                                <button id="btn-accept" class="btn btn-success btn-lg">Click to Confirm</button>
+                            </div>
+                            
+                        {% elif action == "reject" %}
+                            <div id="reject-container">
+                                <h3 class="mb-4 text-center">Decline Interview</h3>
+                                <p class="text-center">You are declining the interview schedule. Please provide a reason.</p>
+                                <div class="form-group mb-4">
+                                    <label for="reason">Reason <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="reason" rows="3" required></textarea>
+                                </div>
+                                <div class="text-center">
+                                    <button id="btn-reject" class="btn btn-danger btn-lg">Submit Decision</button>
+                                </div>
+                            </div>
+                            
+                        {% elif action == "reschedule" %}
+                            <div id="reschedule-container">
+                                <h3 class="mb-4 text-center">Request Reschedule</h3>
+                                <p class="text-center">You can request to reschedule within 2 days of the original date (<b>{{ frappe.utils.formatdate(interview.scheduled_on) }}</b>).</p>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="new_date">Proposed Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="new_date" required>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="new_time">Proposed Time <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" id="new_time" required>
+                                </div>
+                                <div class="form-group mb-4">
+                                    <label for="reason">Reason for Rescheduling <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="reason" rows="3" required></textarea>
+                                </div>
+                                <div class="text-center">
+                                    <button id="btn-reschedule" class="btn btn-primary btn-lg">Request Reschedule</button>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Success Message Container -->
+                        <div id="success-container" class="text-center d-none">
+                            <h3 class="text-success mb-3">Response Submitted Successfully</h3>
+                            <p>Thank you. Your response has been recorded and the HR team has been notified.</p>
+                        </div>
+                        
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    frappe.ready(function() {
+        const token = "{{ token }}";
+        const action = "{{ action }}";
+        
+        function submitResponse(data) {
+            frappe.call({
+                method: "hrms_custom.api.interview.submit_candidate_response",
+                args: {
+                    token: token,
+                    action: action,
+                    reason: data.reason,
+                    new_date: data.new_date,
+                    new_time: data.new_time
+                },
+                btn: data.btn,
+                callback: function(r) {
+                    if (!r.exc) {
+                        $('#accept-container, #reject-container, #reschedule-container').addClass('d-none');
+                        $('#success-container').removeClass('d-none');
+                    }
+                }
+            });
+        }
+        
+        $('#btn-accept').click(function() {
+            submitResponse({ btn: this });
+        });
+        
+        $('#btn-reject').click(function() {
+            const reason = $('#reason').val();
+            if (!reason) {
+                frappe.msgprint("Please enter a reason.");
+                return;
+            }
+            submitResponse({ btn: this, reason: reason });
+        });
+        
+        $('#btn-reschedule').click(function() {
+            const reason = $('#reason').val();
+            const new_date = $('#new_date').val();
+            const new_time = $('#new_time').val();
+            
+            if (!reason || !new_date || !new_time) {
+                frappe.msgprint("Please fill in all fields.");
+                return;
+            }
+            
+            submitResponse({ 
+                btn: this, 
+                reason: reason,
+                new_date: new_date,
+                new_time: new_time
+            });
+        });
+    });
+</script>
+{% endblock %}
