@@ -2161,22 +2161,6 @@
  },
  {
   "default_value": null,
-  "doc_type": "Job Requisition",
-  "docstatus": 0,
-  "doctype": "Property Setter",
-  "doctype_or_field": "DocField",
-  "field_name": "column_break_4",
-  "is_system_generated": 0,
-  "modified": "2026-08-18 15:36:20.201976",
-  "module": "HRMS custom",
-  "name": "Job Requisition-column_break_4-hidden",
-  "property": "hidden",
-  "property_type": "Check",
-  "row_name": null,
-  "value": "1"
- },
- {
-  "default_value": null,
   "doc_type": "Job Opening",
   "docstatus": 0,
   "doctype": "Property Setter",
