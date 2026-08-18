@@ -6,7 +6,7 @@ app_email = "ashwinkumark59@gmail.com"
 app_license = "mit"
 
 doctype_js = {
-    "Employee": "public/js/employee.js",
+    "Employee": "hrms_custom/public/js/employee.js",
 }
 
 fixtures = [
