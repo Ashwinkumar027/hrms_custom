@@ -1,0 +1,235 @@
+
+--- Notify Hiring Manager - Job Requisition Rejected (After Save) ---
+if doc.workflow_state == "Rejected":
+    sender_email = frappe.db.get_value("HR Settings", "HR Settings", "sender_email") or None
+
+    recipient_email = None
+    if doc.requested_by:
+        user_id = frappe.db.get_value("Employee", doc.requested_by, "user_id")
+        if user_id:
+            recipient_email = frappe.db.get_value("User", user_id, "email")
+
+    if recipient_email:
+        form_url = frappe.utils.get_url_to_form(doc.doctype, doc.name)
+        frappe.sendmail(
+            recipients=[recipient_email],
+            subject="Job Requisition REJECTED - " + (doc.designation or doc.name),
+            sender=sender_email,
+            message=(
+                "<p>Dear " + (doc.requested_by_name or "Hiring Manager") + ",</p>"
+                "<p>Your Job Requisition has been <b style='color:red'>Rejected</b>.</p>"
+                "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>"
+                "<tr><td><b>Requisition</b></td><td>" + doc.name + "</td></tr>"
+                "<tr><td><b>Designation</b></td><td>" + (doc.designation or "") + "</td></tr>"
+                "<tr><td><b>Department</b></td><td>" + (doc.department or "") + "</td></tr>"
+                "</table>"
+                "<br><p><a href='" + form_url + "'>View Requisition</a></p>"
+                "<p>Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
+            ),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+        )
+
+--- Notify HR Manager - Job Requisition Fully Approved (After Save) ---
+if doc.workflow_state == "Approved":
+    sender_email = frappe.db.get_value("HR Settings", "HR Settings", "sender_email") or None
+
+    hr_users = frappe.get_all(
+        "Has Role",
+        filters={"role": "HR Manager", "parenttype": "User"},
+        fields=["parent"]
+    )
+    recipients = []
+    for u in hr_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            recipients.append(email)
+
+    if doc.requested_by:
+        user_id = frappe.db.get_value("Employee", doc.requested_by, "user_id")
+        if user_id:
+            requesting_email = frappe.db.get_value("User", user_id, "email")
+            if requesting_email:
+                recipients.append(requesting_email)
+
+    if recipients:
+        form_url = frappe.utils.get_url_to_form(doc.doctype, doc.name)
+        type_of_req = doc.custom_type_of_requirement or ""
+        frappe.sendmail(
+            recipients=list(set(recipients)),
+            subject="Job Requisition APPROVED - Start Recruitment - " + (doc.designation or doc.name),
+            sender=sender_email,
+            message=(
+                "<p>Dear HR Team,</p>"
+                "<p>The Job Requisition is <b style='color:green'>Approved</b>. Please start recruitment.</p>"
+                "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>"
+                "<tr><td><b>Requisition</b></td><td>" + doc.name + "</td></tr>"
+                "<tr><td><b>Type</b></td><td>" + type_of_req + "</td></tr>"
+                "<tr><td><b>Requested By</b></td><td>" + (doc.requested_by_name or doc.requested_by or "") + "</td></tr>"
+                "<tr><td><b>Designation</b></td><td>" + (doc.designation or "") + "</td></tr>"
+                "<tr><td><b>Department</b></td><td>" + (doc.department or "") + "</td></tr>"
+                "<tr><td><b>No of Positions</b></td><td>" + str(doc.no_of_positions or "") + "</td></tr>"
+                "<tr><td><b>Urgency Level</b></td><td>" + (doc.custom_urgency_level or "") + "</td></tr>"
+                "</table>"
+                "<br><p><a href='" + form_url + "' style='background:#0F6E56;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;'>View Requisition</a></p>"
+                "<p>Regards,<br><b>System</b><br>Aionion Capital</p>"
+            ),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+        )
+
+--- Job Requisition - Pending Final Approval Handler (After Save) ---
+sender_email = frappe.db.get_value("HR Settings", "HR Settings", "sender_email") or None
+
+type_of_req = doc.custom_type_of_requirement or ""
+
+# ── NEW POSITION → Notify Final Approver ───────────────────
+if type_of_req == "New Position" and doc.workflow_state == "Pending Final Approval":
+    fa_users = frappe.get_all("Has Role",
+        filters={"role": "Final Approver", "parenttype": "User"}, fields=["parent"])
+    director_users = frappe.get_all("Has Role",
+        filters={"role": "Dileep Director", "parenttype": "User"}, fields=["parent"])
+
+    recipients = []
+    for u in fa_users + director_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            recipients.append(email)
+
+    if recipients:
+        form_url = frappe.utils.get_url_to_form(doc.doctype, doc.name)
+        frappe.sendmail(
+            recipients=list(set(recipients)),
+            subject="[New Position] Final Approval Required - " + (doc.designation or doc.name),
+            sender=sender_email,
+            message=(
+                "<p>Dear Team,</p>"
+                "<p>A <b>New Position</b> Requisition requires your <b>Final Approval</b>.</p>"
+                "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>"
+                "<tr><td><b>Requisition</b></td><td>" + doc.name + "</td></tr>"
+                "<tr><td><b>Designation</b></td><td>" + (doc.designation or "") + "</td></tr>"
+                "<tr><td><b>Department</b></td><td>" + (doc.department or "") + "</td></tr>"
+                "<tr><td><b>No of Positions</b></td><td>" + str(doc.no_of_positions or "") + "</td></tr>"
+                "<tr><td><b>Urgency Level</b></td><td>" + (doc.custom_urgency_level or "") + "</td></tr>"
+                "<tr><td><b>Proposed Salary</b></td><td>" + str(doc.custom_proposed_salarybudget or "") + "</td></tr>"
+                "</table>"
+                "<br><p><a href='" + form_url + "' style='background:#1B4F8A;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;'>Final Approve</a></p>"
+                "<p>Regards,<br><b>System</b><br>Aionion Capital</p>"
+            ),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+        )
+
+# ── REPLACEMENT → Auto Approve + FYI email ─────────────────
+if type_of_req == "Replacement" and doc.workflow_state == "Pending Final Approval":
+    frappe.db.set_value("Job Requisition", doc.name, "workflow_state", "Approved")
+
+    fa_users = frappe.get_all("Has Role",
+        filters={"role": "Final Approver", "parenttype": "User"}, fields=["parent"])
+    director_users = frappe.get_all("Has Role",
+        filters={"role": "Dileep Director", "parenttype": "User"}, fields=["parent"])
+
+    recipients = []
+    for u in fa_users + director_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            recipients.append(email)
+
+    if recipients:
+        form_url = frappe.utils.get_url_to_form(doc.doctype, doc.name)
+        frappe.sendmail(
+            recipients=list(set(recipients)),
+            subject="[FYI] Replacement Position Approved - " + (doc.designation or doc.name),
+            sender=sender_email,
+            message=(
+                "<p>Dear Team,</p>"
+                "<p>This is to inform you that a <b>Replacement</b> position has been approved by HR Manager.</p>"
+                "<p>No action required from your end.</p>"
+                "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>"
+                "<tr><td><b>Requisition</b></td><td>" + doc.name + "</td></tr>"
+                "<tr><td><b>Designation</b></td><td>" + (doc.designation or "") + "</td></tr>"
+                "<tr><td><b>Department</b></td><td>" + (doc.department or "") + "</td></tr>"
+                "<tr><td><b>No of Positions</b></td><td>" + str(doc.no_of_positions or "") + "</td></tr>"
+                "<tr><td><b>Type</b></td><td><b>Replacement</b></td></tr>"
+                "</table>"
+                "<br><p><a href='" + form_url + "' style='background:#0F6E56;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;'>View Requisition</a></p>"
+                "<p>Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
+            ),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+        )
+
+--- Job Requisition - HR Approved Handler (After Save) ---
+sender_email = frappe.db.get_value("HR Settings", "HR Settings", "sender_email") or None
+
+type_of_req = doc.custom_type_of_requirement or ""
+
+# ── NEW POSITION → Notify HR Manager for approval ──────────
+if type_of_req == "New Position" and doc.workflow_state == "Pending Hr Approval":
+    hr_users = frappe.get_all("Has Role",
+        filters={"role": "HR Manager", "parenttype": "User"},
+        fields=["parent"])
+
+    recipients = []
+    for u in hr_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            recipients.append(email)
+
+    if recipients:
+        form_url = frappe.utils.get_url_to_form(doc.doctype, doc.name)
+        frappe.sendmail(
+            recipients=list(set(recipients)),
+            subject="[New Position] Job Requisition Pending Your Approval - " + (doc.designation or doc.name),
+            sender=sender_email,
+            message=(
+                "<p>Dear HR Manager,</p>"
+                "<p>A <b>New Position</b> Job Requisition has been submitted and requires your approval.</p>"
+                "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>"
+                "<tr><td><b>Requisition</b></td><td>" + doc.name + "</td></tr>"
+                "<tr><td><b>Designation</b></td><td>" + (doc.designation or "") + "</td></tr>"
+                "<tr><td><b>Department</b></td><td>" + (doc.department or "") + "</td></tr>"
+                "<tr><td><b>No of Positions</b></td><td>" + str(doc.no_of_positions or "") + "</td></tr>"
+                "<tr><td><b>Urgency Level</b></td><td>" + (doc.custom_urgency_level or "") + "</td></tr>"
+                "<tr><td><b>Proposed Salary</b></td><td>" + str(doc.custom_proposed_salarybudget or "") + "</td></tr>"
+                "</table>"
+                "<br><p><a href='" + form_url + "' style='background:#1B4F8A;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;'>Review & Approve</a></p>"
+                "<p>Regards,<br><b>System</b><br>Aionion Capital</p>"
+            ),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+        )
+
+# ── REPLACEMENT → Notify HR Manager for approval ───────────
+if type_of_req == "Replacement" and doc.workflow_state == "Pending Hr Approval":
+    hr_users = frappe.get_all("Has Role",
+        filters={"role": "HR Manager", "parenttype": "User"},
+        fields=["parent"])
+
+    recipients = []
+    for u in hr_users:
+        email = frappe.db.get_value("User", u.parent, "email")
+        if email:
+            recipients.append(email)
+
+    if recipients:
+        form_url = frappe.utils.get_url_to_form(doc.doctype, doc.name)
+        frappe.sendmail(
+            recipients=list(set(recipients)),
+            subject="[Replacement] Job Requisition Pending Your Approval - " + (doc.designation or doc.name),
+            sender=sender_email,
+            message=(
+                "<p>Dear HR Manager,</p>"
+                "<p>A <b>Replacement</b> Job Requisition has been submitted and requires your approval.</p>"
+                "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>"
+                "<tr><td><b>Requisition</b></td><td>" + doc.name + "</td></tr>"
+                "<tr><td><b>Designation</b></td><td>" + (doc.designation or "") + "</td></tr>"
+                "<tr><td><b>Department</b></td><td>" + (doc.department or "") + "</td></tr>"
+                "<tr><td><b>No of Positions</b></td><td>" + str(doc.no_of_positions or "") + "</td></tr>"
+                "</table>"
+                "<br><p><a href='" + form_url + "' style='background:#1B4F8A;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;'>Review & Approve</a></p>"
+                "<p>Regards,<br><b>System</b><br>Aionion Capital</p>"
+            ),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+        )

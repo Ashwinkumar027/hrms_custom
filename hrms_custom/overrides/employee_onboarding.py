@@ -53,6 +53,23 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             if team and frappe.db.exists("HD Team", team):
                 ticket.agent_group = team
             ticket.insert(ignore_permissions=True)
+            ticket.reload() # Fetch any auto-assignments triggered by Assignment Rules
+            
+            # Auto-populate the activities tracking child table
+            child = frappe.new_doc("Employee Boarding Activity")
+            child.parent = self.name
+            child.parenttype = "Employee Onboarding"
+            child.parentfield = "activities"
+            child.activity_name = subject
+            child.custom_ticket_id = ticket.name
+            child.custom_status = "Pending"
+            
+            # Fetch assigned user from ToDo if auto-assigned
+            todos = frappe.get_all("ToDo", filters={"reference_type": "HD Ticket", "reference_name": ticket.name}, fields=["allocated_to"])
+            if todos:
+                child.user = todos[0].allocated_to
+                
+            child.insert(ignore_permissions=True)
 
         tickets_created = 0
 

@@ -3,15 +3,6 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2026-05-12 07:29:58.055424",
-  "name": "Onboarding In Progress",
-  "style": "Primary",
-  "workflow_state_name": "Onboarding In Progress"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
   "modified": "2026-05-12 07:29:58.049331",
   "name": "Pending HR Review",
   "style": "Warning",
@@ -142,6 +133,15 @@
   "name": "Pending Manager Input",
   "style": "Warning",
   "workflow_state_name": "Pending Manager Input"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:58.055424",
+  "name": "Onboarding In Progress",
+  "style": "Primary",
+  "workflow_state_name": "Onboarding In Progress"
  },
  {
   "docstatus": 0,
