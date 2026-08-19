@@ -66,10 +66,48 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             
             # Fetch assigned user from ToDo if auto-assigned
             todos = frappe.get_all("ToDo", filters={"reference_type": "HD Ticket", "reference_name": ticket.name}, fields=["allocated_to"])
+            user_email = None
             if todos:
                 child.user = todos[0].allocated_to
+                user_email = frappe.db.get_value("User", child.user, "email")
                 
             child.insert(ignore_permissions=True)
+
+            # --- Custom Email Notification ---
+            if user_email and task_type != "ID Card":
+                sender_email = frappe.db.get_value("HR Settings", "HR Settings", "sender_email") or None
+                hr_users = frappe.get_all("Has Role", filters={"role": "HR Manager", "parenttype": "User"}, fields=["parent"])
+                hr_emails = []
+                for u in hr_users:
+                    hr_em = frappe.db.get_value("User", u.parent, "email")
+                    if hr_em: hr_emails.append(hr_em)
+
+                base_url = frappe.utils.get_url()
+                ticket_link = f"<a href='{base_url}/app/hd-ticket/{ticket.name}'>{ticket.name}</a>"
+                
+                frappe.sendmail(
+                    recipients=[user_email],
+                    cc=hr_emails,
+                    subject="New Onboarding Task: " + subject,
+                    sender=sender_email,
+                    message=(
+                        "<p>Dear Team,</p>"
+                        "<p>A new onboarding task has been assigned to you.</p>"
+                        "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse'>"
+                        "<tr><td><b>Company</b></td><td>" + (self.company or "") + "</td></tr>"
+                        "<tr><td><b>New Joiner</b></td><td>" + (self.employee_name or "") + "</td></tr>"
+                        "<tr><td><b>Task</b></td><td>" + subject + "</td></tr>"
+                        "<tr><td><b>Department</b></td><td>" + (self.department or "") + "</td></tr>"
+                        "<tr><td><b>Hiring Manager</b></td><td>" + (self.hiring_manager or "") + "</td></tr>"
+                        "<tr><td><b>Date of Joining</b></td><td>" + str(self.date_of_joining or "") + "</td></tr>"
+                        "<tr><td><b>Helpdesk Ticket</b></td><td>" + ticket_link + "</td></tr>"
+                        "</table>"
+                        "<p>Please complete this task before the joining date.</p>"
+                        "<p>Regards,<br><b>HR Team</b><br>" + (self.company or "") + "</p>"
+                    ),
+                )
+            # ---------------------------------
+
 
         tickets_created = 0
 
@@ -278,11 +316,11 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             "</table>"
             "<p style='margin-top:20px;color:#555;'>"
             "Please design the ID card as per company format and send for printing.</p>"
-            "<p>Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
+            "<p>Regards,<br><b>HR Team</b><br>{company}</p>"
             "</div>"
             "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
             "<p style='color:#cce0ff;margin:0;font-size:11px;'>"
-            "Aionion Capital HRMS — Confidential</p>"
+            "{company} HRMS — Confidential</p>"
             "</div>"
             "</div>"
         ).format(

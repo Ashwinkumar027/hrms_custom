@@ -155,6 +155,7 @@ fixtures = [
     {
         "dt": "Web Form",
         "filters": [["name", "in", [
+            "career-application",
             "job-application",
             "candidate-pre-offer-form",
             "employee-registration-form",

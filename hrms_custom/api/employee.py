@@ -26,24 +26,26 @@ def send_preoffer_form(job_applicant):
 
     params = urllib.parse.urlencode({
         "applicant_name": doc.applicant_name or "",
-        "email": doc.email_id or "",
+        "email_id": doc.email_id or "",
         "phone": doc.phone_number or "",
-        "job_applicant": doc.name
+        "job_applicant": doc.name,
+        "job_title": doc.job_title or ""
     })
 
+    company = doc.company or "Our Company"
     form_url = get_url("/candidate-pre-offer/new?" + params)
-    subject = "Action Required: Pre-Offer Form - Aionion Capital"
+    subject = "Action Required: Pre-Offer Form - " + company
 
     message = (
         "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
         "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"
         "<h2 style='color:white;margin:0;'>Pre-Offer Form</h2>"
-        "<p style='color:#cce0ff;margin:5px 0;'>Aionion Capital</p>"
+        "<p style='color:#cce0ff;margin:5px 0;'>" + company + "</p>"
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + (doc.applicant_name or "Candidate") + "</b>,</p>"
         "<p>Congratulations! You have successfully cleared the interview process at "
-        "<b>Aionion Capital</b>.</p>"
+        "<b>" + company + "</b>.</p>"
         "<p>As the next step towards your offer letter, please fill in the "
         "<b>Pre-Offer Form</b> with your personal details, KYC information, "
         "CTC expectations, and upload all required documents.</p>"
@@ -64,13 +66,12 @@ def send_preoffer_form(job_applicant):
         "<li>Resume / CV</li>"
         "</ul>"
         "<p>Please complete the form at the earliest to proceed with your offer letter.</p>"
-        "<p>For any queries contact: "
-        "<a href='mailto:hr@aionioncapital.com'>hr@aionioncapital.com</a></p>"
-        "<p>Warm Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
+        "<p>For any queries contact HR.</p>"
+        "<p>Warm Regards,<br><b>HR Team</b><br>" + company + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
         "<p style='color:#cce0ff;margin:0;font-size:12px;'>"
-        "Aionion Capital HRMS</p>"
+        "" + company + " HRMS</p>"
         "</div>"
         "</div>"
     )
@@ -178,7 +179,7 @@ def send_offer_letter(job_offer):
         "<div style='font-family:Arial,sans-serif;max-width:650px;margin:0 auto;'>"
         "<div style='background:#1B4F8A;padding:25px;text-align:center;'>"
         "<h2 style='color:white;margin:0;'>Offer Letter</h2>"
-        "<p style='color:#cce0ff;margin:5px 0;'>Aionion Capital</p>"
+        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.company or "") + "</p>"
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + (candidate_name or "Candidate") + "</b>,</p>"
@@ -199,7 +200,7 @@ def send_offer_letter(job_offer):
         "<p style='color:#666;font-size:13px;'>Please be advised that the offer "
         "will be deemed revoked if we do not receive your acceptance within 48 hours.</p>"
         "<p>We look forward to welcoming you to our team!</p>"
-        "<p>Warm Regards,<br><b>HR Department</b><br>Aionion Capital</p>"
+        "<p>Warm Regards,<br><b>HR Department</b><br>" + (doc.company or "") + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
         "<p style='color:#cce0ff;margin:0;font-size:11px;'>"
@@ -287,6 +288,8 @@ def respond_to_offer(token, response, offer):
                 recipients=hr_manager_emails,
                 sender=get_hr_sender(),
                 subject="Offer " + response + " - " + (candidate_name or offer),
+                reference_doctype="Job Offer",
+                reference_name=offer,
                 message=(
                     "<div style='font-family:Arial;padding:20px;'>"
                     "<h2 style='color:" + color + ";'>Offer " + response + "!</h2>"
@@ -312,7 +315,7 @@ def respond_to_offer(token, response, offer):
             <h2 style='color:#0F6E56;'>Offer Accepted!</h2>
             <p>Thank you for accepting our offer, <strong>{candidate_name or ""}</strong>!</p>
             <p>Our HR team will contact you shortly with further details.</p>
-            <p>We look forward to welcoming you to <strong>Aionion Capital</strong>!</p>
+            <p>We look forward to welcoming you to <strong>{job_offer.company or "our team"}</strong>!</p>
             </div>
             """
         )
@@ -400,7 +403,7 @@ def probation_action(employee, action):
                 completed and you have been confirmed as a
                 <strong>permanent employee</strong>
                 effective <strong>{today()}</strong>.</p>
-                <p>Regards,<br><strong>HR Team</strong><br>Aionion Capital</p>
+                <p>Regards,<br><strong>HR Team</strong><br>{emp.company or ''}</p>
                 </div>
                 </div>
                 """
@@ -488,7 +491,7 @@ def probation_action(employee, action):
                 <strong>2 months</strong>.</p>
                 <p>New end date:
                 <strong>{new_end.strftime('%d-%m-%Y')}</strong></p>
-                <p>Regards,<br><strong>HR Team</strong><br>Aionion Capital</p>
+                <p>Regards,<br><strong>HR Team</strong><br>{emp.company or ''}</p>
                 </div>
                 </div>
                 """
@@ -661,12 +664,12 @@ def send_onboarding_forms_email(employee_onboarding):
 
     links_html, _ = _build_tracked_links(employee, base_url)
 
-    subject = "Action Required: Complete Your Onboarding Forms - Aionion Capital"
+    subject = "Action Required: Complete Your Onboarding Forms - " + (doc.company or "")
     message = (
         "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
         "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"
         "<h2 style='color:white;margin:0;'>Onboarding Forms</h2>"
-        "<p style='color:#cce0ff;margin:5px 0;'>Aionion Capital</p>"
+        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.company or "") + "</p>"
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + applicant_name + "</b>,</p>"
@@ -678,10 +681,10 @@ def send_onboarding_forms_email(employee_onboarding):
         "before your joining date. If you face any issues, contact HR.</p>"
         "<p>For any queries contact: "
         "<a href='mailto:hr@aionioncapital.com'>hr@aionioncapital.com</a></p>"
-        "<p>Warm Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
+        "<p>Warm Regards,<br><b>HR Team</b><br>" + (emp.company or "") + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
-        "<p style='color:#cce0ff;margin:0;font-size:12px;'>Aionion Capital HRMS</p>"
+        "<p style='color:#cce0ff;margin:0;font-size:12px;'>" + (doc.company or "") + " HRMS</p>"
         "</div>"
         "</div>"
     )
@@ -729,22 +732,22 @@ def send_onboarding_forms_to_employee(dispatch_name):
 
     links_html, forms_sent = _build_tracked_links(employee, base_url)
 
-    subject = "Action Required: Complete Your Onboarding Forms - Aionion Capital"
+    subject = "Action Required: Complete Your Onboarding Forms - " + (doc.company or "")
     message = (
         "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
         "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"
         "<h2 style='color:white;margin:0;'>Onboarding Forms</h2>"
-        "<p style='color:#cce0ff;margin:5px 0;'>Aionion Capital</p>"
+        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.company or "") + "</p>"
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + (doc.employee_name or "Employee") + "</b>,</p>"
         "<p>Please complete the following onboarding forms at your earliest convenience:</p>"
         + links_html +
         "<p style='margin-top:20px;color:#555;'>If you face any issues, contact HR.</p>"
-        "<p>Warm Regards,<br><b>HR Team</b><br>Aionion Capital</p>"
+        "<p>Warm Regards,<br><b>HR Team</b><br>" + (emp.company or "") + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
-        "<p style='color:#cce0ff;margin:0;font-size:12px;'>Aionion Capital HRMS</p>"
+        "<p style='color:#cce0ff;margin:0;font-size:12px;'>" + (doc.company or "") + " HRMS</p>"
         "</div>"
         "</div>"
     )
