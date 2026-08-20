@@ -38,6 +38,7 @@ class CustomInterview(Interview):
             "<div style='background: #f4f7f6; border-left: 4px solid #1B4F8A; padding: 15px; margin: 25px 0;'>"
             "<p style='margin: 5px 0; font-size: 14px;'><strong>Interview ID:</strong> " + self.name + "</p>"
             "<p style='margin: 5px 0; font-size: 14px;'><strong>Interview Type:</strong> " + (self.interview_type or "") + "</p>"
+            "<p style='margin: 5px 0; font-size: 14px;'><strong>Location / Link:</strong> " + (self.custom_interview_location or "TBD") + "</p>"
             "<p style='margin: 15px 0 5px 0; font-size: 14px; color:#555;'><s>Old Date: " + str(original_date) + " (" + str(original_from_time) + " to " + str(original_to_time) + ")</s></p>"
             "<p style='margin: 5px 0; font-size: 14px; font-weight: bold; color: #1B4F8A;'>New Date: " + str(self.scheduled_on) + "</p>"
             "<p style='margin: 5px 0; font-size: 14px; font-weight: bold; color: #1B4F8A;'>New Time: " + str(self.from_time) + " to " + str(self.to_time) + "</p>"
