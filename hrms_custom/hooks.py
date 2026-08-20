@@ -174,6 +174,7 @@ override_doctype_class = {
     "Employee Onboarding": "hrms_custom.overrides.employee_onboarding.CustomEmployeeOnboarding",
     "Shift Type": "hrms_custom.overrides.shift_type.CustomShiftType",
     "Leave Application": "hrms_custom.overrides.leave_application.CustomLeaveApplication",
+    "Interview": "hrms_custom.overrides.interview.CustomInterview",
 }
 
 override_whitelisted_methods = {
