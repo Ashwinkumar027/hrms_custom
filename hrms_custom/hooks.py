@@ -29,11 +29,24 @@ fixtures = [
     },
     {
         "dt": "Client Script",
-        "filters": [["module", "=", "HRMS custom"]],
+        "filters": [["name", "in", [
+            "Employee Onboarding Field Setup",
+            "Policy in employee",
+            "Employee Field auto fetch",
+            "AUTO probation in employee",
+            "Remove maditatory in employee",
+            "ESI EPF Enrollment",
+            "Employee Last id fetch in onboarding",
+            "Employee Onboarding - Dynamic Mandatories"
+        ]]],
     },
     {
         "dt": "Server Script",
-        "filters": [["module", "=", "HRMS custom"]],
+        "filters": [["name", "in", [
+            "Notify HR when Employee UPDATES a field",
+            "naming series in emp",
+            "Notify Manager - Employee Onboarding Assigned"
+        ]]],
     },
     {
         "dt": "Custom DocPerm",
