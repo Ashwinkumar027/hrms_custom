@@ -32,7 +32,7 @@ def send_preoffer_form(job_applicant):
         "job_title": doc.job_title or ""
     })
 
-    company = doc.company or "Our Company"
+    company = doc.get('company') or "Our Company"
     form_url = get_url("/candidate-pre-offer/new?" + params)
     subject = "Action Required: Pre-Offer Form - " + company
 
@@ -154,7 +154,7 @@ def send_offer_letter(job_offer):
     }
 
     attachments = []
-    print_format = COMPANY_PRINT_MAP.get(doc.company)
+    print_format = COMPANY_PRINT_MAP.get(doc.get('company'))
 
     if print_format:
         try:
@@ -171,7 +171,7 @@ def send_offer_letter(job_offer):
             frappe.log_error(str(e), "Offer Letter PDF Error")
     else:
         frappe.log_error(
-            "No print format found for company: " + (doc.company or ""),
+            "No print format found for company: " + (doc.get('company') or ""),
             "Offer Letter PDF Error"
         )
 
@@ -179,13 +179,13 @@ def send_offer_letter(job_offer):
         "<div style='font-family:Arial,sans-serif;max-width:650px;margin:0 auto;'>"
         "<div style='background:#1B4F8A;padding:25px;text-align:center;'>"
         "<h2 style='color:white;margin:0;'>Offer Letter</h2>"
-        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.company or "") + "</p>"
+        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.get('company') or "") + "</p>"
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + (candidate_name or "Candidate") + "</b>,</p>"
         "<p>Congratulations! We are delighted to inform you that you have been "
         "selected for the position of "
-        "<b>" + (doc.designation or "") + "</b> at <b>" + (doc.company or "") + "</b>.</p>"
+        "<b>" + (doc.designation or "") + "</b> at <b>" + (doc.get('company') or "") + "</b>.</p>"
         "<p>Please find your offer letter attached to this email.</p>"
         "<p>Kindly respond within <b>48 hours</b> by clicking one of the buttons below:</p>"
         "<div style='text-align:center;margin:30px 0;'>"
@@ -200,7 +200,7 @@ def send_offer_letter(job_offer):
         "<p style='color:#666;font-size:13px;'>Please be advised that the offer "
         "will be deemed revoked if we do not receive your acceptance within 48 hours.</p>"
         "<p>We look forward to welcoming you to our team!</p>"
-        "<p>Warm Regards,<br><b>HR Department</b><br>" + (doc.company or "") + "</p>"
+        "<p>Warm Regards,<br><b>HR Department</b><br>" + (doc.get('company') or "") + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
         "<p style='color:#cce0ff;margin:0;font-size:11px;'>"
@@ -212,7 +212,7 @@ def send_offer_letter(job_offer):
     frappe.sendmail(
         recipients=[candidate_email],
         sender=get_hr_sender(),
-        subject="Offer Letter - " + (doc.designation or "") + " - " + (doc.company or ""),
+        subject="Offer Letter - " + (doc.designation or "") + " - " + (doc.get('company') or ""),
         message=message,
         attachments=attachments,
         cc=hr_manager_emails,
@@ -664,12 +664,12 @@ def send_onboarding_forms_email(employee_onboarding):
 
     links_html, _ = _build_tracked_links(employee, base_url)
 
-    subject = "Action Required: Complete Your Onboarding Forms - " + (doc.company or "")
+    subject = "Action Required: Complete Your Onboarding Forms - " + (doc.get('company') or "")
     message = (
         "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
         "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"
         "<h2 style='color:white;margin:0;'>Onboarding Forms</h2>"
-        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.company or "") + "</p>"
+        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.get('company') or "") + "</p>"
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + applicant_name + "</b>,</p>"
@@ -684,7 +684,7 @@ def send_onboarding_forms_email(employee_onboarding):
         "<p>Warm Regards,<br><b>HR Team</b><br>" + (emp.company or "") + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
-        "<p style='color:#cce0ff;margin:0;font-size:12px;'>" + (doc.company or "") + " HRMS</p>"
+        "<p style='color:#cce0ff;margin:0;font-size:12px;'>" + (doc.get('company') or "") + " HRMS</p>"
         "</div>"
         "</div>"
     )
@@ -732,12 +732,12 @@ def send_onboarding_forms_to_employee(dispatch_name):
 
     links_html, forms_sent = _build_tracked_links(employee, base_url)
 
-    subject = "Action Required: Complete Your Onboarding Forms - " + (doc.company or "")
+    subject = "Action Required: Complete Your Onboarding Forms - " + (doc.get('company') or "")
     message = (
         "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
         "<div style='background:#1B4F8A;padding:20px;text-align:center;'>"
         "<h2 style='color:white;margin:0;'>Onboarding Forms</h2>"
-        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.company or "") + "</p>"
+        "<p style='color:#cce0ff;margin:5px 0;'>" + (doc.get('company') or "") + "</p>"
         "</div>"
         "<div style='padding:30px;background:#f9f9f9;'>"
         "<p>Dear <b>" + (doc.employee_name or "Employee") + "</b>,</p>"
@@ -747,7 +747,7 @@ def send_onboarding_forms_to_employee(dispatch_name):
         "<p>Warm Regards,<br><b>HR Team</b><br>" + (emp.company or "") + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
-        "<p style='color:#cce0ff;margin:0;font-size:12px;'>" + (doc.company or "") + " HRMS</p>"
+        "<p style='color:#cce0ff;margin:0;font-size:12px;'>" + (doc.get('company') or "") + " HRMS</p>"
         "</div>"
         "</div>"
     )
