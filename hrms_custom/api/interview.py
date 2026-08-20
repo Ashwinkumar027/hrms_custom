@@ -111,6 +111,7 @@ def send_response_notification(doc):
     
     frappe.sendmail(
         recipients=recipients,
+        sender=hr_sender or None,
         subject=subject,
         message=message
     )
