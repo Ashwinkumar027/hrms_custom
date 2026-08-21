@@ -3207,13 +3207,13 @@
   "doctype_or_field": "DocField",
   "field_name": "custom_aadhaar_pan_link_status",
   "is_system_generated": 0,
-  "modified": "2026-08-21 13:31:01.186387",
+  "modified": "2026-08-21 13:34:42.417862",
   "module": "HRMS custom",
   "name": "Job Applicant-custom_aadhaar_pan_link_status-description",
   "property": "description",
   "property_type": "Small Text",
   "row_name": null,
-  "value": "Attach the Aadhaar–PAN linking status. \n\nUse the below the link to check the Aadhaar–PAN linking status.  \n\nIf it is not linked, kindly let us know.  \n\nhttps://eportal.incometax.gov.in/iec/foservices/#/pre-login/link-aadhaar-status\n\nTake a screenshot of the status and attach it."
+  "value": "Attach the Aadhaar–PAN linking status.<br><br>Use the below link to check the Aadhaar–PAN linking status. If it is not linked, kindly let us know.<br><br><a href=\"https://eportal.incometax.gov.in/iec/foservices/#/pre-login/link-aadhaar-status\" target=\"_blank\" style=\"color:#007bff;text-decoration:underline;font-weight:500\" rel=\"noopener noreferrer\">Check Aadhaar-PAN Status Here</a><br><br>Take a screenshot of the status and attach it."
  },
  {
   "default_value": null,
@@ -3223,13 +3223,13 @@
   "doctype_or_field": "DocField",
   "field_name": "custom_psychometric_test_screenshot",
   "is_system_generated": 0,
-  "modified": "2026-08-21 13:31:01.920296",
+  "modified": "2026-08-21 13:34:42.903160",
   "module": "HRMS custom",
   "name": "Job Applicant-custom_psychometric_test_screenshot-description",
   "property": "description",
   "property_type": "Small Text",
   "row_name": null,
-  "value": "Please click the link below to attend the Psychometric Test and attach a screenshot after completing it.\nAttach all five factors with reasons (Factor 1,2,3,4,5).  \nhttps://openpsychometrics.org/tests/IPIP-BFFM/"
+  "value": "Please click the link below to attend the Psychometric Test and attach a screenshot after completing it.<br>Attach all five factors with reasons (Factor 1,2,3,4,5).<br><br><a href=\"https://openpsychometrics.org/tests/IPIP-BFFM/\" target=\"_blank\" style=\"color:#007bff;text-decoration:underline;font-weight:500\" rel=\"noopener noreferrer\">Start Psychometric Test</a>"
  },
  {
   "default_value": null,
@@ -3239,13 +3239,13 @@
   "doctype_or_field": "DocField",
   "field_name": "custom_agency_code_screenshot",
   "is_system_generated": 0,
-  "modified": "2026-08-21 13:31:01.933561",
+  "modified": "2026-08-21 13:34:42.919612",
   "module": "HRMS custom",
   "name": "Job Applicant-custom_agency_code_screenshot-description",
   "property": "description",
   "property_type": "Small Text",
   "row_name": null,
-  "value": "Please go to the below link and attach the screenshot.  \n\nhttps://agencyportal.irdai.gov.in/PublicAccess/LookUpPAN.aspx"
+  "value": "Please go to the below link and attach the screenshot.<br><br><a href=\"https://agencyportal.irdai.gov.in/PublicAccess/LookUpPAN.aspx\" target=\"_blank\" style=\"color:#007bff;text-decoration:underline;font-weight:500\" rel=\"noopener noreferrer\">Look up Agency Code (IRDAI)</a>"
  },
  {
   "default_value": null,
@@ -3255,12 +3255,12 @@
   "doctype_or_field": "DocField",
   "field_name": "custom_uan_number_if_fresher__please_watch_the_video_",
   "is_system_generated": 0,
-  "modified": "2026-08-21 13:31:01.947013",
+  "modified": "2026-08-21 13:34:42.938858",
   "module": "HRMS custom",
   "name": "Job Applicant-custom_uan_number_if_fresher__please_watch_the_video_-description",
   "property": "description",
   "property_type": "Small Text",
   "row_name": null,
-  "value": "UAN Number (If Fresher – Please refer to the video link below and create your UAN.)\n\nhttps://youtu.be/s8unaNvs2ns?si=Y09QYHIra-aYIzEn"
+  "value": "UAN Number (If Fresher – Please refer to the video link below and create your UAN.)<br><br><a href=\"https://youtu.be/s8unaNvs2ns?si=Y09QYHIra-aYIzEn\" target=\"_blank\" style=\"color:#007bff;text-decoration:underline;font-weight:500\" rel=\"noopener noreferrer\">Watch UAN Creation Video</a>"
  }
 ]
