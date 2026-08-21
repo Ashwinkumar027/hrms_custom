@@ -3294,5 +3294,37 @@
   "property_type": "Check",
   "row_name": null,
   "value": "1"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Employee Onboarding",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "hiring_manager",
+  "is_system_generated": 0,
+  "modified": "2026-08-21 14:29:44.451153",
+  "module": "HRMS custom",
+  "name": "Employee Onboarding-hiring_manager-reqd",
+  "property": "reqd",
+  "property_type": "Check",
+  "row_name": null,
+  "value": "1"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Employee Onboarding",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "holiday_list",
+  "is_system_generated": 0,
+  "modified": "2026-08-21 14:29:44.468736",
+  "module": "HRMS custom",
+  "name": "Employee Onboarding-holiday_list-reqd",
+  "property": "reqd",
+  "property_type": "Check",
+  "row_name": null,
+  "value": "1"
  }
 ]
