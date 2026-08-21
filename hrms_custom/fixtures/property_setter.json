@@ -7,13 +7,13 @@
   "doctype_or_field": "DocType",
   "field_name": null,
   "is_system_generated": 0,
-  "modified": "2026-08-20 21:22:06.128262",
+  "modified": "2026-08-21 13:06:52.379488",
   "module": "HRMS custom",
   "name": "Job Requisition-main-field_order",
   "property": "field_order",
   "property_type": "Data",
   "row_name": null,
-  "value": "[\"workflow_state\", \"naming_series\", \"designation\", \"department\", \"column_break_qkna\", \"no_of_positions\", \"expected_compensation\", \"custom_proposed_salarybudget\", \"column_break_4\", \"company\", \"status\", \"custom_section_approval\", \"custom_position_approval_status\", \"custom_col_break_approval\", \"custom_position_approval_mail\", \"custom_section_reporting\", \"custom_position_reporting_to\", \"custom_preferred_industry\", \"custom_col_break_reporting\", \"custom_required_experience\", \"custom_urgency_level\", \"custom_section_skills\", \"custom_required_qualifications\", \"custom_col_break_position\", \"custom_type_of_requirement\", \"custom_hiring_location\", \"custom_employee_type\", \"section_break_7\", \"requested_by\", \"requested_by_name\", \"column_break_10\", \"requested_by_dept\", \"requested_by_designation\", \"timelines_tab\", \"posting_date\", \"completed_on\", \"column_break_15\", \"custom_col_break_top\", \"expected_by\", \"time_to_fill\", \"job_description_tab\", \"description\", \"reason_for_requesting\", \"connections_tab\", \"custom_login_user\"]"
+  "value": "[\"workflow_state\", \"naming_series\", \"designation\", \"department\", \"custom_team\", \"column_break_qkna\", \"no_of_positions\", \"expected_compensation\", \"custom_proposed_salarybudget\", \"column_break_4\", \"company\", \"status\", \"custom_rejection_reason\", \"custom_section_approval\", \"custom_position_approval_status\", \"custom_col_break_approval\", \"custom_position_approval_mail\", \"custom_section_reporting\", \"custom_position_reporting_to\", \"custom_preferred_industry\", \"custom_col_break_reporting\", \"custom_required_experience\", \"custom_urgency_level\", \"custom_section_skills\", \"custom_required_qualifications\", \"custom_col_break_position\", \"custom_type_of_requirement\", \"custom_hiring_location\", \"custom_employee_type\", \"custom_replacement_details\", \"custom_name_of_employee_being_replaced\", \"custom_employee_id\", \"custom_designation_of_employee\", \"custom_department_of_employee\", \"custom_last_working_date\", \"custom_reason_for_replacement\", \"custom_job_description_section\", \"custom_replacement_employee_ctc\", \"description\", \"custom_roles_and_responsibilities\", \"reason_for_requesting\", \"section_break_7\", \"requested_by\", \"requested_by_name\", \"column_break_10\", \"requested_by_dept\", \"requested_by_designation\", \"timelines_tab\", \"posting_date\", \"completed_on\", \"column_break_15\", \"custom_col_break_top\", \"expected_by\", \"time_to_fill\", \"job_description_tab\", \"connections_tab\", \"custom_login_user\"]"
  },
  {
   "default_value": null,
@@ -3134,5 +3134,37 @@
   "property_type": "Data",
   "row_name": null,
   "value": "[\"custom_preoffer_submission_count\", \"details_section\", \"applicant_name\", \"email_id\", \"phone_number\", \"column_break_3\", \"job_title\", \"designation\", \"country\", \"resume_attachment\", \"column_break_enue\", \"status\", \"custom_current_stage\", \"custom_rejection_mail_sent\", \"applicant_rating\", \"custom_job_requisition\", \"custom_section_personal\", \"custom_date_of_birth\", \"custom_gender\", \"custom_marital_status\", \"custom_languages_known\", \"custom_col_break_personal\", \"custom_current_location\", \"custom_open_to_relocation\", \"custom_preferred_location\", \"custom_experience_level\", \"custom_section_education\", \"custom_ug_degree\", \"custom_pg_degree\", \"custom_pg_certificate\", \"custom_professional_certifications\", \"custom_certification_documents\", \"custom_section_declaration\", \"custom_declaration_agreement\", \"custom_section_kyc\", \"custom_father_spouse_name\", \"custom_spouse_name\", \"custom_fathers_contact_number\", \"custom_mothers_name\", \"custom_mothers_contact_number\", \"custom_emergency_contact_name\", \"custom_emergency_contact_number\", \"custom_section_preoffer\", \"custom_preoffer_form_sent\", \"custom_preoffer_sent_on\", \"custom_preoffer_sent_by\", \"custom_permanent_address\", \"custom_current_address\", \"custom_temporary_address\", \"custom_aadhar_number\", \"custom_pan_number\", \"custom_bank_name\", \"custom_bank_account_holder_name\", \"custom_bank_branch_name\", \"custom_section_ctc\", \"custom_current_employer\", \"custom_current_designation\", \"custom_current_ctc\", \"custom_expected_ctc\", \"custom_notice_period\", \"custom_last_working_day\", \"custom_section_professional\", \"custom_last_org_hr_email\", \"custom_last_org_hr_contact\", \"custom_relevant_experience\", \"custom_relatives_in_company\", \"custom_relatives_details\", \"custom_client_of_company\", \"custom_client_rm_name\", \"custom_uan_number\", \"custom_section_documents\", \"custom_aadhar_upload\", \"custom_passport_photo\", \"custom_casual_photo\", \"custom_pan_upload\", \"custom_10th_marksheet\", \"custom_12th_marksheet\", \"custom_sem_marksheet\", \"custom_degree_certificate\", \"custom_experience_certificate\", \"custom_last_salary_slip\", \"custom_appointment_offer_letter\", \"custom_relieving_letter\", \"custom_payslip_month2\", \"custom_payslip_month3\", \"custom_bank_account_number\", \"custom_bank_passbook\", \"custom_aadhaar_pan_link_status\", \"custom_psychometric_test_screenshot\", \"custom_psychometric_factor1\", \"custom_psychometric_factor2\", \"custom_psychometric_factor3\", \"custom_psychometric_factor4\", \"custom_psychometric_factor5\", \"custom_ic38_certified\", \"custom_has_agency_code\", \"custom_agency_code_screenshot\", \"custom_uan_number_if_fresher__please_watch_the_video_\", \"custom_ifsc_code\", \"custom_ug_certificate\", \"custom_highest_qualification\", \"custom_year_of_passing\", \"custom_section_position\", \"custom_personal_contact_number\", \"custom_personal_email\", \"custom_blood_group\", \"custom_other_documents\", \"custom_please_go_to_the_below_link_and_attach_the_screenshot__\", \"custom_i_agree_to_the_above_declaration\", \"section_break_6\", \"resume_link\", \"resume_preview_html\", \"open_resume_button\", \"cover_letter\", \"notes\", \"source_and_rating_section\", \"source\", \"source_name\", \"column_break_13\", \"employee_referral\", \"salary_expectation_tab\", \"currency\", \"column_break_18\", \"lower_range\", \"upper_range\"]"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Job Requisition",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "department",
+  "is_system_generated": 0,
+  "modified": "2026-08-21 13:06:51.806937",
+  "module": "HRMS custom",
+  "name": "Job Requisition-department-reqd",
+  "property": "reqd",
+  "property_type": "Check",
+  "row_name": null,
+  "value": "1"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Job Requisition",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "job_description_tab",
+  "is_system_generated": 0,
+  "modified": "2026-08-21 13:06:52.357563",
+  "module": "HRMS custom",
+  "name": "Job Requisition-job_description_tab-hidden",
+  "property": "hidden",
+  "property_type": "Check",
+  "row_name": null,
+  "value": "1"
  }
 ]
