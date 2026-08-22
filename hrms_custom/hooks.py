@@ -45,7 +45,7 @@ fixtures = [
         "filters": [["name", "in", [
             "Notify HR when Employee UPDATES a field",
             "naming series in emp",
-            "Notify Manager - Employee Onboarding Assigned"
+            "Notify Manager - Employee Onboarding Assigned", "Interview Feedback Notification"
         ]]],
     },
     {
