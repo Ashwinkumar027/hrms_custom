@@ -334,9 +334,43 @@ def respond_to_offer(token, response, offer):
         )
 
 
+import hmac
+import hashlib
+import time
+
+@frappe.whitelist()
+def get_probation_link(employee, action):
+    expiry = int(time.time()) + (7 * 24 * 60 * 60)
+    secret = frappe.conf.get("encryption_key") or frappe.conf.get("db_password") or frappe.local.site
+    msg = f"{employee}:{action}:{expiry}".encode("utf-8")
+    token = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+    site_url = frappe.utils.get_url()
+    # Route via standard whitelisted path
+    return f"{site_url}/api/method/hrms_custom.api.employee.probation_action?employee={employee}&action={action}&expiry={expiry}&token={token}"
+
 @frappe.whitelist(allow_guest=True)
-def probation_action(employee, action):
+def probation_action(employee, action, expiry=None, token=None):
+    if not all([employee, action, expiry, token]):
+        frappe.throw("Invalid Request", frappe.PermissionError)
+        
+    secret = frappe.conf.get("encryption_key") or frappe.conf.get("db_password") or frappe.local.site
+    msg = f"{employee}:{action}:{expiry}".encode("utf-8")
+    expected_token = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+    
+    if not frappe.utils.compare_digest(expected_token, token):
+        frappe.throw("Invalid or forged token", frappe.PermissionError)
+        
+    if int(time.time()) > int(expiry):
+        frappe.throw("This link has expired", frappe.PermissionError)
+        
     emp = frappe.get_doc("Employee", employee)
+    
+    if not getattr(emp, "custom_probation_end_date", None):
+        frappe.throw(f"Employee {employee} is not on probation or missing end date.")
+        
+    if getattr(emp, "final_confirmation_date", None):
+        frappe.throw(f"Employee {employee} is already confirmed.")
+
 
     manager_email = None
     manager_name = "Manager"
