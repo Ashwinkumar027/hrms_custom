@@ -3358,5 +3358,21 @@
   "property_type": "Check",
   "row_name": null,
   "value": "1"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Job Requisition",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "reason_for_requesting",
+  "is_system_generated": 0,
+  "modified": "2026-08-23 09:44:53.282065",
+  "module": "HRMS custom",
+  "name": "Job Requisition-reason_for_requesting-hidden",
+  "property": "hidden",
+  "property_type": "Check",
+  "row_name": null,
+  "value": "1"
  }
 ]
