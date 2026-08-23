@@ -84,15 +84,6 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2026-05-05 16:10:49.238843",
-  "name": "Pending Hr Approval",
-  "style": "",
-  "workflow_state_name": "Pending Hr Approval"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
   "modified": "2026-07-09 16:56:44.696807",
   "name": "Pending Accounts Processing",
   "style": "",
@@ -151,5 +142,14 @@
   "name": "Rejected",
   "style": "Danger",
   "workflow_state_name": "Rejected"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-05 16:10:49.238843",
+  "name": "Pending Hr Approval",
+  "style": "",
+  "workflow_state_name": "Pending Hr Approval"
  }
 ]

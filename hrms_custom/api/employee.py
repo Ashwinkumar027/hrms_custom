@@ -28,7 +28,7 @@ def send_preoffer_form(job_applicant):
         "applicant_name": doc.applicant_name or "",
         "email_id": doc.email_id or "",
         "phone": doc.phone_number or "",
-        "job_applicant": doc.name,
+        "custom_original_applicant_id": doc.name,
         "job_title": doc.job_title or ""
     })
 
