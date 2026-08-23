@@ -3,15 +3,6 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2026-05-12 07:29:58.049331",
-  "name": "Pending HR Review",
-  "style": "Warning",
-  "workflow_state_name": "Pending HR Review"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
   "modified": "2026-07-09 16:56:19.422539",
   "name": "RM Rejected",
   "style": "",
@@ -133,6 +124,15 @@
   "name": "Draft",
   "style": "",
   "workflow_state_name": "Draft"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:58.049331",
+  "name": "Pending HR Review",
+  "style": "Warning",
+  "workflow_state_name": "Pending HR Review"
  },
  {
   "docstatus": 0,
