@@ -3,15 +3,6 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2026-05-12 07:29:58.049331",
-  "name": "Pending HR Review",
-  "style": "Warning",
-  "workflow_state_name": "Pending HR Review"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
   "modified": "2026-07-09 16:56:19.422539",
   "name": "RM Rejected",
   "style": "",
@@ -74,29 +65,11 @@
  {
   "docstatus": 0,
   "doctype": "Workflow State",
-  "icon": "remove",
-  "modified": "2026-02-26 11:18:34.169759",
-  "name": "Rejected",
-  "style": "Danger",
-  "workflow_state_name": "Rejected"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
   "icon": "",
   "modified": "2026-04-20 15:59:14.650142",
   "name": "Pending Final Approval",
   "style": "",
   "workflow_state_name": "Pending Final Approval"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
-  "modified": "2026-05-05 16:10:49.238843",
-  "name": "Pending Hr Approval",
-  "style": "",
-  "workflow_state_name": "Pending Hr Approval"
  },
  {
   "docstatus": 0,
@@ -151,5 +124,32 @@
   "name": "Draft",
   "style": "",
   "workflow_state_name": "Draft"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-12 07:29:58.049331",
+  "name": "Pending HR Review",
+  "style": "Warning",
+  "workflow_state_name": "Pending HR Review"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "remove",
+  "modified": "2026-02-26 11:18:34.169759",
+  "name": "Rejected",
+  "style": "Danger",
+  "workflow_state_name": "Rejected"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-05 16:10:49.238843",
+  "name": "Pending Hr Approval",
+  "style": "",
+  "workflow_state_name": "Pending Hr Approval"
  }
 ]

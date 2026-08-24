@@ -7,8 +7,13 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
 
     def on_update(self):
         if hasattr(super(), "on_update"): super().on_update()
-        if self.workflow_state == "Onboarding In Progress":
+        if self.workflow_state == "Onboarding In Progress" and not self.flags.tickets_created:
+            self.flags.tickets_created = True
+            # Clear existing activities to prevent duplicates if any leftover
+            self.set("activities", [])
             self._create_onboarding_tickets()
+            # Save the newly appended activities safely
+            self.save(ignore_permissions=True)
 
     def _create_onboarding_tickets(self):
         company = self.company or None
@@ -55,23 +60,18 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             ticket.insert(ignore_permissions=True)
             ticket.reload() # Fetch any auto-assignments triggered by Assignment Rules
             
-            # Auto-populate the activities tracking child table
-            child = frappe.new_doc("Employee Boarding Activity")
-            child.parent = self.name
-            child.parenttype = "Employee Onboarding"
-            child.parentfield = "activities"
-            child.activity_name = subject
-            child.custom_ticket_id = ticket.name
-            child.custom_status = "Pending"
-            
             # Fetch assigned user from ToDo if auto-assigned
             todos = frappe.get_all("ToDo", filters={"reference_type": "HD Ticket", "reference_name": ticket.name}, fields=["allocated_to"])
-            user_email = None
-            if todos:
-                child.user = todos[0].allocated_to
-                user_email = frappe.db.get_value("User", child.user, "email")
-                
-            child.insert(ignore_permissions=True)
+            assigned_user = todos[0].allocated_to if todos else None
+            user_email = frappe.db.get_value("User", assigned_user, "email") if assigned_user else None
+
+            # Auto-populate the activities tracking child table using self.append
+            self.append("activities", {
+                "activity_name": subject,
+                "custom_ticket_id": ticket.name,
+                "custom_status": "Pending",
+                "user": assigned_user
+            })
 
             # --- Custom Email Notification ---
             if user_email and task_type != "ID Card":
@@ -344,6 +344,10 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
         """, as_dict=True)
         hr_emails = [r.email for r in hr_managers if r.email]
 
+        attachments = []
+        if self.custom_candidate_passport_size_image_for_id_card:
+            attachments.append({"file_url": self.custom_candidate_passport_size_image_for_id_card})
+
         frappe.sendmail(
             recipients=[designer_email],
             cc=hr_emails,
@@ -352,6 +356,7 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             message=message,
             reference_doctype="Employee Onboarding",
             reference_name=self.name,
+            attachments=attachments
         )
 
         frappe.msgprint(
