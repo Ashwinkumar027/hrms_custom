@@ -31,6 +31,10 @@ class CustomAttendanceRequest(AttendanceRequest):
     def before_submit(self):
         _validate_reason_allocation(self)
 
+        employee_user = frappe.db.get_value("Employee", self.employee, "user_id")
+        if employee_user == frappe.session.user and frappe.session.user != "Administrator":
+            frappe.throw(_("Self-approval for Attendance Requests is not allowed"))
+
     def on_submit(self):
         behavior = _get_attendance_behavior(self)
 
@@ -38,6 +42,12 @@ class CustomAttendanceRequest(AttendanceRequest):
             self._tag_existing_attendance()
         else:
             self._smart_create_or_regularize_attendance()
+
+    def before_cancel(self):
+        if self.docstatus == 1:
+            employee_user = frappe.db.get_value("Employee", self.employee, "user_id")
+            if employee_user == frappe.session.user and frappe.session.user != "Administrator":
+                frappe.throw(_("You cannot cancel your own approved Attendance Request. Please contact your approver or HR."))
 
     def on_cancel(self):
         behavior = _get_attendance_behavior(self)
