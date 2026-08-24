@@ -32,3 +32,20 @@ class CustomLeaveApplication(LeaveApplication):
 				frappe.msgprint(_("Email sent to {0}").format(contact))
 			except frappe.OutgoingEmailError:
 				pass
+
+	def before_cancel(self):
+		if self.status == "Approved":
+			employee_user = frappe.db.get_value("Employee", self.employee, "user_id")
+			if employee_user == frappe.session.user and frappe.session.user != "Administrator":
+				frappe.throw(_("You cannot cancel your own approved Leave Application. Please contact your approver or HR."))
+		super().before_cancel()
+
+	def validate(self):
+		super().validate()
+		self._validate_self_approval_hardening()
+
+	def _validate_self_approval_hardening(self):
+		if self.status == "Approved":
+			employee_user = frappe.db.get_value("Employee", self.employee, "user_id")
+			if employee_user == frappe.session.user and frappe.session.user != "Administrator":
+				frappe.throw(_("Self-approval for leaves is not allowed"))
