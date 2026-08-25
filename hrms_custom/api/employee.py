@@ -715,7 +715,7 @@ def send_onboarding_forms_email(employee_onboarding):
         "before your joining date. If you face any issues, contact HR.</p>"
         "<p>For any queries contact: "
         "<a href='mailto:hr@aionioncapital.com'>hr@aionioncapital.com</a></p>"
-        "<p>Warm Regards,<br><b>HR Team</b><br>" + (emp.company or "") + "</p>"
+        "<p>Warm Regards,<br><b>HR Team</b><br>" + (doc.get("company") or "") + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
         "<p style='color:#cce0ff;margin:0;font-size:12px;'>" + (doc.get('company') or "") + " HRMS</p>"
@@ -778,7 +778,7 @@ def send_onboarding_forms_to_employee(dispatch_name):
         "<p>Please complete the following onboarding forms at your earliest convenience:</p>"
         + links_html +
         "<p style='margin-top:20px;color:#555;'>If you face any issues, contact HR.</p>"
-        "<p>Warm Regards,<br><b>HR Team</b><br>" + (emp.company or "") + "</p>"
+        "<p>Warm Regards,<br><b>HR Team</b><br>" + (doc.get("company") or "") + "</p>"
         "</div>"
         "<div style='background:#1B4F8A;padding:10px;text-align:center;'>"
         "<p style='color:#cce0ff;margin:0;font-size:12px;'>" + (doc.get('company') or "") + " HRMS</p>"
