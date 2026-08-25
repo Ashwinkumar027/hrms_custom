@@ -357,7 +357,7 @@ def probation_action(employee, action, expiry=None, token=None):
     msg = f"{employee}:{action}:{expiry}".encode("utf-8")
     expected_token = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
     
-    if not frappe.utils.compare_digest(expected_token, token):
+    if not hmac.compare_digest(expected_token, token):
         frappe.throw("Invalid or forged token", frappe.PermissionError)
         
     if int(time.time()) > int(expiry):
