@@ -159,17 +159,6 @@ class CustomEmployeeOnboarding(EmployeeOnboarding):
             make_ticket(subject, table, task_type="Email ID")
             tickets_created += 1
 
-        # SOFTWARE ACCESS
-        if self.custom_software_access:
-            extra = "<tr><td><b>Software/CRM</b></td><td>{}</td></tr>".format(
-                self.custom_software_access
-            )
-            table = base_table(extra)
-            subject = "Software Access Request - {}".format(self.employee_name)
-            make_ticket(subject, table, task_type="Software Access")
-            tickets_created += 1
-
-        # ID CARD
         if self.custom_id_card:
             extra = "<tr><td><b>ID Card</b></td><td>Required</td></tr>"
             table = base_table(extra)
