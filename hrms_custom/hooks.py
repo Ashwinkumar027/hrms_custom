@@ -224,6 +224,13 @@ after_migrate = [
     "hrms_custom.hrms_custom.utils.fix_employee_permission.fix_employee_role_permission"
 ]
 
+# Patches frappe.desk.form.document_follow.follow_document (and frappe.model.document's
+# bound reference to it) to accept non-str doc_name, e.g. for autoincrement-named
+# doctypes such as PWA Notification. See hrms_custom/monkey_patches.py for the full
+# explanation and the exact upstream condition under which this can be deleted.
+before_request = ["hrms_custom.monkey_patches.apply"]
+before_job = ["hrms_custom.monkey_patches.apply"]
+
 doc_events = {
     "Employee": {
         "after_insert": "hrms_custom.hrms_custom.utils.user_permissions.create_user_permission_for_employee",
