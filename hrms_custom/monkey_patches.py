@@ -47,6 +47,15 @@ frappe.desk.form.document_follow.follow_document), patching only the source
 module does not change what Document.insert() actually calls. Both bindings
 must be rebound for the fix to take effect at the real call site.
 
+Verified on an isolated frappe 16.29.0 / hrms 16.4.8 environment (its own
+MariaDB and Redis instances, no shared state with any other bench): with
+this patch absent, inserting an autoincrement-named doctype (PWA
+Notification) as a user with follow_created_documents = 1 raised the exact
+FrappeTypeError above. Under identical conditions, applying the patch
+resolved it -- the insert succeeded with a real int doc name, and
+follow_document/model.document's bound references, idempotency, and
+whitelisting all held as designed.
+
 DELETE THIS PATCH once frappe fixes the call site upstream -- either by
 casting str(self.name) at frappe/model/document.py:519, or by relaxing the
 `doc_name: str` annotation on follow_document (e.g. to `int | str`). As of
