@@ -178,6 +178,142 @@ GATE_JS = """
 """
 
 
+# The PWA's own onError() handlers (FormView.vue, in apps/hrms) discard the
+# real server error and always show a generic "Error creating/updating/
+# deleting {doctype}" toast, even though the failing response carries the
+# real message in `_server_messages` (frappe-ui itself parses this into
+# `error.messages` internally, but FormView.vue's onError() callbacks don't
+# accept the error argument, so it's read and then thrown away). We can't
+# touch apps/hrms, so this patches around it from outside: wrap window.fetch
+# to capture the real message from any failed request, then watch for the
+# generic toast's text node and swap it in before it renders.
+#
+# FRAGILITY: matches toast text against the literal "Error creating "/
+# "Error updating "/"Error deleting " prefixes FormView.vue currently
+# generates. If a future hrms upgrade rewords that toast, this stops
+# firing and the generic message is shown as before (fails closed, no
+# breakage) — re-check after any hrms app upgrade, same as GATE_JS above.
+#
+# LIMITATION: the captured message is a single global "last error", keyed
+# only by response failure + a short TTL, not by request. Concurrent
+# in-flight requests (e.g. a failing save racing a parallel attachment
+# upload) could in theory attribute the wrong message to a toast. Accepted
+# as a low-probability edge case for a lightweight, non-invasive patch.
+ERROR_TOAST_JS = """
+<script>
+(function () {
+	var GENERIC_TOAST_PREFIX = /^Error (creating|updating|deleting) /;
+	var MESSAGE_TTL_MS = 5000;
+	var lastServerMessage = null;
+	var lastServerMessageAt = 0;
+
+	// Textarea trick: assigning to .innerHTML on a <textarea> is parsed in
+	// RCDATA mode, which decodes entities but never creates child elements
+	// (no <img onerror>, no script execution) — a safe way to decode
+	// entities in untrusted text without a real HTML-parsing sanitizer.
+	function decodeEntities(str) {
+		var textarea = document.createElement("textarea");
+		textarea.innerHTML = str;
+		return textarea.value;
+	}
+
+	function stripHtml(str) {
+		var withoutTags = String(str).replace(/<[^>]*>/g, "");
+		return decodeEntities(withoutTags).trim();
+	}
+
+	// Mirrors the parsing frappe-ui's own frappeRequest.js does for
+	// error._server_messages (JSON array of JSON-encoded {message: ...}
+	// objects), since we have no access to its internal parsed error here.
+	function extractServerMessage(bodyText) {
+		try {
+			var data = JSON.parse(bodyText);
+			if (!data._server_messages) return null;
+			var raw = JSON.parse(data._server_messages);
+			var messages = [];
+			for (var i = 0; i < raw.length; i++) {
+				try {
+					var obj = JSON.parse(raw[i]);
+					if (obj && obj.message) messages.push(stripHtml(obj.message));
+				} catch (e) {}
+			}
+			return messages.length ? messages.join(" ") : null;
+		} catch (e) {}
+		return null;
+	}
+
+	var originalFetch = window.fetch;
+	window.fetch = function () {
+		return originalFetch.apply(this, arguments).then(
+			function (response) {
+				if (!response.ok) {
+					// Read a clone so the app's own response.text()/.json()
+					// further down the chain still sees an unconsumed body.
+					// Chained (not fire-and-forget) so lastServerMessage is
+					// set before the caller's own .then() runs and triggers
+					// the toast. Deliberately NOT cleared on response.ok: by
+					// the time the scan (one rAF later) runs, a later fetch
+					// could already have started and not yet resolved,
+					// clearing a message that hasn't been consumed yet. A
+					// generic toast can only follow a failed request, and
+					// that failure sets (or explicitly nulls) this itself.
+					return response
+						.clone()
+						.text()
+						.then(function (text) {
+							lastServerMessage = extractServerMessage(text);
+							lastServerMessageAt = Date.now();
+							return response;
+						})
+						.catch(function () {
+							lastServerMessage = null;
+							return response;
+						});
+				}
+				return response;
+			},
+			function (err) {
+				// Network-level failure never reaches the branch above, so
+				// clear here too — otherwise a stale message from an
+				// earlier failed request could wrongly attach to an
+				// unrelated later toast within the TTL window.
+				lastServerMessage = null;
+				throw err;
+			}
+		);
+	};
+
+	function scanForGenericToasts() {
+		var paragraphs = document.querySelectorAll("p:not([data-error-toast-checked])");
+		for (var i = 0; i < paragraphs.length; i++) {
+			var p = paragraphs[i];
+			p.setAttribute("data-error-toast-checked", "1");
+			var text = p.textContent || "";
+			if (!GENERIC_TOAST_PREFIX.test(text)) continue;
+
+			if (lastServerMessage && Date.now() - lastServerMessageAt < MESSAGE_TTL_MS) {
+				p.textContent = lastServerMessage;
+			}
+			lastServerMessage = null;
+		}
+	}
+
+	var pending = null;
+	function scheduleScan() {
+		if (pending) return;
+		pending = requestAnimationFrame(function () {
+			pending = null;
+			scanForGenericToasts();
+		});
+	}
+
+	var observer = new MutationObserver(scheduleScan);
+	observer.observe(document.body, { subtree: true, childList: true });
+})();
+</script>
+"""
+
+
 def get_context(context):
 	ctx = stock_get_context(context)
 
@@ -186,7 +322,7 @@ def get_context(context):
 		html = f.read()
 
 	html = html.replace("</head>", HIDE_CSS + "</head>")
-	html = html.replace("</body>", GATE_JS + "</body>")
+	html = html.replace("</body>", GATE_JS + ERROR_TOAST_JS + "</body>")
 
 	ctx.stock_html = frappe.render_template(html, ctx)
 	return ctx
