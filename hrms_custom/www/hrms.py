@@ -314,6 +314,161 @@ ERROR_TOAST_JS = """
 """
 
 
+# RequestActionSheet.vue (the "My Requests" action sheet) shows Approve/Reject for a
+# Leave Application whenever the viewer holds doctype/permlevel write access to the
+# status field (Leave Approver/HR User role), never checking whether
+# frappe.session.user is the specific document's leave_approver. So any
+# Leave-Approver-role holder sees Approve/Reject on every pending Leave Application,
+# not just ones assigned to them -- the backend rejects a resulting self-approval
+# (see hrms_custom/overrides/leave_application.py) but otherwise doesn't stop it via
+# this UI path. We can't touch apps/hrms, so this hides the buttons client-side.
+#
+# MECHANISM:
+# - Session user: read from the "user_id" cookie, the same way the PWA's own
+#   src/data/session.js does -- Frappe sets this cookie non-httponly specifically
+#   for client-side reads.
+# - Current document identity: RequestActionSheet.vue (and FormView.vue, harmlessly)
+#   call frappe.client.get_doc_permissions with {doctype, docname} in the POST body on
+#   every mount (uncached, always fires), so we intercept that request (not its
+#   response) to learn which doc is on screen. Gating on doctype === "Leave
+#   Application" here is what keeps this from touching Expense Claim's Approve/Reject
+#   (same component, different approval field) or any workflow-driven Approve/Reject
+#   for other doctypes (WorkflowActionSheet) -- Leave Application has no Frappe
+#   Workflow configured, so that branch never applies to it.
+# - leave_approver lookup: createDocumentResource caches by [doctype, name], so the
+#   full-doc frappe.client.get fetch may not re-fire on a second view of the same
+#   record. We opportunistically cache leave_approver from that response when it does
+#   fire, and fall back to an explicit frappe.client.get_value call when it doesn't.
+# - Fail-open: only hide once we have a *confirmed* mismatching leave_approver. While
+#   the lookup is still pending, the buttons are left as-is rather than hidden, since
+#   a false hide would block a real approver's only path to act, while a brief false
+#   show only reproduces today's behavior for a moment.
+#
+# FRAGILITY: matches on the literal English button label "Approve" (untranslated PWA
+# labels, same convention as GATE_JS/ERROR_TOAST_JS above). Re-check after any hrms
+# app upgrade that changes RequestActionSheet.vue's structure or wording.
+LEAVE_APPROVAL_GATE_JS = """
+<script>
+(function () {
+	function getSessionUser() {
+		var match = document.cookie.match(/(?:^|; )user_id=([^;]*)/);
+		var user = match ? decodeURIComponent(match[1]) : null;
+		return (user && user !== "Guest") ? user : null;
+	}
+
+	var currentDoc = { doctype: null, docname: null };
+	var leaveApproverByName = {};
+	var pendingApproverFetch = {};
+
+	function parseJsonBody(init) {
+		try {
+			return init && init.body ? JSON.parse(init.body) : null;
+		} catch (e) {
+			return null;
+		}
+	}
+
+	var originalFetch = window.fetch;
+	window.fetch = function (input, init) {
+		var url = typeof input === "string" ? input : (input && input.url) || "";
+
+		if (url === "/api/method/frappe.client.get_doc_permissions") {
+			var requestParams = parseJsonBody(init);
+			if (requestParams) {
+				currentDoc = {
+					doctype: requestParams.doctype || null,
+					docname: requestParams.docname || null,
+				};
+			}
+		}
+
+		return originalFetch.apply(this, arguments).then(function (response) {
+			if (response.ok && url === "/api/method/frappe.client.get") {
+				response
+					.clone()
+					.json()
+					.then(function (data) {
+						var doc = data && data.message;
+						if (doc && doc.doctype === "Leave Application" && doc.name) {
+							leaveApproverByName[doc.name] = doc.leave_approver || "";
+						}
+					})
+					.catch(function () {});
+			}
+			return response;
+		});
+	};
+
+	function fetchApproverIfNeeded(docname) {
+		if (docname in leaveApproverByName) return;
+		if (pendingApproverFetch[docname]) return;
+		pendingApproverFetch[docname] = true;
+
+		originalFetch("/api/method/frappe.client.get_value", {
+			method: "POST",
+			headers: { "Content-Type": "application/json; charset=utf-8" },
+			body: JSON.stringify({
+				doctype: "Leave Application",
+				fieldname: "leave_approver",
+				filters: docname,
+			}),
+		})
+			.then(function (r) {
+				return r.json();
+			})
+			.then(function (data) {
+				var value = data && data.message && data.message.leave_approver;
+				leaveApproverByName[docname] = value || "";
+				scheduleScan();
+			})
+			.catch(function () {
+				delete pendingApproverFetch[docname];
+			});
+	}
+
+	function findApprovalButtonsContainer() {
+		var buttons = document.querySelectorAll("button");
+		for (var i = 0; i < buttons.length; i++) {
+			var text = (buttons[i].textContent || "").trim();
+			if (text === "Approve") return buttons[i].parentElement;
+		}
+		return null;
+	}
+
+	function applyApprovalGate() {
+		if (currentDoc.doctype !== "Leave Application" || !currentDoc.docname) return;
+
+		var container = findApprovalButtonsContainer();
+		if (!container) return;
+
+		var approver = leaveApproverByName[currentDoc.docname];
+		if (approver === undefined) {
+			fetchApproverIfNeeded(currentDoc.docname);
+			return;
+		}
+
+		var sessionUser = getSessionUser();
+		var mismatched = !sessionUser || approver !== sessionUser;
+		container.style.display = mismatched ? "none" : "";
+	}
+
+	var pending = null;
+	function scheduleScan() {
+		if (pending) return;
+		pending = requestAnimationFrame(function () {
+			pending = null;
+			applyApprovalGate();
+		});
+	}
+
+	var observer = new MutationObserver(scheduleScan);
+	observer.observe(document.body, { subtree: true, childList: true });
+	scheduleScan();
+})();
+</script>
+"""
+
+
 def get_context(context):
 	ctx = stock_get_context(context)
 
@@ -322,7 +477,7 @@ def get_context(context):
 		html = f.read()
 
 	html = html.replace("</head>", HIDE_CSS + "</head>")
-	html = html.replace("</body>", GATE_JS + ERROR_TOAST_JS + "</body>")
+	html = html.replace("</body>", GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + "</body>")
 
 	ctx.stock_html = frappe.render_template(html, ctx)
 	return ctx
