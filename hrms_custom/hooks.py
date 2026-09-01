@@ -181,7 +181,9 @@ override_whitelisted_methods = {
     "erpnext.setup.doctype.employee.employee.deactivate_sales_person":
     "hrms_custom.overrides.employee.deactivate_sales_person",
     "hrms.api.get_doctype_fields":
-    "hrms_custom.api.get_doctype_fields"
+    "hrms_custom.api.get_doctype_fields",
+    "frappe.client.get_doc_permissions":
+    "hrms_custom.api.get_doc_permissions"
 }
 
 permission_query_conditions = {
