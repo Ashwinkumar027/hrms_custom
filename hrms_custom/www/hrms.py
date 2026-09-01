@@ -178,21 +178,27 @@ GATE_JS = """
 """
 
 
-# The PWA's own onError() handlers (FormView.vue, in apps/hrms) discard the
-# real server error and always show a generic "Error creating/updating/
-# deleting {doctype}" toast, even though the failing response carries the
-# real message in `_server_messages` (frappe-ui itself parses this into
-# `error.messages` internally, but FormView.vue's onError() callbacks don't
-# accept the error argument, so it's read and then thrown away). We can't
-# touch apps/hrms, so this patches around it from outside: wrap window.fetch
-# to capture the real message from any failed request, then watch for the
-# generic toast's text node and swap it in before it renders.
+# The PWA's own onError() handlers discard the real server error and show a
+# generic toast instead, even though the failing response carries the real
+# message in `_server_messages` (frappe-ui itself parses this into
+# `error.messages` internally, but the callbacks below don't accept the
+# error argument, so it's read and then thrown away). We can't touch
+# apps/hrms, so this patches around it from outside: wrap window.fetch to
+# capture the real message from any failed request, then watch for a
+# generic toast's text node and swap it in before it renders. Two
+# components generate these generic toasts with different wording:
+#   - FormView.vue (save/submit/cancel/delete on the detail form):
+#     "Error creating/updating/deleting {doctype}"
+#   - RequestActionSheet.vue (Approve/Reject/Submit/Cancel from the "My
+#     Requests" action sheet, via getFailureMessage()): "Approval failed!",
+#     "Rejection failed!", "Document submission failed!", "Document
+#     cancellation failed!"
 #
-# FRAGILITY: matches toast text against the literal "Error creating "/
-# "Error updating "/"Error deleting " prefixes FormView.vue currently
-# generates. If a future hrms upgrade rewords that toast, this stops
-# firing and the generic message is shown as before (fails closed, no
-# breakage) — re-check after any hrms app upgrade, same as GATE_JS above.
+# FRAGILITY: matches toast text against the literal strings/prefixes each
+# component currently generates. If a future hrms upgrade rewords either
+# toast, matching for that one stops firing and the generic message is
+# shown as before (fails closed, no breakage) — re-check after any hrms
+# app upgrade, same as GATE_JS above.
 #
 # LIMITATION: the captured message is a single global "last error", keyed
 # only by response failure + a short TTL, not by request. Concurrent
@@ -203,9 +209,20 @@ ERROR_TOAST_JS = """
 <script>
 (function () {
 	var GENERIC_TOAST_PREFIX = /^Error (creating|updating|deleting) /;
+	var GENERIC_TOAST_EXACT = [
+		"Approval failed!",
+		"Rejection failed!",
+		"Document submission failed!",
+		"Document cancellation failed!",
+	];
 	var MESSAGE_TTL_MS = 5000;
 	var lastServerMessage = null;
 	var lastServerMessageAt = 0;
+
+	function isGenericToast(text) {
+		if (GENERIC_TOAST_PREFIX.test(text)) return true;
+		return GENERIC_TOAST_EXACT.indexOf(text) !== -1;
+	}
 
 	// Textarea trick: assigning to .innerHTML on a <textarea> is parsed in
 	// RCDATA mode, which decodes entities but never creates child elements
@@ -289,7 +306,7 @@ ERROR_TOAST_JS = """
 			var p = paragraphs[i];
 			p.setAttribute("data-error-toast-checked", "1");
 			var text = p.textContent || "";
-			if (!GENERIC_TOAST_PREFIX.test(text)) continue;
+			if (!isGenericToast(text)) continue;
 
 			if (lastServerMessage && Date.now() - lastServerMessageAt < MESSAGE_TTL_MS) {
 				p.textContent = lastServerMessage;
