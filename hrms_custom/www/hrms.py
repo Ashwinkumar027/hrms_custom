@@ -486,6 +486,205 @@ LEAVE_APPROVAL_GATE_JS = """
 """
 
 
+# Attendance Request has a real Frappe Workflow ("Attendance Request Approval"), so
+# its Approve/Reject buttons come from WorkflowActionSheet.vue via
+# frappe.model.workflow.get_transitions, not RequestActionSheet.vue's generic
+# status-field branch. That endpoint calls doc.check_permission("read") first, which
+# already blocks a viewer whose User Permission scope doesn't reach this employee at
+# all -- unlike Leave Application's RequestActionSheet.vue path, which only checked a
+# role-level field permission with no per-document scoping, this doctype has no
+# equivalent "wrong reach" gap to close.
+#
+# What IS still visible and wrong: both Approve/Reject transitions are configured
+# with allow_self_approval=1 (see hrms_custom/fixtures/workflow.json), which
+# deliberately bypasses Frappe's own workflow self-approval check
+# (frappe.model.workflow.has_permission) AND the PWA's own client-side self filter
+# (composables/workflow.js's getTransitions: `transition.allow_self_approval ||
+# !isSelfApproval`). So an applicant who also holds the Leave Approver role (needed to
+# be offered these transitions at all) sees Approve/Reject on their OWN pending
+# request -- confirmed on the UAT bench: get_transitions() itself returns
+# ['Approve', 'Reject'] for such a user viewing their own document, and
+# has_permission(doc, "submit") is True (self-scope always covers your own employee),
+# so a has_permission-only check would NOT catch this case. The backend
+# (CustomAttendanceRequest.before_submit) already rejects the resulting
+# self-approval, same as Leave Application -- this only hides the button.
+#
+# There is no per-document "assigned approver" field/share for this doctype (confirmed
+# earlier), so "is this viewer authorized for this specific document" reduces to two
+# checks: the has_permission(doc, "submit") result already returned by
+# frappe.client.get_doc_permissions (kept as a defense-in-depth check, even though the
+# read-permission gate above means it's rarely the thing that actually fires), and
+# whether the viewer IS the document's own employee (the actual, confirmed-reachable
+# gap), resolved via Employee.user_id the same way
+# CustomAttendanceRequest.before_submit() does.
+#
+# KNOWN LIMITATION: only fixes the "My Requests" action-sheet rendering
+# (RequestActionSheet.vue, view="actionSheet", <=2 actions -> Approve/Reject render as
+# plain buttons). FormView.vue's WorkflowActionSheet always uses view="form", which
+# shows a single "Actions" button that opens an <ion-action-sheet> -- an Ionic web
+# component that renders its button list in a shadow root, not reachable by a
+# light-DOM querySelectorAll. The detail-page path is not covered by this script;
+# the backend block is what protects it.
+#
+# FRAGILITY: matches on the literal English button label "Approve", same convention as
+# LEAVE_APPROVAL_GATE_JS above. Re-check after any hrms app upgrade that changes
+# WorkflowActionSheet.vue's structure or wording.
+ATTENDANCE_APPROVAL_GATE_JS = """
+<script>
+(function () {
+	function getSessionUser() {
+		var match = document.cookie.match(/(?:^|; )user_id=([^;]*)/);
+		var user = match ? decodeURIComponent(match[1]) : null;
+		return (user && user !== "Guest") ? user : null;
+	}
+
+	var currentDoc = { doctype: null, docname: null };
+	var submitPermissionByName = {};
+	var employeeCodeByName = {};
+	var employeeUserByCode = {};
+	var pendingEmployeeUserFetch = {};
+
+	function parseJsonBody(init) {
+		try {
+			return init && init.body ? JSON.parse(init.body) : null;
+		} catch (e) {
+			return null;
+		}
+	}
+
+	var originalFetch = window.fetch;
+	window.fetch = function (input, init) {
+		var url = typeof input === "string" ? input : (input && input.url) || "";
+		var requestParams = null;
+
+		if (url === "/api/method/frappe.client.get_doc_permissions") {
+			requestParams = parseJsonBody(init);
+			if (requestParams) {
+				currentDoc = {
+					doctype: requestParams.doctype || null,
+					docname: requestParams.docname || null,
+				};
+			}
+		}
+
+		return originalFetch.apply(this, arguments).then(function (response) {
+			if (!response.ok) return response;
+
+			if (url === "/api/method/frappe.client.get_doc_permissions" && requestParams) {
+				if (requestParams.doctype === "Attendance Request" && requestParams.docname) {
+					var docname = requestParams.docname;
+					response
+						.clone()
+						.json()
+						.then(function (data) {
+							var perms = data && data.message && data.message.permissions;
+							submitPermissionByName[docname] = !!(perms && perms.submit);
+							scheduleScan();
+						})
+						.catch(function () {});
+				}
+			}
+
+			if (url === "/api/method/frappe.client.get") {
+				response
+					.clone()
+					.json()
+					.then(function (data) {
+						var doc = data && data.message;
+						if (doc && doc.doctype === "Attendance Request" && doc.name) {
+							employeeCodeByName[doc.name] = doc.employee || "";
+							scheduleScan();
+						}
+					})
+					.catch(function () {});
+			}
+
+			return response;
+		});
+	};
+
+	function fetchEmployeeUserIfNeeded(employeeCode) {
+		if (employeeCode in employeeUserByCode) return;
+		if (pendingEmployeeUserFetch[employeeCode]) return;
+		pendingEmployeeUserFetch[employeeCode] = true;
+
+		originalFetch("/api/method/frappe.client.get_value", {
+			method: "POST",
+			headers: { "Content-Type": "application/json; charset=utf-8" },
+			body: JSON.stringify({
+				doctype: "Employee",
+				fieldname: "user_id",
+				filters: employeeCode,
+			}),
+		})
+			.then(function (r) {
+				return r.json();
+			})
+			.then(function (data) {
+				var value = data && data.message && data.message.user_id;
+				employeeUserByCode[employeeCode] = value || "";
+				scheduleScan();
+			})
+			.catch(function () {
+				delete pendingEmployeeUserFetch[employeeCode];
+			});
+	}
+
+	function findApprovalButtonsContainer() {
+		var buttons = document.querySelectorAll("button");
+		for (var i = 0; i < buttons.length; i++) {
+			var text = (buttons[i].textContent || "").trim();
+			if (text === "Approve") return buttons[i].parentElement;
+		}
+		return null;
+	}
+
+	function applyApprovalGate() {
+		if (currentDoc.doctype !== "Attendance Request" || !currentDoc.docname) return;
+
+		var container = findApprovalButtonsContainer();
+		if (!container) return;
+
+		var docname = currentDoc.docname;
+
+		var submitAllowed = submitPermissionByName[docname];
+		if (submitAllowed === undefined) return; // not yet known -- fail open
+		if (!submitAllowed) {
+			container.style.display = "none";
+			return;
+		}
+
+		var employeeCode = employeeCodeByName[docname];
+		if (employeeCode === undefined) return; // not yet known -- fail open
+
+		var employeeUser = employeeUserByCode[employeeCode];
+		if (employeeUser === undefined) {
+			fetchEmployeeUserIfNeeded(employeeCode);
+			return; // fail open while resolving
+		}
+
+		var sessionUser = getSessionUser();
+		var isSelf = Boolean(sessionUser && employeeUser && sessionUser === employeeUser);
+		container.style.display = isSelf ? "none" : "";
+	}
+
+	var pending = null;
+	function scheduleScan() {
+		if (pending) return;
+		pending = requestAnimationFrame(function () {
+			pending = null;
+			applyApprovalGate();
+		});
+	}
+
+	var observer = new MutationObserver(scheduleScan);
+	observer.observe(document.body, { subtree: true, childList: true });
+	scheduleScan();
+})();
+</script>
+"""
+
+
 def get_context(context):
 	ctx = stock_get_context(context)
 
@@ -494,7 +693,10 @@ def get_context(context):
 		html = f.read()
 
 	html = html.replace("</head>", HIDE_CSS + "</head>")
-	html = html.replace("</body>", GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + "</body>")
+	html = html.replace(
+		"</body>",
+		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + "</body>",
+	)
 
 	ctx.stock_html = frappe.render_template(html, ctx)
 	return ctx
