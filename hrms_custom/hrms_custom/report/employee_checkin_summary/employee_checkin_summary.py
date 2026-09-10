@@ -17,6 +17,8 @@ def get_columns():
         {"label": "Date", "fieldname": "log_date", "fieldtype": "Date", "width": 100},
         {"label": "Check In", "fieldname": "check_in", "fieldtype": "Data", "width": 100},
         {"label": "Check Out", "fieldname": "check_out", "fieldtype": "Data", "width": 100},
+        {"label": "Check-in latitude and longitude", "fieldname": "check_in_lat_long", "fieldtype": "Data", "width": 180},
+        {"label": "Check-out latitude and longitude", "fieldname": "check_out_lat_long", "fieldtype": "Data", "width": 180},
         {"label": "Auto Checkout", "fieldname": "auto_closed", "fieldtype": "Data", "width": 120},
         {"label": "Shift", "fieldname": "shift", "fieldtype": "Link", "options": "Shift Type", "width": 130},
         {"label": "Location", "fieldname": "location", "fieldtype": "Data", "width": 140},
@@ -50,6 +52,43 @@ def get_employees(filters):
     return {e.name: e for e in employees}
 
 
+def _format_lat_long(log):
+    if not log:
+        return ""
+    lat = getattr(log, "latitude", None)
+    lon = getattr(log, "longitude", None)
+
+    if isinstance(lat, str):
+        lat = lat.strip() or None
+    if isinstance(lon, str):
+        lon = lon.strip() or None
+
+    lat_val = None
+    lon_val = None
+    if lat is not None:
+        try:
+            lat_val = float(lat)
+        except (ValueError, TypeError):
+            lat_val = None
+
+    if lon is not None:
+        try:
+            lon_val = float(lon)
+        except (ValueError, TypeError):
+            lon_val = None
+
+    has_lat = lat_val is not None and lat_val != 0.0
+    has_lon = lon_val is not None and lon_val != 0.0
+
+    if has_lat and has_lon:
+        return f"{lat}, {lon}"
+    elif has_lat:
+        return str(lat)
+    elif has_lon:
+        return str(lon)
+    return ""
+
+
 def get_data(filters):
     start_date = getdate(filters.get("start_date"))
     end_date = getdate(filters.get("end_date"))
@@ -64,7 +103,16 @@ def get_data(filters):
             "employee": ["in", list(employee_map.keys())],
             "time": ["between", [str(start_date) + " 00:00:00", str(end_date) + " 23:59:59"]],
         },
-        fields=["employee", "log_type", "time", "shift", "custom_auto_closed", "custom_validated_shift_location"],
+        fields=[
+            "employee",
+            "log_type",
+            "time",
+            "shift",
+            "latitude",
+            "longitude",
+            "custom_auto_closed",
+            "custom_validated_shift_location",
+        ],
         order_by="employee asc, time asc",
     )
 
@@ -107,6 +155,8 @@ def get_data(filters):
             "log_date": log_date,
             "check_in": first_in.time.strftime("%H:%M") if first_in else "",
             "check_out": last_out.time.strftime("%H:%M") if last_out else "",
+            "check_in_lat_long": _format_lat_long(first_in),
+            "check_out_lat_long": _format_lat_long(last_out),
             "auto_closed": auto_closed,
             "shift": shift,
             "location": location,
