@@ -1,6 +1,6 @@
 import frappe
 from frappe.utils import getdate
-from hrms_custom.hrms_custom.report.monthly_attendance_sheet_custom.monthly_attendance_sheet_custom import (
+from hrms_custom.hrms_custom.report.consolidated_attendance_sheet.consolidated_attendance_sheet import (
     _get_downward_chain,
 )
 

@@ -1,4 +1,4 @@
-frappe.query_reports["Monthly Attendance Sheet Custom"] = {
+frappe.query_reports["Consolidated Attendance Sheet"] = {
     filters: [
         {
             fieldname: "filter_based_on",
@@ -156,16 +156,51 @@ frappe.query_reports["Monthly Attendance Sheet Custom"] = {
             value = "<strong>" + value + "</strong>";
         }
 
-        if (!summarized_view) {
-            if ((group_by && column.colIndex > 3) || (!group_by && column.colIndex > 2)) {
-                if (value == "HD/P") value = "<span style='color:#914EE3'>" + value + "</span>";
-                else if (value == "HD/A")
-                    value = "<span style='color:orange'>" + value + "</span>";
-                else if (value == "P" || value == "WFH")
-                    value = "<span style='color:green'>" + value + "</span>";
-                else if (value == "A") value = "<span style='color:red'>" + value + "</span>";
-                else if (value == "L") value = "<span style='color:#318AD8'>" + value + "</span>";
-                else value = "<span style='color:#878787'>" + value + "</span>";
+        if (!summarized_view && value) {
+            // Strip any existing HTML tags to inspect the raw code
+            const cleanVal = String(value).replace(/<[^>]*>/g, "").trim();
+            if (!cleanVal) return value;
+
+            // 1. Pending Approvals (Pure Red dashed badge)
+            if (cleanVal.endsWith("-PND")) {
+                value = "<span style='color: #e74c3c; background-color: #fde8e8; padding: 2px 5px; border-radius: 3px; font-weight: 600; border: 1px dashed #e74c3c; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+            }
+            // 2. Absent (Pure Red text)
+            else if (cleanVal === "A") {
+                value = "<span style='color: #e74c3c; font-weight: 700;'>" + cleanVal + "</span>";
+            }
+            // 3. Missing Checkout & Loss of Pay (Pure Red solid badge)
+            else if (cleanVal === "M(CO)" || cleanVal === "LOP") {
+                value = "<span style='color: #e74c3c; background-color: #fde8e8; padding: 2px 5px; border-radius: 3px; font-weight: 600; border: 1px solid #e74c3c; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+            }
+            // 4. Regularization, On Duty, Week Off Credit
+            else if (cleanVal === "REG" || cleanVal === "OD" || cleanVal === "WOC") {
+                value = "<span style='color: #16a085; background-color: #e8f8f5; padding: 2px 5px; border-radius: 3px; font-weight: 600; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+            }
+            // 5. Permissions (Late In / Early Out)
+            else if (cleanVal === "PER/LI" || cleanVal === "PER/EO") {
+                value = "<span style='color: #8e44ad; background-color: #f4ecf7; padding: 2px 5px; border-radius: 3px; font-weight: 600; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+            }
+            // 6. Present & Work From Home
+            else if (cleanVal === "P" || cleanVal === "WFH") {
+                value = "<span style='color: green; font-weight: 600;'>" + cleanVal + "</span>";
+            }
+            // 7. Half Days
+            else if (cleanVal === "HD/A") {
+                value = "<span style='color: orange; font-weight: 600;'>" + cleanVal + "</span>";
+            } else if (cleanVal === "HD/P" || cleanVal.startsWith("HD/")) {
+                value = "<span style='color: #914EE3; font-weight: 600;'>" + cleanVal + "</span>";
+            }
+            // 8. Approved Leaves (Other Live Types)
+            else if (["CL", "CO", "SL", "RH", "EL", "PCL", "PL", "ML", "LWP", "L"].includes(cleanVal)) {
+                value = "<span style='color: #2980b9; background-color: #ebf5fb; padding: 2px 5px; border-radius: 3px; font-weight: 600; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+            }
+            // 9. Weekly Off & Holiday
+            else if (cleanVal === "WO" || cleanVal === "H") {
+                value = "<span style='color: #878787; font-weight: 500;'>" + cleanVal + "</span>";
+            }
+            else {
+                value = "<span style='color: #878787;'>" + value + "</span>";
             }
         }
 

@@ -13,11 +13,11 @@
  "modified": "2026-07-11 09:56:02.816061",
  "modified_by": "Administrator",
  "module": "HRMS custom",
- "name": "Monthly Attendance Sheet Custom",
+ "name": "Consolidated Attendance Sheet",
  "owner": "Administrator",
  "prepared_report": 0,
  "ref_doctype": "Attendance",
- "report_name": "Monthly Attendance Sheet Custom",
+ "report_name": "Consolidated Attendance Sheet",
  "report_type": "Script Report",
  "roles": [
   {
