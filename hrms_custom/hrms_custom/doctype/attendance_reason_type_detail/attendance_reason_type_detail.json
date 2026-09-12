@@ -14,7 +14,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Reason",
-   "options": "Missed Check-In or Check-Out\nWork From Home\nOn Duty\nLate In\nEarly Out",
+   "options": "Missed Check-In or Check-Out\nWork From Home\nOn Duty\nLate In\nEarly Out\nWeek Off Credit",
    "reqd": 1
   }
  ],

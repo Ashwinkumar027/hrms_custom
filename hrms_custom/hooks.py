@@ -112,7 +112,8 @@ fixtures = [
             "Permission",
             "On Duty",
             "Missed Attendance",
-            "Work From Home Allowance"
+            "Work From Home Allowance",
+            "Week Off Credit"
         ]]],
     },
     {

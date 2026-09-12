@@ -65,5 +65,21 @@
    }
   ],
   "type_name": "Missed Attendance"
+ },
+ {
+  "amended_from": null,
+  "attendance_behavior": "Creates Attendance",
+  "description": null,
+  "docstatus": 1,
+  "doctype": "Attendance Reason Type",
+  "is_active": 1,
+  "modified": "2026-09-12 02:30:00.000000",
+  "name": "Week Off Credit",
+  "reasons": [
+   {
+    "reason": "Week Off Credit"
+   }
+  ],
+  "type_name": "Week Off Credit"
  }
 ]

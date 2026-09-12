@@ -2509,7 +2509,7 @@
   "property": "options",
   "property_type": "Text",
   "row_name": "Attendance Request-reason",
-  "value": "Regularization\nOn Duty\nWork From Home\nLate In\nEarly Out"
+  "value": "Regularization\nOn Duty\nWork From Home\nLate In\nEarly Out\nWeek Off Credit"
  },
  {
   "default_value": "",
