@@ -199,7 +199,7 @@ has_permission = {
 
 scheduler_events = {
     "cron": {
-        "0 9 * * *": [
+        "30 3 * * *": [
             "hrms_custom.hrms_custom.utils.upcoming_holiday_notification.send_upcoming_holiday_notifications"
         ],
         "30 2 * * *": [
