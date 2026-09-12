@@ -410,7 +410,7 @@ def _get_kpi_summary_html(data, columns):
         </div>
         <div style="flex: 1; min-width: 170px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border-left: 4px solid #e74c3c;">
             <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Absences / LOP / M(CO)</div>
-            <div style="font-size: 22px; font-weight: 700; color: #e74c3c; margin-top: 2px;">{int(absent_count)} <span style="font-size: 12px; font-weight: 500; color: #94a3b8;">Days</span></div>
+            <div style="font-size: 22px; font-weight: 700; color: #e74c3c; margin-top: 2px;">{absent_count:g} <span style="font-size: 12px; font-weight: 500; color: #94a3b8;">Days</span></div>
         </div>
         <div style="flex: 1; min-width: 170px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border-left: 4px solid #f59e0b;">
             <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Pending Approvals</div>

@@ -31,7 +31,7 @@ def _process_company_upcoming_holidays(company, today_date):
         return getdate(check_date).weekday() == 6
 
     # Inspect upcoming dates within a 4-day window (e.g. Friday notifying for Saturday, Sunday, Monday)
-    for days_ahead in range(1, 5):
+    for days_ahead in range(1, 7):
         h_date = getdate(add_days(today_date, days_ahead))
         h_name = None
         h_type = None
@@ -158,11 +158,17 @@ def get_company_holiday_list(company_name, as_on=None):
         if not hl_end or getdate(hl_end) >= as_on:
             return comp_default
 
-    return frappe.db.get_value(
+    # 3. Fallback to active Holiday List covering as_on (prefer non-optional lists)
+    matching_lists = frappe.get_all(
         "Holiday List",
-        {"from_date": ["<=", as_on], "to_date": [">=", as_on]},
-        "name",
+        filters={"from_date": ["<=", as_on], "to_date": [">=", as_on]},
+        pluck="name",
     )
+    for hl_name in matching_lists:
+        if "optional" not in hl_name.lower():
+            return hl_name
+
+    return matching_lists[0] if matching_lists else None
 
 
 def _get_company_optional_holiday_list(company_name):
