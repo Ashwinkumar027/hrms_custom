@@ -161,46 +161,46 @@ frappe.query_reports["Consolidated Attendance Sheet"] = {
             const cleanVal = String(value).replace(/<[^>]*>/g, "").trim();
             if (!cleanVal) return value;
 
-            // 1. Pending Approvals (Pure Red dashed badge)
+            // 1. Pending Approvals (Pure Red dashed micro-pill)
             if (cleanVal.endsWith("-PND")) {
-                value = "<span style='color: #e74c3c; background-color: #fde8e8; padding: 2px 5px; border-radius: 3px; font-weight: 600; border: 1px dashed #e74c3c; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+                value = "<span style='color: #e74c3c; background: #fff5f5; border: 1px dashed #e74c3c; padding: 2px 5px; border-radius: 4px; font-weight: 700; font-size: 10.5px; display: inline-block; white-space: nowrap; letter-spacing: 0.2px;'>" + cleanVal + "</span>";
             }
-            // 2. Absent (Pure Red text)
+            // 2. Absent (Bold Pure Red)
             else if (cleanVal === "A") {
-                value = "<span style='color: #e74c3c; font-weight: 700;'>" + cleanVal + "</span>";
+                value = "<span style='color: #dc2626; font-weight: 800; font-size: 12px;'>" + cleanVal + "</span>";
             }
-            // 3. Missing Checkout & Loss of Pay (Pure Red solid badge)
+            // 3. Missing Checkout & Loss of Pay (Pure Red solid micro-pill)
             else if (cleanVal === "M(CO)" || cleanVal === "LOP") {
-                value = "<span style='color: #e74c3c; background-color: #fde8e8; padding: 2px 5px; border-radius: 3px; font-weight: 600; border: 1px solid #e74c3c; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+                value = "<span style='color: #ffffff; background: #e74c3c; border: 1px solid #c0392b; padding: 2px 5px; border-radius: 4px; font-weight: 700; font-size: 10.5px; display: inline-block; white-space: nowrap; box-shadow: 0 1px 2px rgba(231,76,60,0.2);'>" + cleanVal + "</span>";
             }
-            // 4. Regularization, On Duty, Week Off Credit
+            // 4. Regularization, On Duty, Week Off Credit (Teal micro-pill)
             else if (cleanVal === "REG" || cleanVal === "OD" || cleanVal === "WOC") {
-                value = "<span style='color: #16a085; background-color: #e8f8f5; padding: 2px 5px; border-radius: 3px; font-weight: 600; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+                value = "<span style='color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; padding: 2px 5px; border-radius: 4px; font-weight: 600; font-size: 10.5px; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
             }
-            // 5. Permissions (Late In / Early Out)
+            // 5. Permissions (Purple micro-pill)
             else if (cleanVal === "PER/LI" || cleanVal === "PER/EO") {
-                value = "<span style='color: #8e44ad; background-color: #f4ecf7; padding: 2px 5px; border-radius: 3px; font-weight: 600; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+                value = "<span style='color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; padding: 2px 5px; border-radius: 4px; font-weight: 600; font-size: 10.5px; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
             }
-            // 6. Present & Work From Home
+            // 6. Present & Work From Home (Crisp Forest Green)
             else if (cleanVal === "P" || cleanVal === "WFH") {
-                value = "<span style='color: green; font-weight: 600;'>" + cleanVal + "</span>";
+                value = "<span style='color: #15803d; font-weight: 700; font-size: 12px;'>" + cleanVal + "</span>";
             }
-            // 7. Half Days
+            // 7. Half Days (Subtle amber/purple micro-pills)
             else if (cleanVal === "HD/A") {
-                value = "<span style='color: orange; font-weight: 600;'>" + cleanVal + "</span>";
+                value = "<span style='color: #c2410c; background: #fff7ed; border: 1px solid #ffedd5; padding: 2px 5px; border-radius: 4px; font-weight: 600; font-size: 10.5px; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
             } else if (cleanVal === "HD/P" || cleanVal.startsWith("HD/")) {
-                value = "<span style='color: #914EE3; font-weight: 600;'>" + cleanVal + "</span>";
+                value = "<span style='color: #7c3aed; background: #faf5ff; border: 1px solid #f3e8ff; padding: 2px 5px; border-radius: 4px; font-weight: 600; font-size: 10.5px; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
             }
-            // 8. Approved Leaves (Other Live Types)
+            // 8. Approved Leaves (Soft Sky Blue micro-pill)
             else if (["CL", "CO", "SL", "RH", "EL", "PCL", "PL", "ML", "LWP", "L"].includes(cleanVal)) {
-                value = "<span style='color: #2980b9; background-color: #ebf5fb; padding: 2px 5px; border-radius: 3px; font-weight: 600; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
+                value = "<span style='color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600; font-size: 10.5px; display: inline-block; white-space: nowrap;'>" + cleanVal + "</span>";
             }
-            // 9. Weekly Off & Holiday
+            // 9. Weekly Off & Holiday (Muted Slate)
             else if (cleanVal === "WO" || cleanVal === "H") {
-                value = "<span style='color: #878787; font-weight: 500;'>" + cleanVal + "</span>";
+                value = "<span style='color: #94a3b8; font-weight: 600; font-size: 11px;'>" + cleanVal + "</span>";
             }
             else {
-                value = "<span style='color: #878787;'>" + value + "</span>";
+                value = "<span style='color: #64748b;'>" + value + "</span>";
             }
         }
 

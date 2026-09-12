@@ -43,7 +43,7 @@ def execute(filters=None):
         elif filters.get("start_date") and filters.get("end_date"):
             filters.filter_based_on = "Date Range"
         else:
-            filters.filter_based_on = "Date Range" 
+            filters.filter_based_on = "Date Range"
 
     reports_to = filters.pop("reports_to", None)
 
@@ -57,24 +57,28 @@ def execute(filters=None):
     chart = None
     message = None
 
-    for company in companies:
-        run_filters = frappe._dict(filters)
-        run_filters.company = company
-        try:
-            c, d, m, ch = stock_execute(run_filters)
-        except Exception:
-            frappe.logger("hrms_custom").warning(
-                "Consolidated Attendance Sheet: skipped company {0} due to error".format(company)
-            )
-            continue
-        if c and columns is None:
-            columns = c
-        if ch and chart is None:
-            chart = ch
-        if m and message is None:
-            message = m
-        if d:
-            all_data.extend(d)
+    # Mute popups like 'No attendance records found.' when looping through empty companies
+    saved_mute = getattr(frappe.flags, "mute_messages", False)
+    frappe.flags.mute_messages = True
+    try:
+        for company in companies:
+            run_filters = frappe._dict(filters)
+            run_filters.company = company
+            try:
+                c, d, m, ch = stock_execute(run_filters)
+            except Exception:
+                frappe.logger("hrms_custom").warning(
+                    f"Consolidated Attendance Sheet: skipped company {company} due to error"
+                )
+                continue
+            if c and columns is None:
+                columns = c
+            if ch and chart is None:
+                chart = ch
+            if d:
+                all_data.extend(d)
+    finally:
+        frappe.flags.mute_messages = saved_mute
 
     data = all_data
 
@@ -85,10 +89,21 @@ def execute(filters=None):
             if row.get("employee") in allowed_employees
         ]
 
+    # Widen date columns to 80px & center align to prevent badge truncation (e.g. REG-PND)
+    if columns:
+        for col in columns:
+            if col.get("fieldname") and _is_date_field(col["fieldname"]):
+                col["width"] = 80
+                col["align"] = "center"
+
     # Detailed View: Enrich cells with custom leave codes, attendance request codes, permissions, and pending markers
     if not filters.get("summarized_view") and data and columns:
         data = _enrich_attendance_grid(data, columns, filters)
-        message = _get_legend_message()
+        # Suppress heavy chart in detailed view so KPIs and grid are immediately visible at the top
+        chart = None
+        kpi_html = _get_kpi_summary_html(data, columns)
+        legend_html = _get_legend_message()
+        message = f"{kpi_html}{legend_html}"
 
     return columns, data, message, chart
 
@@ -173,6 +188,24 @@ def _enrich_attendance_grid(data, columns, filters):
         ],
     )
 
+    # Build lookup maps
+    # pending_leaves: (employee, date) -> code (e.g. 'CL-PND')
+    pending_leaves = {}
+    approved_leaves = {}
+    for la in leave_applications:
+        l_type = (la.leave_type or "").strip().lower()
+        l_code = LEAVE_TYPE_MAP.get(l_type, (la.leave_type or "L").strip().upper())
+        curr = max(getdate(la.from_date), start_date)
+        last = min(getdate(la.to_date), end_date)
+
+        while curr <= last:
+            is_half = bool(la.half_day and (not la.half_day_date or getdate(la.half_day_date) == curr))
+            if la.docstatus == 0:
+                pending_leaves[(la.employee, curr)] = f"HD/{l_code}-PND" if is_half else f"{l_code}-PND"
+            elif la.docstatus == 1:
+                approved_leaves[(la.employee, curr)] = f"HD/{l_code}" if is_half else l_code
+            curr += timedelta(days=1)
+
     # 4. Fetch Attendance Requests (approved docstatus=1 and pending docstatus=0)
     att_requests = frappe.get_all(
         "Attendance Request",
@@ -193,24 +226,6 @@ def _enrich_attendance_grid(data, columns, filters):
             "docstatus",
         ],
     )
-
-    # Build lookup maps
-    # pending_leaves: (employee, date) -> code (e.g. 'CL-PND')
-    pending_leaves = {}
-    approved_leaves = {}
-    for la in leave_applications:
-        l_type = (la.leave_type or "").strip().lower()
-        l_code = LEAVE_TYPE_MAP.get(l_type, (la.leave_type or "L").strip().upper())
-        curr = max(getdate(la.from_date), start_date)
-        last = min(getdate(la.to_date), end_date)
-
-        while curr <= last:
-            is_half = bool(la.half_day and (not la.half_day_date or getdate(la.half_day_date) == curr))
-            if la.docstatus == 0:
-                pending_leaves[(la.employee, curr)] = f"HD/{l_code}-PND" if is_half else f"{l_code}-PND"
-            elif la.docstatus == 1:
-                approved_leaves[(la.employee, curr)] = f"HD/{l_code}" if is_half else l_code
-            curr += timedelta(days=1)
 
     # pending_requests: (employee, date) -> code (e.g. 'REG-PND', 'OD-PND', 'PER/LI-PND', 'WOC-PND')
     # approved_requests: (employee, date) -> code (e.g. 'REG', 'OD', 'WOC', 'WFH')
@@ -350,66 +365,138 @@ def _is_date_field(val):
     return len(parts) == 3 and parts[0].isdigit() and parts[1].isdigit() and parts[2].isdigit()
 
 
+def _get_kpi_summary_html(data, columns):
+    """Generate 4 executive KPI summary cards above the grid."""
+    date_cols = [
+        col["fieldname"] for col in columns
+        if col.get("fieldname") and _is_date_field(col["fieldname"])
+    ]
+    employees = {r.get("employee") for r in data if r.get("employee")}
+    total_emp = len(employees)
+
+    present_count = 0
+    absent_count = 0
+    pending_count = 0
+
+    for row in data:
+        if not row.get("employee"):
+            continue
+        for d_col in date_cols:
+            val = str(row.get(d_col) or "").strip()
+            if not val:
+                continue
+            if val.endswith("-PND"):
+                pending_count += 1
+            if val in ("P", "WFH", "REG", "OD", "WOC") or val.startswith("PER/"):
+                present_count += 1
+            elif val.startswith("HD/P"):
+                present_count += 0.5
+                absent_count += 0.5
+            elif val in ("A", "LOP", "M(CO)") or val.startswith("HD/A"):
+                absent_count += 1
+
+    denominator = present_count + absent_count
+    att_rate = (present_count / denominator * 100.0) if denominator > 0 else 0.0
+
+    cards_html = f"""
+    <div style="display: flex; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="flex: 1; min-width: 170px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border-left: 4px solid #3b82f6;">
+            <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Active Headcount</div>
+            <div style="font-size: 22px; font-weight: 700; color: #1e293b; margin-top: 2px;">{total_emp} <span style="font-size: 12px; font-weight: 500; color: #94a3b8;">Employees</span></div>
+        </div>
+        <div style="flex: 1; min-width: 170px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border-left: 4px solid #10b981;">
+            <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Attendance Rate</div>
+            <div style="font-size: 22px; font-weight: 700; color: #0f766e; margin-top: 2px;">{att_rate:.1f}%</div>
+        </div>
+        <div style="flex: 1; min-width: 170px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border-left: 4px solid #e74c3c;">
+            <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Absences / LOP / M(CO)</div>
+            <div style="font-size: 22px; font-weight: 700; color: #e74c3c; margin-top: 2px;">{int(absent_count)} <span style="font-size: 12px; font-weight: 500; color: #94a3b8;">Days</span></div>
+        </div>
+        <div style="flex: 1; min-width: 170px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border-left: 4px solid #f59e0b;">
+            <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Pending Approvals</div>
+            <div style="font-size: 22px; font-weight: 700; color: #b45309; margin-top: 2px;">{pending_count} <span style="font-size: 12px; font-weight: 500; color: #94a3b8;">Requests</span></div>
+        </div>
+    </div>
+    """
+    return cards_html
+
+
 def _get_legend_message():
     sections = [
         (
             "Attendance",
             [
-                ("Present", "P", "#27ae60"),
-                ("Absent", "A", "#e74c3c"),
-                ("Work From Home", "WFH", "#16a085"),
-                ("Half Day Present", "HD/P", "#9b59b6"),
-                ("Half Day Absent", "HD/A", "#e67e22"),
-                ("Weekly Off", "WO", "#7f8c8d"),
-                ("Holiday", "H", "#7f8c8d"),
+                ("Present", "P", "color: #15803d; font-weight: 700;"),
+                ("Absent", "A", "color: #dc2626; font-weight: 800;"),
+                ("Work From Home", "WFH", "color: #15803d; font-weight: 700;"),
+                ("Half Day Present", "HD/P", "color: #7c3aed; background: #faf5ff; border: 1px solid #f3e8ff; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Half Day Absent", "HD/A", "color: #c2410c; background: #fff7ed; border: 1px solid #ffedd5; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Weekly Off", "WO", "color: #94a3b8; font-weight: 600;"),
+                ("Holiday", "H", "color: #94a3b8; font-weight: 600;"),
             ],
         ),
         (
             "Approved Leaves",
             [
-                ("Casual Leave", "CL", "#2980b9"),
-                ("Comp-Off", "CO", "#2980b9"),
-                ("Sick Leave", "SL", "#2980b9"),
-                ("Restricted Holiday", "RH", "#2980b9"),
-                ("Earned Leave", "EL", "#2980b9"),
-                ("Probation Casual Leave", "PCL", "#2980b9"),
-                ("Paternity leave", "PL", "#2980b9"),
-                ("Maternity Leave", "ML", "#2980b9"),
-                ("Loss Of Pay", "LOP", "#e74c3c"),
-                ("Leave With Pay", "LWP", "#2980b9"),
+                ("Casual Leave", "CL", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Comp-Off", "CO", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Sick Leave", "SL", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Restricted Holiday", "RH", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Earned Leave", "EL", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Probation Casual Leave", "PCL", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Paternity Leave", "PL", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Maternity Leave", "ML", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Loss Of Pay", "LOP", "color: #ffffff; background: #e74c3c; border: 1px solid #c0392b; padding: 2px 5px; border-radius: 4px; font-weight: 700;"),
+                ("Leave With Pay", "LWP", "color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
             ],
         ),
         (
             "Requests & Permissions",
             [
-                ("Regularization", "REG", "#16a085"),
-                ("On Duty", "OD", "#16a085"),
-                ("Week Off Credit", "WOC", "#16a085"),
-                ("Late In Permission", "PER/LI", "#8e44ad"),
-                ("Early Out Permission", "PER/EO", "#8e44ad"),
-                ("Missing Checkout / Auto-Closed", "M(CO)", "#e74c3c"),
+                ("Regularization", "REG", "color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("On Duty", "OD", "color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Week Off Credit", "WOC", "color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Late In Permission", "PER/LI", "color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Early Out Permission", "PER/EO", "color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; padding: 2px 5px; border-radius: 4px; font-weight: 600;"),
+                ("Missing Checkout / Auto-Closed", "M(CO)", "color: #ffffff; background: #e74c3c; border: 1px solid #c0392b; padding: 2px 5px; border-radius: 4px; font-weight: 700;"),
             ],
         ),
         (
             "Pending Approvals",
             [
-                ("Pending Requests", "*-PND (e.g. CL-PND, REG-PND, OD-PND, PER/LI-PND, WOC-PND)", "#e74c3c"),
+                ("Pending Requests", "*-PND (e.g. CL-PND, REG-PND, OD-PND, PER/LI-PND, WOC-PND)", "color: #e74c3c; background: #fff5f5; border: 1px dashed #e74c3c; padding: 2px 5px; border-radius: 4px; font-weight: 700;"),
             ],
         ),
     ]
 
-    message = "<div style='font-size: 12px; line-height: 24px; padding: 6px 0;'>"
+    details_html = """
+    <details style="margin-bottom: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px;">
+        <summary style="font-weight: 600; color: #475569; cursor: pointer; user-select: none; outline: none; padding: 2px 0;">
+            Attendance Legend & Leave Codes
+            <span style="font-weight: 400; color: #94a3b8; font-size: 11px; margin-left: 8px;">(Click to expand / collapse)</span>
+        </summary>
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+    """
+
     for title, items in sections:
-        message += f"<div style='margin-bottom: 4px;'><strong style='color: #2c3e50;'>{title}:</strong> "
-        for label, code, color in items:
-            message += f"""
-                <span style='border-left: 3px solid {color}; padding: 1px 8px 1px 5px; margin: 0 4px; display: inline-block;'>
-                    {label} - <b>{code}</b>
+        details_html += f"""
+            <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px;">
+                <span style="font-weight: 600; color: #334155; min-width: 145px;">{title}:</span>
+        """
+        for label, code, style_str in items:
+            details_html += f"""
+                <span style="display: inline-flex; align-items: center; gap: 4px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 6px; margin: 1px 2px;">
+                    <span style="color: #64748b; font-size: 11px;">{label}</span>
+                    <span style="{style_str} font-size: 10.5px;">{code}</span>
                 </span>
             """
-        message += "</div>"
-    message += "</div>"
-    return message
+        details_html += "</div>"
+
+    details_html += """
+        </div>
+    </details>
+    """
+    return details_html
 
 
 def _get_downward_chain(manager):
