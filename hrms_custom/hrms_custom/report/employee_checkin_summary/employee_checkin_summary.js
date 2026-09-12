@@ -15,6 +15,12 @@ frappe.query_reports["Employee Checkin Summary"] = {
             reqd: 1,
         },
         {
+            fieldname: "status",
+            label: __("Status"),
+            fieldtype: "Select",
+            options: ["", "Completed", "Missing Check-out", "Missing Check-in", "Auto Closed"],
+        },
+        {
             fieldname: "employee",
             label: __("Employee"),
             fieldtype: "Link",
@@ -49,16 +55,55 @@ frappe.query_reports["Employee Checkin Summary"] = {
     formatter: function (value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
 
-        if (column.fieldname === "auto_closed" && data && data.auto_closed === "AUTO") {
-            value = "<span style='color:#e65100; font-weight:bold;'>AUTO</span>";
+        if (!data) return value;
+
+        // 1. Missing Check In
+        if (column.fieldname === "check_in" && !data.check_in) {
+            value = "<span style='background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10.5px;'>MISSING</span>";
         }
 
-        if (column.fieldname === "check_out" && data && data.auto_closed === "AUTO") {
-            value = "<span style='color:#e65100;'>" + value + "</span>";
+        // 2. Missing Check Out
+        if (column.fieldname === "check_out") {
+            if (!data.check_out) {
+                value = "<span style='background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10.5px;'>MISSING</span>";
+            } else if (data.auto_closed === "AUTO") {
+                value = "<span style='color: #ea580c; font-weight: 600;'>" + value + "</span>";
+            }
         }
 
-        if (column.fieldname === "check_out" && data && !data.check_out) {
-            value = "<span style='color:red;'>MISSING</span>";
+        // 3. Checkout Type / Auto Closed Badge
+        if (column.fieldname === "auto_closed") {
+            if (data.auto_closed === "AUTO") {
+                value = "<span style='background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10.5px;'>AUTO</span>";
+            } else if (data.check_in && data.check_out) {
+                value = "<span style='background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10.5px;'>REGULAR</span>";
+            } else {
+                value = "<span style='color: #94a3b8;'>-</span>";
+            }
+        }
+
+        // 4. Working Hours styling
+        if (column.fieldname === "working_hours") {
+            if (data.working_hours && data.working_hours !== "-") {
+                value = "<span style='font-weight: 600; color: #1e293b; font-size: 11.5px;'>" + data.working_hours + "</span>";
+            } else {
+                value = "<span style='color: #cbd5e1;'>-</span>";
+            }
+        }
+
+        // 5. Clickable Google Maps Pin for Coordinates
+        if ((column.fieldname === "check_in_lat_long" || column.fieldname === "check_out_lat_long") && value) {
+            const raw = String(value).replace(/<[^>]*>/g, "").trim();
+            if (raw && raw.includes(",")) {
+                const parts = raw.split(",");
+                const lat = parseFloat(parts[0].trim());
+                const lon = parseFloat(parts[1].trim());
+                if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+                    const shortCoords = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                    const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+                    value = `<a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #0284c7; text-decoration: none; font-weight: 500; font-size: 11px; display: inline-flex; align-items: center; gap: 3px;" title="Open in Google Maps (${raw})">📍 ${shortCoords}</a>`;
+                }
+            }
         }
 
         return value;
