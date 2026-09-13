@@ -711,7 +711,7 @@
    },
    {
     "action": "Approve",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Leave Approver",
     "condition": null,
     "next_state": "Approved",
@@ -722,7 +722,7 @@
    },
    {
     "action": "Reject",
-    "allow_self_approval": 1,
+    "allow_self_approval": 0,
     "allowed": "Leave Approver",
     "condition": null,
     "next_state": "Rejected",

@@ -184,7 +184,9 @@ override_whitelisted_methods = {
     "hrms.api.get_doctype_fields":
     "hrms_custom.api.get_doctype_fields",
     "frappe.client.get_doc_permissions":
-    "hrms_custom.api.get_doc_permissions"
+    "hrms_custom.api.get_doc_permissions",
+    "frappe.model.workflow.get_transitions":
+    "hrms_custom.api.get_transitions"
 }
 
 permission_query_conditions = {

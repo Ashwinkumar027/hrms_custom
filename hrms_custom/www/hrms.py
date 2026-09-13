@@ -6,7 +6,13 @@ no_cache = 1
 HIDE_CSS = """
 <style>
 a[href^="/hrms/shift-requests"],
-a[href^="/hrms/employee-advances"] { display: none !important; }
+a[href^="/hrms/employee-advances"],
+a[href^="/hrms/expense-claims"],
+[data-hide-shift-section="true"] { display: none !important; }
+
+ion-tab-button[tab="Expenses"],
+ion-tab-button[href*="expense-claims"],
+#tab-button-Expenses { display: none !important; }
 
 @media (min-width: 640px) {
     .sm\\:w-96 {
@@ -685,6 +691,50 @@ ATTENDANCE_APPROVAL_GATE_JS = """
 """
 
 
+
+HIDE_SHIFTS_JS = """
+<script>
+(function () {
+	function hideShiftSections() {
+		var headings = document.querySelectorAll("div.text-lg.text-gray-800.font-bold");
+		for (var i = 0; i < headings.length; i++) {
+			var h = headings[i];
+			var text = (h.textContent || "").trim();
+			if (text === "Upcoming Shifts" || text === "Recent Shift Requests") {
+				var container = h.parentElement;
+				if (container && container.id !== "app" && !container.classList.contains("flex-col")) {
+					container.setAttribute("data-hide-shift-section", "true");
+					container.style.display = "none";
+				}
+			}
+		}
+
+		var shiftBtns = document.querySelectorAll('a[href^="/hrms/shift-requests"]');
+		for (var j = 0; j < shiftBtns.length; j++) {
+			var btnParent = shiftBtns[j].parentElement;
+			if (btnParent && btnParent.classList.contains("w-full")) {
+				btnParent.setAttribute("data-hide-shift-section", "true");
+				btnParent.style.display = "none";
+			}
+		}
+	}
+
+	var pending = null;
+	function scheduleScan() {
+		if (pending) return;
+		pending = requestAnimationFrame(function () {
+			pending = null;
+			hideShiftSections();
+		});
+	}
+
+	var observer = new MutationObserver(scheduleScan);
+	observer.observe(document.body, { subtree: true, childList: true });
+	scheduleScan();
+})();
+</script>
+"""
+
 def get_context(context):
 	ctx = stock_get_context(context)
 
@@ -695,7 +745,7 @@ def get_context(context):
 	html = html.replace("</head>", HIDE_CSS + "</head>")
 	html = html.replace(
 		"</body>",
-		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + "</body>",
+		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + HIDE_SHIFTS_JS + "</body>",
 	)
 
 	ctx.stock_html = frappe.render_template(html, ctx)
