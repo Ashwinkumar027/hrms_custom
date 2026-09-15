@@ -735,8 +735,266 @@ HIDE_SHIFTS_JS = """
 </script>
 """
 
+CANCEL_PENDING_LEAVE_JS = r"""
+<script>
+(function () {
+	function doCancelLeave(docname, btn) {
+		if (!confirm("Are you sure you want to cancel this leave application?")) return;
+
+		if (btn) {
+			btn.disabled = true;
+			btn.innerText = "Cancelling...";
+			btn.style.opacity = "0.7";
+		}
+
+		var headers = {
+			"Content-Type": "application/json; charset=utf-8",
+			"Accept": "application/json",
+		};
+		var token = window.csrf_token || (window.frappe && window.frappe.csrf_token);
+		if (token) {
+			headers["X-Frappe-CSRF-Token"] = token;
+		}
+
+		fetch("/api/method/hrms_custom.api.leave_application.cancel_pending_leave", {
+			method: "POST",
+			headers: headers,
+			body: JSON.stringify({ name: docname }),
+		})
+			.then(function (res) {
+				return res.json().then(function (data) {
+					return { ok: res.ok, data: data };
+				});
+			})
+			.then(function (res) {
+				if (!res.ok) {
+					var err = "Failed to cancel leave application";
+					if (res.data && res.data._server_messages) {
+						try {
+							var parsed = JSON.parse(res.data._server_messages);
+							err = JSON.parse(parsed[0]).message;
+						} catch (e) {
+							err = res.data._server_messages;
+						}
+					} else if (res.data && res.data.message) {
+						err = res.data.message;
+					}
+					alert(err);
+					if (btn) {
+						btn.disabled = false;
+						btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>Cancel</span>';
+						btn.style.opacity = "1";
+					}
+					return;
+				}
+
+				var modal = document.querySelector("ion-modal");
+				if (modal && typeof modal.dismiss === "function") {
+					modal.dismiss();
+				}
+
+				if (window.location.pathname.indexOf("/hrms/leave/") !== -1) {
+					window.history.back();
+				}
+
+				setTimeout(function () {
+					window.location.reload();
+				}, 400);
+			})
+			.catch(function (err) {
+				alert("Error: " + (err && err.message ? err.message : err));
+				if (btn) {
+					btn.disabled = false;
+					btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>Cancel</span>';
+					btn.style.opacity = "1";
+				}
+			});
+	}
+
+	function findLeaveSheet() {
+		var allSpans = document.querySelectorAll("span");
+		for (var i = 0; i < allSpans.length; i++) {
+			var span = allSpans[i];
+			if ((span.textContent || "").trim() === "Leave Application") {
+				var sheet = span.closest(".bg-white");
+				if (sheet) {
+					var text = sheet.innerText || sheet.textContent || "";
+					if (text.indexOf("HR-LAP-") !== -1) {
+						return sheet;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	function applyCancelButtons() {
+		// 1. RequestActionSheet modal
+		var sheet = findLeaveSheet();
+		if (sheet) {
+			var text = sheet.innerText || sheet.textContent || "";
+			var match = text.match(/HR-LAP-\d{4}-\d+/);
+			var isPending = text.indexOf("Pending Approval") !== -1 || text.indexOf("Open") !== -1;
+
+			if (match && isPending) {
+				var docname = match[0];
+				var existingActionsBar = sheet.querySelector(".sticky.bottom-0.border-t:not([data-custom-cancel-bar])");
+
+				// Remove center cancel button if present in existing action bar (between Reject and Approve)
+				if (existingActionsBar) {
+					var centerBtn = existingActionsBar.querySelector("[data-custom-leave-cancel-btn]");
+					if (centerBtn) {
+						centerBtn.remove();
+					}
+				}
+
+				// Always use full-width bottom cancel bar
+				var customBar = sheet.querySelector("[data-custom-cancel-bar]");
+				if (!customBar) {
+					customBar = document.createElement("div");
+					customBar.setAttribute("data-custom-cancel-bar", "1");
+					customBar.className = "flex w-full flex-row items-center justify-between gap-3 sticky bottom-0 border-t z-[100] p-4 bg-white";
+
+					var cancelBtn = document.createElement("button");
+					cancelBtn.type = "button";
+					cancelBtn.setAttribute("data-custom-leave-cancel-btn", docname);
+					cancelBtn.className = "w-full py-3 px-4 rounded-lg font-medium text-base inline-flex items-center justify-center gap-2 transition-colors cursor-pointer";
+					cancelBtn.style.cssText = "background-color: #fee2e2; color: #dc2626; border: none;";
+					cancelBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>Cancel</span>';
+					cancelBtn.onclick = function () { doCancelLeave(docname, cancelBtn); };
+
+					customBar.appendChild(cancelBtn);
+					sheet.appendChild(customBar);
+				} else {
+					var cancelBtn = customBar.querySelector("[data-custom-leave-cancel-btn]");
+					if (cancelBtn && cancelBtn.getAttribute("data-custom-leave-cancel-btn") !== docname) {
+						cancelBtn.setAttribute("data-custom-leave-cancel-btn", docname);
+						cancelBtn.onclick = function () { doCancelLeave(docname, cancelBtn); };
+					}
+				}
+			}
+		}
+
+		// 2. FormView detail view (/hrms/leave/<name>)
+		if (window.location.pathname.indexOf("/hrms/leave/") !== -1 && window.location.pathname.indexOf("/hrms/leave/new") === -1) {
+			var m = window.location.pathname.match(/\/hrms\/leave\/([^\/?#]+)/);
+			if (m && m[1]) {
+				var formDocname = decodeURIComponent(m[1]);
+				var formBottom = document.querySelector(".standalone\\:pb-safe-bottom.sticky.bottom-0") || document.querySelector("div.sticky.bottom-0.border-t");
+				if (formBottom && !formBottom.querySelector("[data-custom-form-cancel-btn]")) {
+					var bodyText = document.body.innerText || "";
+					var formIsPending = bodyText.indexOf("Pending Approval") !== -1 || bodyText.indexOf("Open") !== -1;
+					if (formIsPending) {
+						var formBtn = document.createElement("button");
+						formBtn.type = "button";
+						formBtn.setAttribute("data-custom-form-cancel-btn", formDocname);
+						formBtn.className = "w-full rounded py-4 text-base font-medium inline-flex items-center justify-center gap-2 transition-colors cursor-pointer mb-3";
+						formBtn.style.cssText = "background-color: #fee2e2; color: #dc2626; border: none;";
+						formBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>Cancel Leave</span>';
+						formBtn.onclick = function () { doCancelLeave(formDocname, formBtn); };
+						formBottom.insertBefore(formBtn, formBottom.firstChild);
+					}
+				}
+			}
+		}
+	}
+
+	var pending = null;
+	function scheduleScan() {
+		if (pending) return;
+		pending = requestAnimationFrame(function () {
+			pending = null;
+			applyCancelButtons();
+		});
+	}
+
+	var observer = new MutationObserver(scheduleScan);
+	observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+	scheduleScan();
+	setInterval(scheduleScan, 500);
+})();
+</script>
+"""
+
+OPTIONAL_LEAVE_PWA_JS = r"""
+<script>
+(function () {
+	var optionalLeaveTypes = JSON.parse('{{ optional_leave_types_json }}');
+
+	function findHalfDayContainer() {
+		var elements = document.querySelectorAll("span, label, div");
+		for (var i = 0; i < elements.length; i++) {
+			var el = elements[i];
+			if ((el.textContent || "").trim() === "Half Day") {
+				var container = el.closest(".flex-col");
+				if (container && container.querySelector('input[type="checkbox"]')) {
+					return container;
+				}
+			}
+		}
+		return null;
+	}
+
+	function getLeaveTypeInputValue() {
+		var inputs = document.querySelectorAll("input");
+		for (var i = 0; i < inputs.length; i++) {
+			var p = inputs[i].getAttribute("placeholder") || "";
+			if (p.indexOf("Leave Type") !== -1) {
+				return (inputs[i].value || "").trim();
+			}
+		}
+		return "";
+	}
+
+	function handleOptionalLeaveForm() {
+		if (window.location.pathname.indexOf("/hrms/leave/") === -1) return;
+
+		var selectedType = getLeaveTypeInputValue();
+		var halfDayEl = findHalfDayContainer();
+		if (!halfDayEl) return;
+
+		var isOptional = optionalLeaveTypes.indexOf(selectedType) !== -1;
+		if (isOptional) {
+			halfDayEl.style.display = "none";
+			var cb = halfDayEl.querySelector('input[type="checkbox"]');
+			if (cb && cb.checked) {
+				cb.click();
+			}
+		} else {
+			halfDayEl.style.display = "";
+		}
+	}
+
+	var pending = null;
+	function scheduleScan() {
+		if (pending) return;
+		pending = requestAnimationFrame(function () {
+			pending = null;
+			handleOptionalLeaveForm();
+		});
+	}
+
+	var observer = new MutationObserver(scheduleScan);
+	observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+	scheduleScan();
+	setInterval(scheduleScan, 500);
+})();
+</script>
+"""
+
 def get_context(context):
 	ctx = stock_get_context(context)
+
+	optional_leaves = frappe.get_all(
+		"Leave Type", filters={"is_optional_leave": 1}, pluck="name"
+	)
+	ctx.optional_leave_types_json = frappe.as_json(optional_leaves)
+
+	if hasattr(ctx, "boot") and isinstance(ctx.boot, dict):
+		if "__messages" not in ctx.boot or not isinstance(ctx.boot["__messages"], dict):
+			ctx.boot["__messages"] = {}
+		ctx.boot["__messages"]["Open:Leave Application"] = "Pending Approval"
+		ctx.boot["__messages"]["Open"] = "Pending Approval"
 
 	stock_path = frappe.get_app_path("hrms", "www", "hrms.html")
 	with open(stock_path, "r") as f:
@@ -744,8 +1002,12 @@ def get_context(context):
 
 	html = html.replace("</head>", HIDE_CSS + "</head>")
 	html = html.replace(
+		"frappe.boot = {{ boot }}",
+		'frappe.boot = {{ boot }}\n\t\t\tif (!window.frappe) window.frappe = Object();\n\t\t\tif (!window.frappe.boot) window.frappe.boot = Object();\n\t\t\tif (!window.frappe.boot["__messages"]) window.frappe.boot["__messages"] = Object();\n\t\t\twindow.frappe.boot["__messages"]["Open:Leave Application"] = "Pending Approval";\n\t\t\twindow.frappe.boot["__messages"]["Open"] = "Pending Approval";',
+	)
+	html = html.replace(
 		"</body>",
-		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + HIDE_SHIFTS_JS + "</body>",
+		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + HIDE_SHIFTS_JS + CANCEL_PENDING_LEAVE_JS + OPTIONAL_LEAVE_PWA_JS + "</body>",
 	)
 
 	ctx.stock_html = frappe.render_template(html, ctx)

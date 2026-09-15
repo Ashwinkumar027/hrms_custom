@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 import frappe
 from frappe import _
+from frappe.query_builder.functions import Coalesce
 from frappe.utils import flt, get_datetime, get_datetime_str, getdate, time_diff_in_hours
 
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
@@ -205,18 +206,23 @@ class CustomAttendanceRequest(AttendanceRequest):
             filters={"parent": reason_type.name},
             pluck="reason",
         )
+        if not sibling_reasons:
+            return
 
-        existing = frappe.db.get_value(
-            "Attendance Request",
-            {
-                "employee": self.employee,
-                "from_date": self.from_date,
-                "reason": ["in", sibling_reasons],
-                "docstatus": ["!=", 2],
-                "name": ["!=", self.name or ""],
-            },
-            "name",
+        Request = frappe.qb.DocType("Attendance Request")
+        query = (
+            frappe.qb.from_(Request)
+            .select(Request.name)
+            .where(
+                (Request.employee == self.employee)
+                & (Request.from_date == self.from_date)
+                & (Request.reason.isin(sibling_reasons))
+                & (Request.docstatus < 2)
+                & (~Coalesce(Request.workflow_state, "").isin(["Rejected", "Cancelled"]))
+                & (Request.name != (self.name or ""))
+            )
         )
+        existing = query.run(as_dict=True)
         if existing:
             frappe.throw(
                 _(
@@ -227,9 +233,36 @@ class CustomAttendanceRequest(AttendanceRequest):
                 ).format(
                     self.employee_name or self.employee,
                     self.from_date,
-                    existing,
+                    existing[0].name,
                 )
             )
+
+    def validate_request_overlap(self):
+        """Exclude rejected requests from overlap checks so employees can reapply."""
+        if not self.name:
+            self.name = "New Attendance Request"
+
+        Request = frappe.qb.DocType("Attendance Request")
+        query = (
+            frappe.qb.from_(Request)
+            .select(Request.name)
+            .where(
+                (Request.employee == self.employee)
+                & (Request.docstatus < 2)
+                & (~Coalesce(Request.workflow_state, "").isin(["Rejected", "Cancelled"]))
+                & (Request.name != self.name)
+                & (self.to_date >= Request.from_date)
+                & (self.from_date <= Request.to_date)
+            )
+        )
+
+        if self.shift:
+            query = query.where(Request.shift == self.shift)
+
+        overlapping_request = query.run(as_dict=True)
+
+        if overlapping_request:
+            self.throw_overlap_error(overlapping_request[0].name)
 
     def _smart_create_or_regularize_attendance(self):
         """

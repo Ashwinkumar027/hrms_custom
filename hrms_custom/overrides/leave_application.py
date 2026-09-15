@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import cint, get_fullname
+from frappe.utils import cint, flt, get_fullname
 
 from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 
@@ -43,12 +43,20 @@ class CustomLeaveApplication(LeaveApplication):
 	def validate(self):
 		super().validate()
 		self._validate_self_approval_hardening()
+		self._validate_optional_leave_full_days()
 
 	def _validate_self_approval_hardening(self):
 		if self.status == "Approved":
 			employee_user = frappe.db.get_value("Employee", self.employee, "user_id")
 			if employee_user == frappe.session.user and frappe.session.user != "Administrator":
 				frappe.throw(_("Self-approval for leaves is not allowed"))
+
+	def _validate_optional_leave_full_days(self):
+		if not self.leave_type:
+			return
+		if frappe.db.get_value("Leave Type", self.leave_type, "is_optional_leave"):
+			if cint(self.half_day) == 1 or flt(self.total_leave_days) % 1 != 0:
+				frappe.throw(_("Half day is not allowed for optional holidays. Please apply for full days only."))
 
 	def on_update(self):
 		super().on_update()

@@ -960,18 +960,63 @@ PWA_HIDDEN_FIELDS = {
     },
     "Leave Application": {
         "department",
+        "follow_via_email",
+    },
+}
+
+PWA_READ_ONLY_FIELDS = {
+    "Leave Application": {
+        "status",
+        "leave_approver",
+        "posting_date",
     },
 }
 
 
 @frappe.whitelist()
 def get_doctype_fields(doctype: str) -> list[dict]:
+    import copy
     from hrms.api import get_doctype_fields as hrms_get_doctype_fields
 
     fields = hrms_get_doctype_fields(doctype)
     hidden = PWA_HIDDEN_FIELDS.get(doctype)
-    if not hidden:
-        return fields
-    return [field for field in fields if field.fieldname not in hidden]
+    read_only = PWA_READ_ONLY_FIELDS.get(doctype, set())
 
+    out = []
+    for field in fields:
+        if hidden and field.fieldname in hidden:
+            continue
+        if field.fieldname in read_only:
+            f = copy.copy(field)
+            f.read_only = 1
+            out.append(f)
+        else:
+            out.append(field)
+    return out
+
+@frappe.whitelist()
+def get_all_employees() -> list[dict]:
+    """
+    Returns public employee directory info (name, employee_name, designation,
+    department, company, reports_to, user_id, image, status) for all employees.
+    Overrides hrms.api.get_all_employees so that the PWA can resolve employee
+    avatars and names across team requests and leave applications without being
+    blocked by Desk Employee permission query conditions.
+    """
+    return frappe.get_all(
+        "Employee",
+        fields=[
+            "name",
+            "employee_name",
+            "designation",
+            "department",
+            "company",
+            "reports_to",
+            "user_id",
+            "image",
+            "status",
+        ],
+        limit=999999,
+        order_by="employee_name asc",
+    )
 

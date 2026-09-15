@@ -7,6 +7,7 @@ app_license = "mit"
 
 doctype_js = {
     "Employee": "hrms_custom/public/js/employee.js",
+    "Leave Application": "hrms_custom/public/js/leave_application.js",
 }
 
 fixtures = [
@@ -186,7 +187,9 @@ override_whitelisted_methods = {
     "frappe.client.get_doc_permissions":
     "hrms_custom.api.get_doc_permissions",
     "frappe.model.workflow.get_transitions":
-    "hrms_custom.api.get_transitions"
+    "hrms_custom.api.get_transitions",
+    "hrms.api.get_all_employees":
+    "hrms_custom.api.employee.get_all_employees"
 }
 
 permission_query_conditions = {
