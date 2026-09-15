@@ -93,4 +93,24 @@ def apply():
 	document_follow_module.follow_document = follow_document
 	document_module.follow_document = follow_document
 
+	
+	# Patch Monthly Attendance Sheet to automatically filter by current employee if non-HR
+	try:
+		import hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet as mas_module
+		if not hasattr(mas_module, "_original_execute"):
+			mas_module._original_execute = mas_module.execute
+
+			def custom_mas_execute(filters=None):
+				filters = frappe._dict(filters or {})
+				roles = frappe.get_roles()
+				if not any(r in roles for r in ("HR Manager", "HR User", "System Manager", "Administrator")):
+					employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+					if employee:
+						filters.employee = employee
+				return mas_module._original_execute(filters)
+
+			mas_module.execute = custom_mas_execute
+	except Exception as e:
+		frappe.log_error(str(e), "monkey_patches.apply (monthly_attendance_sheet)")
+
 	_applied = True

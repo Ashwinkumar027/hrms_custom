@@ -945,7 +945,6 @@ def download_onboarding_documents(employee):
 
 PWA_HIDDEN_FIELDS = {
     "Attendance Request": {
-        "department",
         "custom_request_type",
         "custom_permission_type",
         "half_day",
@@ -959,7 +958,6 @@ PWA_HIDDEN_FIELDS = {
         "custom_reporting_manager_email",
     },
     "Leave Application": {
-        "department",
         "follow_via_email",
     },
 }
@@ -969,6 +967,10 @@ PWA_READ_ONLY_FIELDS = {
         "status",
         "leave_approver",
         "posting_date",
+        "department",
+    },
+    "Attendance Request": {
+        "department",
     },
 }
 

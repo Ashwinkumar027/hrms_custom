@@ -196,6 +196,7 @@ permission_query_conditions = {
     "Attendance Request": "hrms_custom.permissions.attendance_request.get_permission_query_conditions",
     "Employee": "hrms_custom.permissions.employee.get_permission_query_conditions",
     "TA Reimbursement Claim": "hrms_custom.permissions.ta_reimbursement_claim.get_permission_query_conditions",
+    "Attendance": "hrms_custom.permissions.attendance.get_permission_query_conditions",
 }
 
 has_permission = {
@@ -229,7 +230,8 @@ scheduler_events = {
 }
 
 after_migrate = [
-    "hrms_custom.hrms_custom.utils.fix_employee_permission.fix_employee_role_permission"
+    "hrms_custom.hrms_custom.utils.fix_employee_permission.fix_employee_role_permission",
+    "hrms_custom.utils.workspace_sidebar.sync_attendance_dashboard_and_sidebar"
 ]
 
 # Patches frappe.desk.form.document_follow.follow_document (and frappe.model.document's
@@ -276,3 +278,6 @@ doc_events = {
         "before_insert": "hrms_custom.api.interview.generate_token"
     }
 }
+
+
+extend_bootinfo = "hrms_custom.utils.workspace_sidebar.extend_bootinfo"

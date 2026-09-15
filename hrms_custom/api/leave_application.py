@@ -12,32 +12,28 @@ def get_doc_permissions(doctype: str, docname: str):
 
 	if doctype == "Leave Application":
 		state = frappe.db.get_value(
-			"Leave Application", docname, ["docstatus", "status", "employee"], as_dict=True
+			"Leave Application", docname, ["docstatus", "status", "employee", "owner"], as_dict=True
 		)
-		if state and state.docstatus == 0:
-			if state.status == "Open":
-				# on_submit() unconditionally rejects submission while status
-				# is "Open", regardless of who submits (see
-				# hrms/hr/doctype/leave_application/leave_application.py
-				# on_submit: "Only Leave Applications with status 'Approved'
-				# and 'Rejected' can be submitted"). get_doc_permissions is
-				# role/permlevel-based and doesn't know this, so it wrongly
-				# reports submit=1 to anyone holding submit rights on the
-				# doctype, which shows a Submit button in the PWA that
-				# always fails.
-				result["permissions"]["submit"] = 0
-
+		if state:
 			employee_user = frappe.db.get_value("Employee", state.employee, "user_id")
-			if employee_user == frappe.session.user and frappe.session.user != "Administrator":
-				# The applicant should never be the one finalizing their own
-				# Leave Application, regardless of status -- normal
-				# approvals now auto-submit (see CustomLeaveApplication.
-				# on_update), so this only still matters for a record left
-				# over from before that existed, and letting the applicant
-				# submit it themselves is exactly the self-approval path
-				# validate_for_self_approval()/_validate_self_approval_
-				# hardening() already reject.
-				result["permissions"]["submit"] = 0
+			is_applicant = bool(
+				(employee_user and employee_user == frappe.session.user)
+				or (state.owner and state.owner == frappe.session.user)
+			)
+			result["is_applicant"] = 1 if is_applicant else 0
+
+			# Leave approver / non-applicant must NEVER have cancel permission on Leave Application.
+			# Only the applied person can cancel the leave.
+			# Also when status is not pending (e.g. Rejected/Approved/Cancelled), cancel is disabled.
+			if not is_applicant or state.status not in ("Open", "Draft"):
+				result["permissions"]["cancel"] = 0
+
+			if state.docstatus == 0:
+				if state.status == "Open":
+					result["permissions"]["submit"] = 0
+
+				if is_applicant and frappe.session.user != "Administrator":
+					result["permissions"]["submit"] = 0
 
 	return result
 
@@ -56,15 +52,12 @@ def cancel_pending_leave(name: str):
 		frappe.throw(_("Cannot cancel Leave Application with status '{0}'.").format(doc.status))
 
 	user = frappe.session.user
-	roles = frappe.get_roles(user)
 	employee_user = frappe.db.get_value("Employee", doc.employee, "user_id")
-
 	is_applicant = (user == employee_user or user == doc.owner)
-	is_approver = (user == doc.leave_approver)
-	is_admin_or_hr = any(r in roles for r in ("System Manager", "HR Manager", "HR User"))
 
-	if not (is_applicant or is_approver or is_admin_or_hr):
-		frappe.throw(_("You are not authorized to cancel this Leave Application."), frappe.PermissionError)
+	# Only the applied person can cancel the leave
+	if not (is_applicant or user == "Administrator"):
+		frappe.throw(_("Only the applied person can cancel the leave application."), frappe.PermissionError)
 
 	doc.db_set("status", "Cancelled")
 	doc.add_comment("Comment", text=_("Cancelled by {0}").format(user))

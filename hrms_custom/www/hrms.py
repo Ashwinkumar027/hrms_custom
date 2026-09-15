@@ -265,21 +265,36 @@ ERROR_TOAST_JS = """
 		return null;
 	}
 
+	var isRequestInFlight = false;
+	window.addEventListener(
+		"click",
+		function (e) {
+			var target = e.target && e.target.closest ? e.target.closest("button") : null;
+			if (!target) return;
+			var text = (target.textContent || "").trim();
+			if (text === "Save" || text === "Submit") {
+				if (isRequestInFlight) {
+					e.preventDefault();
+					e.stopImmediatePropagation();
+					return false;
+				}
+				isRequestInFlight = true;
+				setTimeout(function () {
+					isRequestInFlight = false;
+				}, 1500);
+			}
+		},
+		true
+	);
+
 	var originalFetch = window.fetch;
 	window.fetch = function () {
 		return originalFetch.apply(this, arguments).then(
 			function (response) {
+				isRequestInFlight = false;
 				if (!response.ok) {
 					// Read a clone so the app's own response.text()/.json()
 					// further down the chain still sees an unconsumed body.
-					// Chained (not fire-and-forget) so lastServerMessage is
-					// set before the caller's own .then() runs and triggers
-					// the toast. Deliberately NOT cleared on response.ok: by
-					// the time the scan (one rAF later) runs, a later fetch
-					// could already have started and not yet resolved,
-					// clearing a message that hasn't been consumed yet. A
-					// generic toast can only follow a failed request, and
-					// that failure sets (or explicitly nulls) this itself.
 					return response
 						.clone()
 						.text()
@@ -296,10 +311,7 @@ ERROR_TOAST_JS = """
 				return response;
 			},
 			function (err) {
-				// Network-level failure never reaches the branch above, so
-				// clear here too — otherwise a stale message from an
-				// earlier failed request could wrongly attach to an
-				// unrelated later toast within the TTL window.
+				isRequestInFlight = false;
 				lastServerMessage = null;
 				throw err;
 			}
@@ -307,17 +319,41 @@ ERROR_TOAST_JS = """
 	};
 
 	function scanForGenericToasts() {
-		var paragraphs = document.querySelectorAll("p:not([data-error-toast-checked])");
-		for (var i = 0; i < paragraphs.length; i++) {
-			var p = paragraphs[i];
-			p.setAttribute("data-error-toast-checked", "1");
-			var text = p.textContent || "";
-			if (!isGenericToast(text)) continue;
+		var toastRoot = document.getElementById("frappeui-toast-root");
+		if (!toastRoot) return;
 
-			if (lastServerMessage && Date.now() - lastServerMessageAt < MESSAGE_TTL_MS) {
-				p.textContent = lastServerMessage;
+		var toastWrappers = toastRoot.querySelectorAll(".pointer-events-auto");
+		var hasActiveAccurateError = false;
+
+		for (var t = 0; t < toastWrappers.length; t++) {
+			var wrapper = toastWrappers[t];
+			var paragraphs = wrapper.querySelectorAll("p");
+			for (var i = 0; i < paragraphs.length; i++) {
+				var p = paragraphs[i];
+				var text = (p.textContent || "").trim();
+
+				if (isGenericToast(text)) {
+					if (hasActiveAccurateError) {
+						// Only one accurate error message should be shown: remove duplicate/generic toasts
+						wrapper.remove();
+						break;
+					} else if (lastServerMessage && Date.now() - lastServerMessageAt < MESSAGE_TTL_MS) {
+						p.textContent = lastServerMessage;
+						hasActiveAccurateError = true;
+					} else {
+						// If generic and no server message or already handled, remove generic clutter
+						wrapper.remove();
+						break;
+					}
+				} else if (lastServerMessage && text === lastServerMessage.trim()) {
+					if (hasActiveAccurateError) {
+						// Remove duplicate toast showing the same message
+						wrapper.remove();
+						break;
+					}
+					hasActiveAccurateError = true;
+				}
 			}
-			lastServerMessage = null;
 		}
 	}
 
@@ -738,6 +774,61 @@ HIDE_SHIFTS_JS = """
 CANCEL_PENDING_LEAVE_JS = r"""
 <script>
 (function () {
+	function getSessionUser() {
+		var match = document.cookie.match(/(?:^|; )user_id=([^;]*)/);
+		var user = match ? decodeURIComponent(match[1]) : null;
+		return (user && user !== "Guest") ? user : null;
+	}
+
+	var isApplicantByName = {};
+	var pendingApplicantFetch = {};
+
+	function fetchApplicantStatusIfNeeded(docname) {
+		if (docname in isApplicantByName) return;
+		if (pendingApplicantFetch[docname]) return;
+		pendingApplicantFetch[docname] = true;
+
+		fetch("/api/method/hrms_custom.api.leave_application.get_doc_permissions", {
+			method: "POST",
+			headers: { "Content-Type": "application/json; charset=utf-8" },
+			body: JSON.stringify({ doctype: "Leave Application", docname: docname }),
+		})
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				if (data && data.message) {
+					isApplicantByName[docname] = Boolean(data.message.is_applicant);
+					scheduleScan();
+				}
+			})
+			.catch(function () {
+				delete pendingApplicantFetch[docname];
+			});
+	}
+
+	var originalFetch = window.fetch;
+	window.fetch = function (input, init) {
+		var url = typeof input === "string" ? input : (input && input.url) || "";
+		var requestParams = null;
+		try {
+			if (init && init.body) requestParams = JSON.parse(init.body);
+		} catch (e) {}
+
+		return originalFetch.apply(this, arguments).then(function (response) {
+			if (response.ok && requestParams && requestParams.docname) {
+				if (url === "/api/method/frappe.client.get_doc_permissions" || url === "/api/method/hrms_custom.api.leave_application.get_doc_permissions") {
+					var dn = requestParams.docname;
+					response.clone().json().then(function (data) {
+						if (data && data.message && data.message.is_applicant !== undefined) {
+							isApplicantByName[dn] = Boolean(data.message.is_applicant);
+							scheduleScan();
+						}
+					}).catch(function () {});
+				}
+			}
+			return response;
+		});
+	};
+
 	function doCancelLeave(docname, btn) {
 		if (!confirm("Are you sure you want to cancel this leave application?")) return;
 
@@ -835,21 +926,56 @@ CANCEL_PENDING_LEAVE_JS = r"""
 			var text = sheet.innerText || sheet.textContent || "";
 			var match = text.match(/HR-LAP-\d{4}-\d+/);
 			var isPending = text.indexOf("Pending Approval") !== -1 || text.indexOf("Open") !== -1;
+			var isNotPending = text.indexOf("Rejected") !== -1 || text.indexOf("Approved") !== -1 || text.indexOf("Cancelled") !== -1;
 
-			if (match && isPending) {
-				var docname = match[0];
-				var existingActionsBar = sheet.querySelector(".sticky.bottom-0.border-t:not([data-custom-cancel-bar])");
+			var customBar = sheet.querySelector("[data-custom-cancel-bar]");
+			var centerBtn = sheet.querySelector("[data-custom-leave-cancel-btn]");
 
-				// Remove center cancel button if present in existing action bar (between Reject and Approve)
-				if (existingActionsBar) {
-					var centerBtn = existingActionsBar.querySelector("[data-custom-leave-cancel-btn]");
-					if (centerBtn) {
-						centerBtn.remove();
+			if (!match || isNotPending || !isPending) {
+				// Status is not pending (e.g. Rejected) -- NEVER show cancel button!
+				if (customBar) customBar.remove();
+				if (centerBtn) centerBtn.remove();
+				var allBtns = sheet.querySelectorAll("button");
+				for (var b = 0; b < allBtns.length; b++) {
+					var bText = (allBtns[b].textContent || "").trim();
+					if (bText === "Cancel") {
+						var parentBar = allBtns[b].closest(".sticky.bottom-0");
+						if (parentBar) parentBar.style.display = "none";
+						else allBtns[b].style.display = "none";
 					}
 				}
+				return;
+			}
 
-				// Always use full-width bottom cancel bar
-				var customBar = sheet.querySelector("[data-custom-cancel-bar]");
+			var docname = match[0];
+			if (!(docname in isApplicantByName)) {
+				fetchApplicantStatusIfNeeded(docname);
+			}
+			var isApplicant = isApplicantByName[docname];
+
+			// If viewer is NOT the applicant (or is Leave Approver):
+			// "keep only approve and reject, not cancel for leave approver, only applied person can cancel the leave"
+			if (isApplicant === false) {
+				if (customBar) customBar.remove();
+				if (centerBtn) centerBtn.remove();
+				var allBtns = sheet.querySelectorAll("button");
+				for (var b = 0; b < allBtns.length; b++) {
+					var bText = (allBtns[b].textContent || "").trim();
+					if (bText === "Cancel") {
+						allBtns[b].style.display = "none";
+					}
+				}
+				return;
+			}
+
+			// ONLY when viewer IS the applicant AND leave is pending:
+			if (isApplicant === true && isPending) {
+				var existingActionsBar = sheet.querySelector(".sticky.bottom-0.border-t:not([data-custom-cancel-bar])");
+				if (existingActionsBar) {
+					var cBtn = existingActionsBar.querySelector("[data-custom-leave-cancel-btn]");
+					if (cBtn) cBtn.remove();
+				}
+
 				if (!customBar) {
 					customBar = document.createElement("div");
 					customBar.setAttribute("data-custom-cancel-bar", "1");
@@ -880,20 +1006,29 @@ CANCEL_PENDING_LEAVE_JS = r"""
 			var m = window.location.pathname.match(/\/hrms\/leave\/([^\/?#]+)/);
 			if (m && m[1]) {
 				var formDocname = decodeURIComponent(m[1]);
+				if (!(formDocname in isApplicantByName)) {
+					fetchApplicantStatusIfNeeded(formDocname);
+				}
+				var isApp = isApplicantByName[formDocname];
+				var bodyText = document.body.innerText || "";
+				var formIsPending = bodyText.indexOf("Pending Approval") !== -1 || bodyText.indexOf("Open") !== -1;
+				var existingBtn = document.querySelector("[data-custom-form-cancel-btn]");
+
+				if (!formIsPending || isApp === false) {
+					if (existingBtn) existingBtn.remove();
+					return;
+				}
+
 				var formBottom = document.querySelector(".standalone\\:pb-safe-bottom.sticky.bottom-0") || document.querySelector("div.sticky.bottom-0.border-t");
-				if (formBottom && !formBottom.querySelector("[data-custom-form-cancel-btn]")) {
-					var bodyText = document.body.innerText || "";
-					var formIsPending = bodyText.indexOf("Pending Approval") !== -1 || bodyText.indexOf("Open") !== -1;
-					if (formIsPending) {
-						var formBtn = document.createElement("button");
-						formBtn.type = "button";
-						formBtn.setAttribute("data-custom-form-cancel-btn", formDocname);
-						formBtn.className = "w-full rounded py-4 text-base font-medium inline-flex items-center justify-center gap-2 transition-colors cursor-pointer mb-3";
-						formBtn.style.cssText = "background-color: #fee2e2; color: #dc2626; border: none;";
-						formBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>Cancel Leave</span>';
-						formBtn.onclick = function () { doCancelLeave(formDocname, formBtn); };
-						formBottom.insertBefore(formBtn, formBottom.firstChild);
-					}
+				if (formBottom && !existingBtn && isApp === true && formIsPending) {
+					var formBtn = document.createElement("button");
+					formBtn.type = "button";
+					formBtn.setAttribute("data-custom-form-cancel-btn", formDocname);
+					formBtn.className = "w-full rounded py-4 text-base font-medium inline-flex items-center justify-center gap-2 transition-colors cursor-pointer mb-3";
+					formBtn.style.cssText = "background-color: #fee2e2; color: #dc2626; border: none;";
+					formBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>Cancel Leave</span>';
+					formBtn.onclick = function () { doCancelLeave(formDocname, formBtn); };
+					formBottom.insertBefore(formBtn, formBottom.firstChild);
 				}
 			}
 		}
@@ -982,6 +1117,16 @@ OPTIONAL_LEAVE_PWA_JS = r"""
 </script>
 """
 
+def _get_team_attendance_js():
+	try:
+		js_path = frappe.get_app_path("hrms_custom", "public", "js", "team_attendance_pwa.js")
+		with open(js_path, "r", encoding="utf-8") as f:
+			code = f.read()
+		return f"<script>\n{{% raw %}}\n{code}\n{{% endraw %}}\n</script>"
+	except Exception:
+		return ""
+
+
 def get_context(context):
 	ctx = stock_get_context(context)
 
@@ -1007,7 +1152,7 @@ def get_context(context):
 	)
 	html = html.replace(
 		"</body>",
-		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + HIDE_SHIFTS_JS + CANCEL_PENDING_LEAVE_JS + OPTIONAL_LEAVE_PWA_JS + "</body>",
+		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + HIDE_SHIFTS_JS + CANCEL_PENDING_LEAVE_JS + OPTIONAL_LEAVE_PWA_JS + _get_team_attendance_js() + "</body>",
 	)
 
 	ctx.stock_html = frappe.render_template(html, ctx)
