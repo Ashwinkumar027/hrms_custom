@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 from datetime import datetime, date, timedelta
-from frappe.utils import getdate, nowdate, today
+from frappe.utils import cint, getdate, nowdate, today
 from hrms_custom.hrms_custom.report.consolidated_attendance_sheet.consolidated_attendance_sheet import (
     _get_downward_chain,
 )
@@ -55,8 +55,8 @@ def get_team_attendance_status(date=None):
     """
     Get attendance status for all employees in the calling manager's downline for a given date.
     Results are classified into exactly 3 buckets:
-      1. On Time: Present, check-in at or before shift start time
-      2. Late In: Present, check-in after shift start time (with late-by duration & check-in time)
+      1. On Time: Present, check-in at or before shift start time + late entry grace period (if configured)
+      2. Late In: Present, check-in after grace period (with late-by duration calculated from shift start)
       3. Not Yet In: only meaningful for today; no check-in yet, not on leave/WFH/WO/Holiday
 
     Employees on approved leave, WFH, Week Off, or Holiday, or who otherwise do not fit these
@@ -144,7 +144,10 @@ def get_team_attendance_status(date=None):
                 emp_shift_map[sa.employee] = sa.shift_type
 
     # Cache Shift Types
-    all_shift_types = frappe.get_all("Shift Type", fields=["name", "start_time", "end_time"])
+    all_shift_types = frappe.get_all(
+        "Shift Type",
+        fields=["name", "start_time", "end_time", "enable_late_entry_marking", "late_entry_grace_period"],
+    )
     shift_type_map = {st.name: st for st in all_shift_types}
 
     # 5. Pre-fetch checkins on target_date
@@ -252,7 +255,16 @@ def get_team_attendance_status(date=None):
             shift_start_dt = first_in.shift_start or expected_start_dt
             checkin_time_str = _format_time_str(checkin_time)
 
-            if checkin_time <= shift_start_dt:
+            # Determine grace period for this shift
+            ck_st_obj = shift_type_map.get(first_in.shift) or st_obj
+            grace_mins = (
+                ck_st_obj.late_entry_grace_period
+                if (ck_st_obj and getattr(ck_st_obj, "enable_late_entry_marking", 0) and getattr(ck_st_obj, "late_entry_grace_period", 0))
+                else 0
+            )
+            grace_cutoff_dt = shift_start_dt + timedelta(minutes=cint(grace_mins))
+
+            if checkin_time <= grace_cutoff_dt:
                 result_employees.append({
                     "employee": emp_id,
                     "employee_name": emp.employee_name,
@@ -288,8 +300,16 @@ def get_team_attendance_status(date=None):
             else:
                 checkin_dt = expected_start_dt
 
+            att_st_obj = shift_type_map.get(att_record.shift) or st_obj
+            grace_mins = (
+                att_st_obj.late_entry_grace_period
+                if (att_st_obj and getattr(att_st_obj, "enable_late_entry_marking", 0) and getattr(att_st_obj, "late_entry_grace_period", 0))
+                else 0
+            )
+            grace_cutoff_dt = expected_start_dt + timedelta(minutes=cint(grace_mins))
+
             checkin_time_str = _format_time_str(checkin_dt)
-            if checkin_dt <= expected_start_dt:
+            if checkin_dt <= grace_cutoff_dt:
                 result_employees.append({
                     "employee": emp_id,
                     "employee_name": emp.employee_name,
