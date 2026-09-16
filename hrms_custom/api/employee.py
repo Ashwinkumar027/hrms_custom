@@ -960,6 +960,10 @@ PWA_HIDDEN_FIELDS = {
     "Leave Application": {
         "follow_via_email",
     },
+    "Compensatory Leave Request": {
+        "leave_allocation",
+        "amended_from",
+    },
 }
 
 PWA_READ_ONLY_FIELDS = {
@@ -970,6 +974,9 @@ PWA_READ_ONLY_FIELDS = {
         "department",
     },
     "Attendance Request": {
+        "department",
+    },
+    "Compensatory Leave Request": {
         "department",
     },
 }

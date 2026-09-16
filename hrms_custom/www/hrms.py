@@ -1127,6 +1127,17 @@ def _get_team_attendance_js():
 		return ""
 
 
+
+def _get_compensatory_leave_js():
+	try:
+		js_path = frappe.get_app_path("hrms_custom", "public", "js", "compensatory_leave_pwa.js")
+		with open(js_path, "r", encoding="utf-8") as f:
+			code = f.read()
+		return f"<script>\n{{% raw %}}\n{code}\n{{% endraw %}}\n</script>"
+	except Exception:
+		return ""
+
+
 def get_context(context):
 	ctx = stock_get_context(context)
 
@@ -1152,7 +1163,7 @@ def get_context(context):
 	)
 	html = html.replace(
 		"</body>",
-		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + HIDE_SHIFTS_JS + CANCEL_PENDING_LEAVE_JS + OPTIONAL_LEAVE_PWA_JS + _get_team_attendance_js() + "</body>",
+		GATE_JS + ERROR_TOAST_JS + LEAVE_APPROVAL_GATE_JS + ATTENDANCE_APPROVAL_GATE_JS + HIDE_SHIFTS_JS + CANCEL_PENDING_LEAVE_JS + OPTIONAL_LEAVE_PWA_JS + _get_team_attendance_js() + _get_compensatory_leave_js() + "</body>",
 	)
 
 	ctx.stock_html = frappe.render_template(html, ctx)

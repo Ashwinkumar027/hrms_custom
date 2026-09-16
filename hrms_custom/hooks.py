@@ -259,6 +259,9 @@ doc_events = {
     "Attendance Request": {
         "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_request_lock"
     },
+    "Compensatory Leave Request": {
+        "before_submit": "hrms_custom.overrides.compensatory_leave_request.validate_self_approval"
+    },
     "Employee Registration Form": {
         "on_update": "hrms_custom.hrms_custom.utils.form_fill_tracking.increment_fill_count"
     },
