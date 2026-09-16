@@ -118,6 +118,10 @@ fixtures = [
         ]]],
     },
     {
+        "dt": "Attendance Reason",
+        "filters": [["is_active", "=", 1]],
+    },
+    {
         "dt": "Attendance Reason Allocation",
         "filters": [
             ["applies_to", "=", "Company"],

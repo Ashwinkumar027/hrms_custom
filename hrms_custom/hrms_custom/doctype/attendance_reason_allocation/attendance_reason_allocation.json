@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:ARA-.#####",
+ "autoname": "ARA-.#####",
  "creation": "2026-06-08 00:49:31.945767",
  "doctype": "DocType",
  "engine": "InnoDB",

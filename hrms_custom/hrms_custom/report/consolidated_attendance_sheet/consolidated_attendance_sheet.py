@@ -318,7 +318,7 @@ def _resolve_cell_status(
         req_name = att.custom_attendance_request or att.attendance_request
         req_reason = frappe.db.get_value("Attendance Request", req_name, "reason")
         if req_reason:
-            r_code = REQUEST_REASON_MAP.get(req_reason.strip().lower())
+            r_code = REQUEST_REASON_MAP.get(req_reason.strip().lower(), req_reason.strip().upper())
             if r_code:
                 return r_code
 

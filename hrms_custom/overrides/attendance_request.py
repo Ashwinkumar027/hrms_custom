@@ -28,12 +28,22 @@ class CustomAttendanceRequest(AttendanceRequest):
             super().validate()
 
     def _validate_not_future_date(self):
-        if self.reason == "Regularization":
+        reason_type = _get_reason_type_doc(self)
+        is_regularization = (
+            self.reason == "Regularization"
+            or (reason_type and reason_type.name == "Missed Attendance")
+        )
+        if is_regularization:
             if getdate(self.from_date) > getdate(frappe.utils.today()) or getdate(self.to_date) > getdate(frappe.utils.today()):
                 frappe.throw(_("Regularization requests cannot be created for future dates."))
 
     def _validate_holiday_request_type(self):
-        if self.reason == "On Duty":
+        reason_type = _get_reason_type_doc(self)
+        is_on_duty = (
+            self.reason == "On Duty"
+            or (reason_type and reason_type.name == "On Duty")
+        )
+        if is_on_duty:
             self.include_holidays = 1
         else:
             self.include_holidays = 0
@@ -218,11 +228,20 @@ class CustomAttendanceRequest(AttendanceRequest):
     def _validate_no_duplicate_permission(self):
         """Block duplicate Permission requests for the same employee and date (any type)."""
         reason_type = _get_reason_type_doc(self)
-        sibling_reasons = frappe.get_all(
+        if not reason_type:
+            return
+
+        reasons = frappe.get_all(
+            "Attendance Reason",
+            filters={"attendance_reason_type": reason_type.name},
+            pluck="name",
+        )
+        legacy_reasons = frappe.get_all(
             "Attendance Reason Type Detail",
             filters={"parent": reason_type.name},
             pluck="reason",
         )
+        sibling_reasons = list(set(reasons + legacy_reasons))
         if not sibling_reasons:
             return
 
@@ -444,9 +463,10 @@ class CustomAttendanceRequest(AttendanceRequest):
         if attendance_meta.has_field("custom_permission_regularized"):
             update["custom_permission_regularized"] = 1
 
-        if self.reason == "Late In":
+        reason_str = (self.reason or "").lower()
+        if "late" in reason_str:
             update["late_entry"] = 1
-        elif self.reason == "Early Out":
+        elif "early" in reason_str:
             update["early_exit"] = 1
 
         frappe.db.set_value("Attendance", attendance, update, update_modified=False)
@@ -578,10 +598,16 @@ def _get_reason_type_doc(doc):
         return None
 
     parent = frappe.db.get_value(
-        "Attendance Reason Type Detail",
-        filters={"reason": lookup},
-        fieldname="parent",
+        "Attendance Reason",
+        lookup,
+        "attendance_reason_type",
     )
+    if not parent:
+        parent = frappe.db.get_value(
+            "Attendance Reason Type Detail",
+            filters={"reason": lookup},
+            fieldname="parent",
+        )
 
     if not parent:
         return None
@@ -707,16 +733,22 @@ def _count_period_usage(doc, reason_type, allocation):
     window_start, window_end = _get_period_window(doc.from_date, period_start_day)
 
     reasons = frappe.get_all(
+        "Attendance Reason",
+        filters={"attendance_reason_type": reason_type.name},
+        pluck="name",
+    )
+    legacy_reasons = frappe.get_all(
         "Attendance Reason Type Detail",
         filters={"parent": reason_type.name},
         pluck="reason",
     )
+    all_reasons = list(set(reasons + legacy_reasons))
 
     existing = frappe.get_all(
         "Attendance Request",
         filters={
             "employee": doc.employee,
-            "reason": ["in", reasons],
+            "reason": ["in", all_reasons],
             "from_date": ["between", [window_start, window_end]],
             "docstatus": 1,
             "name": ["!=", doc.name],
@@ -745,7 +777,8 @@ def _get_actual_window(employee, permission_date, ptype):
     def clamp_gap(value):
         return min(max(flt(value), 0.0), 2.0)
 
-    if ptype == "Late In":
+    ptype_lower = (ptype or "").lower()
+    if ptype == "Late In" or "late" in ptype_lower:
         grace_minutes = (
             frappe.utils.cint(shift_doc.late_entry_grace_period)
             if frappe.utils.cint(shift_doc.enable_late_entry_marking)
@@ -792,7 +825,7 @@ def _get_actual_window(employee, permission_date, ptype):
             "checkin_found": True,
         }
 
-    if ptype == "Early Out":
+    if ptype == "Early Out" or "early" in ptype_lower:
         grace_minutes = (
             frappe.utils.cint(shift_doc.early_exit_grace_period)
             if frappe.utils.cint(shift_doc.enable_early_exit_marking)

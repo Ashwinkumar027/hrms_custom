@@ -1,0 +1,62 @@
+[
+ {
+  "attendance_reason_type": "Missed Attendance",
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Attendance Reason",
+  "is_active": 1,
+  "modified": "2026-09-16 18:04:56.812203",
+  "name": "Regularization",
+  "reason_name": "Regularization"
+ },
+ {
+  "attendance_reason_type": "On Duty",
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Attendance Reason",
+  "is_active": 1,
+  "modified": "2026-09-16 18:04:57.751200",
+  "name": "On Duty",
+  "reason_name": "On Duty"
+ },
+ {
+  "attendance_reason_type": "Work From Home Allowance",
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Attendance Reason",
+  "is_active": 1,
+  "modified": "2026-09-16 18:04:57.760318",
+  "name": "Work From Home",
+  "reason_name": "Work From Home"
+ },
+ {
+  "attendance_reason_type": "Permission",
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Attendance Reason",
+  "is_active": 1,
+  "modified": "2026-09-16 18:04:57.768117",
+  "name": "Late In",
+  "reason_name": "Late In"
+ },
+ {
+  "attendance_reason_type": "Permission",
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Attendance Reason",
+  "is_active": 1,
+  "modified": "2026-09-16 18:04:57.776663",
+  "name": "Early Out",
+  "reason_name": "Early Out"
+ },
+ {
+  "attendance_reason_type": "Week Off Credit",
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Attendance Reason",
+  "is_active": 1,
+  "modified": "2026-09-16 18:04:57.783919",
+  "name": "Week Off Credit",
+  "reason_name": "Week Off Credit"
+ }
+]

@@ -1001,6 +1001,24 @@ def get_doctype_fields(doctype: str) -> list[dict]:
             out.append(f)
         else:
             out.append(field)
+
+    if doctype == "Attendance Request":
+        from hrms_custom.api.attendance import get_allocated_reasons
+        allocated = get_allocated_reasons(as_dict=True)
+        for i, field in enumerate(out):
+            if field.fieldname == "reason":
+                f = copy.copy(field)
+                f.fieldtype = "Link"
+                f.options = "Attendance Reason"
+                if allocated:
+                    f.documentList = allocated
+                else:
+                    f.documentList = []
+                    f.read_only = 1
+                    f.error_message = frappe._("No attendance reasons allocated to you — contact HR")
+                out[i] = f
+                break
+
     return out
 
 @frappe.whitelist()
