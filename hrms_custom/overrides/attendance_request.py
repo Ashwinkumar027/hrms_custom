@@ -6,6 +6,8 @@ from frappe import _
 from frappe.query_builder.functions import Coalesce
 from frappe.utils import flt, get_datetime, get_datetime_str, getdate, time_diff_in_hours
 
+from erpnext.setup.doctype.employee.employee import is_holiday
+
 from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
 
 from hrms_custom.utils.email_utils import get_hr_sender
@@ -15,6 +17,7 @@ class CustomAttendanceRequest(AttendanceRequest):
     def validate(self):
         self._validate_single_date()
         self._validate_not_future_date()
+        self._validate_holiday_request_type()
         self._set_notification_emails()
 
         if self._is_permission():
@@ -28,6 +31,20 @@ class CustomAttendanceRequest(AttendanceRequest):
         if self.reason == "Regularization":
             if getdate(self.from_date) > getdate(frappe.utils.today()) or getdate(self.to_date) > getdate(frappe.utils.today()):
                 frappe.throw(_("Regularization requests cannot be created for future dates."))
+
+    def _validate_holiday_request_type(self):
+        if self.reason == "On Duty":
+            self.include_holidays = 1
+        else:
+            self.include_holidays = 0
+            current = getdate(self.from_date)
+            end = getdate(self.to_date)
+            while current <= end:
+                if is_holiday(self.employee, current):
+                    frappe.throw(
+                        _("Attendance requests for holidays can only be submitted with Request Type 'On Duty'.")
+                    )
+                current += timedelta(days=1)
 
     def before_submit(self):
         _validate_reason_allocation(self)
