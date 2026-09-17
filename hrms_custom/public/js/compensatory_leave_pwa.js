@@ -60,6 +60,85 @@
 		}
 	}
 
+	var compensatoryLeaveTypes = null;
+	var isLeaveTypeFetchPending = false;
+
+	// Fetch Compensatory Leave Types
+	function fetchCompensatoryLeaveTypes(callback) {
+		if (compensatoryLeaveTypes && compensatoryLeaveTypes.length > 0) {
+			if (callback) callback(compensatoryLeaveTypes);
+			return;
+		}
+
+		if (isLeaveTypeFetchPending) {
+			if (callback) {
+				var interval = setInterval(function () {
+					if (!isLeaveTypeFetchPending) {
+						clearInterval(interval);
+						if (callback) callback(compensatoryLeaveTypes || ["Comp-Off"]);
+					}
+				}, 50);
+			}
+			return;
+		}
+		isLeaveTypeFetchPending = true;
+
+		fetch("/api/method/hrms_custom.api.compensatory_leave.get_compensatory_leave_types", {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+				"X-Frappe-CSRF-Token": window.csrf_token || "",
+			},
+		})
+			.then(function (res) {
+				return res.json();
+			})
+			.then(function (data) {
+				isLeaveTypeFetchPending = false;
+				if (data && data.message && data.message.length > 0) {
+					compensatoryLeaveTypes = data.message;
+				} else {
+					return fetch("/api/method/frappe.client.get_list?doctype=Leave+Type&filters=" + encodeURIComponent(JSON.stringify({ is_compensatory: 1 })) + "&fields=" + encodeURIComponent(JSON.stringify(["name"])))
+						.then(function (res2) { return res2.json(); })
+						.then(function (data2) {
+							if (data2 && data2.message && data2.message.length > 0) {
+								compensatoryLeaveTypes = data2.message.map(function (m) { return m.name; });
+							} else {
+								compensatoryLeaveTypes = ["Comp-Off"];
+							}
+						});
+				}
+			})
+			.catch(function () {
+				isLeaveTypeFetchPending = false;
+				compensatoryLeaveTypes = ["Comp-Off"];
+			})
+			.finally(function () {
+				isLeaveTypeFetchPending = false;
+				if (!compensatoryLeaveTypes || compensatoryLeaveTypes.length === 0) {
+					compensatoryLeaveTypes = ["Comp-Off"];
+				}
+				updateLeaveTypeDisplay();
+				if (callback) callback(compensatoryLeaveTypes);
+			});
+	}
+
+	function updateLeaveTypeDisplay() {
+		var container = document.getElementById("comp-leave-type-container");
+		if (!container) return;
+
+		var types = compensatoryLeaveTypes || ["Comp-Off"];
+		if (types.length <= 1) {
+			var val = types[0] || "Comp-Off";
+			container.innerHTML = '<input type="text" id="comp-leave-type-input" value="' + val + '" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 cursor-not-allowed" readonly />';
+		} else {
+			var optionsHtml = types.map(function (t) {
+				return '<option value="' + t + '">' + t + '</option>';
+			}).join("");
+			container.innerHTML = '<select id="comp-leave-type-select" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors">' + optionsHtml + '</select>';
+		}
+	}
+
 	// 2. Toast Notification Helper
 	function showToast(message, isError) {
 		var existing = document.getElementById("comp-leave-toast");
@@ -161,56 +240,59 @@
 
 		page = document.createElement("div");
 		page.id = "compensatory-leave-page-container";
-		page.className = "fixed inset-0 z-[10000] bg-white flex flex-col overflow-hidden";
+		page.className = "fixed inset-0 z-[10000] bg-gray-100 flex flex-col items-center justify-start overflow-hidden";
 		page.style.display = "none";
 
 		var html = [
-			'<div class="flex items-center justify-between p-4 border-b bg-white z-10 sticky top-0">',
-			'  <button id="comp-leave-back-btn" class="p-2 -ml-2 text-gray-700 hover:text-gray-900 rounded-full hover:bg-gray-100 flex items-center justify-center">',
-			'    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
-			'  </button>',
-			'  <h1 class="text-base font-semibold text-gray-900 flex-1 text-center pr-6">New Compensatory Leave Request</h1>',
-			'</div>',
-			'<div class="flex-1 overflow-y-auto p-4 max-w-lg mx-auto w-full pb-24">',
-			'  <div class="space-y-4">',
-			'    <div>',
-			'      <label class="block text-sm font-medium text-gray-700 mb-1">Employee</label>',
+			'<div class="w-full h-full bg-white sm:w-96 flex flex-col shadow-sm relative overflow-hidden">',
+			'  <!-- Header matching Frappe HR FormView -->',
+			'  <header class="flex flex-row bg-white shadow-sm py-4 px-3 items-center sticky top-0 z-10 shrink-0">',
+			'    <button id="comp-leave-back-btn" class="p-1 -ml-1 text-gray-700 hover:text-gray-900 rounded-full hover:bg-gray-100 flex items-center justify-center mr-2 cursor-pointer">',
+			'      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>',
+			'    </button>',
+			'    <h2 class="text-xl font-bold text-gray-900 truncate">New Compensatory Leave Request</h2>',
+			'  </header>',
+			'  <!-- Form Body -->',
+			'  <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-white pb-6">',
+			'    <div class="flex flex-col gap-1.5">',
+			'      <label class="block text-sm font-medium text-gray-700">Employee</label>',
 			'      <input type="text" id="comp-leave-employee-display" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 cursor-not-allowed" readonly placeholder="Loading employee..." />',
 			'    </div>',
-			'    <div>',
-			'      <label class="block text-sm font-medium text-gray-700 mb-1">Leave Type</label>',
-			'      <input type="text" value="Compensatory Off" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 cursor-not-allowed" readonly />',
+			'    <div class="flex flex-col gap-1.5">',
+			'      <label class="block text-sm font-medium text-gray-700">Leave Type</label>',
+			'      <div id="comp-leave-type-container">',
+			'        <input type="text" id="comp-leave-type-input" value="' + ((compensatoryLeaveTypes && compensatoryLeaveTypes[0]) || "Loading...") + '" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 cursor-not-allowed" readonly />',
+			'      </div>',
 			'    </div>',
-			'    <div>',
-			'      <label class="block text-sm font-medium text-gray-700 mb-1">Work From Date <span class="text-red-500">*</span></label>',
-			'      <input type="date" id="comp-leave-from-date" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors" />',
+			'    <div class="flex flex-col gap-1.5">',
+			'      <label class="block text-sm font-medium text-gray-700">Work From Date <span class="text-red-500">*</span></label>',
+			'      <input type="date" id="comp-leave-from-date" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:bg-white focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors" />',
 			'    </div>',
-			'    <div>',
-			'      <label class="block text-sm font-medium text-gray-700 mb-1">Work End Date <span class="text-red-500">*</span></label>',
-			'      <input type="date" id="comp-leave-to-date" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors" />',
-			'      <p id="comp-leave-date-error" class="hidden text-xs text-red-500 mt-1">Work End Date cannot be before Work From Date</p>',
+			'    <div class="flex flex-col gap-1.5">',
+			'      <label class="block text-sm font-medium text-gray-700">Work End Date <span class="text-red-500">*</span></label>',
+			'      <input type="date" id="comp-leave-to-date" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:bg-white focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors" />',
+			'      <p id="comp-leave-date-error" class="hidden text-xs text-red-500 mt-0.5">Work End Date cannot be before Work From Date</p>',
 			'    </div>',
 			'    <div class="flex items-center pt-1">',
-			'      <input type="checkbox" id="comp-leave-half-day" class="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded" />',
+			'      <input type="checkbox" id="comp-leave-half-day" class="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded cursor-pointer" />',
 			'      <label for="comp-leave-half-day" class="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">Half Day</label>',
 			'    </div>',
-			'    <div id="comp-leave-half-day-container" class="hidden flex-col gap-1">',
-			'      <label class="block text-sm font-medium text-gray-700 mb-1">Half Day Date <span class="text-red-500">*</span></label>',
-			'      <input type="date" id="comp-leave-half-day-date" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors" />',
+			'    <div id="comp-leave-half-day-container" class="hidden flex-col gap-1.5">',
+			'      <label class="block text-sm font-medium text-gray-700">Half Day Date <span class="text-red-500">*</span></label>',
+			'      <input type="date" id="comp-leave-half-day-date" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:bg-white focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors" />',
 			'    </div>',
-			'    <div>',
-			'      <label class="block text-sm font-medium text-gray-700 mb-1">Reason <span class="text-red-500">*</span></label>',
-			'      <textarea id="comp-leave-reason" rows="3" placeholder="Enter reason for compensatory leave..." class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors resize-none"></textarea>',
+			'    <div class="flex flex-col gap-1.5">',
+			'      <label class="block text-sm font-medium text-gray-700">Reason <span class="text-red-500">*</span></label>',
+			'      <textarea id="comp-leave-reason" rows="3" placeholder="Enter reason for compensatory leave..." class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:bg-white focus:ring-1 focus:ring-gray-900 focus:border-gray-900 outline-none transition-colors resize-none"></textarea>',
 			'    </div>',
 			'    <div id="comp-leave-form-error" class="hidden p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-200"></div>',
 			'  </div>',
-			'</div>',
-			'<div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t flex justify-center z-20">',
-			'  <div class="max-w-lg w-full">',
+			'  <!-- Actions Footer matching Frappe HR FormView -->',
+			'  <footer class="p-4 bg-white border-t sticky bottom-0 z-10 shrink-0">',
 			'    <button id="comp-leave-save-btn" class="w-full py-3 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2 cursor-pointer">',
 			'      <span id="comp-leave-btn-label">Save</span>',
 			'    </button>',
-			'  </div>',
+			'  </footer>',
 			'</div>'
 		].join("");
 
@@ -362,6 +444,19 @@
 			}
 		}
 
+		var leaveType = "";
+		var selectEl = document.getElementById("comp-leave-type-select");
+		var inputEl = document.getElementById("comp-leave-type-input");
+		if (selectEl && selectEl.value) {
+			leaveType = selectEl.value;
+		} else if (inputEl && inputEl.value && inputEl.value !== "Loading...") {
+			leaveType = inputEl.value;
+		} else if (compensatoryLeaveTypes && compensatoryLeaveTypes.length > 0) {
+			leaveType = compensatoryLeaveTypes[0];
+		} else {
+			leaveType = "Comp-Off";
+		}
+
 		isSubmitting = true;
 		if (saveBtn) saveBtn.disabled = true;
 		if (btnLabel) btnLabel.textContent = "Saving...";
@@ -370,7 +465,7 @@
 			doc: {
 				doctype: "Compensatory Leave Request",
 				employee: sessionEmployee.name,
-				leave_type: "Compensatory Off",
+				leave_type: leaveType,
 				work_from_date: fromDate,
 				work_end_date: toDate,
 				half_day: isHalfDay ? 1 : 0,
@@ -469,6 +564,10 @@
 
 		fetchSessionEmployee(function (emp) {
 			updateEmployeeDisplay();
+		});
+
+		fetchCompensatoryLeaveTypes(function (types) {
+			updateLeaveTypeDisplay();
 		});
 	}
 
@@ -748,7 +847,7 @@
 			'      </div>',
 			'      <div class="flex flex-row items-center justify-between flex w-full">',
 			'        <div class="text-gray-600 text-base">Leave Type</div>',
-			'        <div class="text-gray-900 text-base font-normal">' + (req.leave_type || "Compensatory Off") + '</div>',
+			'        <div class="text-gray-900 text-base font-normal">' + (req.leave_type || (compensatoryLeaveTypes && compensatoryLeaveTypes[0]) || "Comp-Off") + '</div>',
 			'      </div>',
 			'      <div class="flex flex-row items-center justify-between flex w-full">',
 			'        <div class="text-gray-600 text-base">Work Dates</div>',
@@ -969,6 +1068,7 @@
 
 	observer.observe(document.body, { subtree: true, childList: true });
 
+	fetchCompensatoryLeaveTypes();
 	scheduleScan();
 	setInterval(scheduleScan, 1500);
 })();

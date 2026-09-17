@@ -77,6 +77,20 @@ def get_authorized_employees(user: str | None = None) -> list[str]:
 
 
 @frappe.whitelist()
+def get_compensatory_leave_types() -> list[str]:
+	"""
+	Returns active leave type names configured as compensatory (is_compensatory=1).
+	Dynamically resolves names like 'Comp-Off' or 'Compensatory Off' depending on the site.
+	"""
+	return frappe.get_all(
+		"Leave Type",
+		filters={"is_compensatory": 1},
+		pluck="name",
+		order_by="name asc",
+	)
+
+
+@frappe.whitelist()
 def get_compensatory_leave_requests(
 	for_approval: int | str | bool = False,
 	limit: int | None = 10,
