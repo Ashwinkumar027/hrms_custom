@@ -984,7 +984,6 @@ PWA_READ_ONLY_FIELDS = {
 
 @frappe.whitelist()
 def get_doctype_fields(doctype: str) -> list[dict]:
-    import copy
     from hrms.api import get_doctype_fields as hrms_get_doctype_fields
 
     fields = hrms_get_doctype_fields(doctype)
@@ -993,30 +992,29 @@ def get_doctype_fields(doctype: str) -> list[dict]:
 
     out = []
     for field in fields:
-        if hidden and field.fieldname in hidden:
+        fname = getattr(field, "fieldname", None) or (field.get("fieldname") if isinstance(field, dict) else None)
+        if hidden and fname in hidden:
             continue
-        if field.fieldname in read_only:
-            f = copy.copy(field)
-            f.read_only = 1
-            out.append(f)
-        else:
-            out.append(field)
+
+        f_dict = field.as_dict() if hasattr(field, "as_dict") else dict(field)
+        if fname in read_only:
+            f_dict["read_only"] = 1
+        out.append(f_dict)
 
     if doctype == "Attendance Request":
         from hrms_custom.api.attendance import get_allocated_reasons
         allocated = get_allocated_reasons(as_dict=True)
-        for i, field in enumerate(out):
-            if field.fieldname == "reason":
-                f = copy.copy(field)
-                f.fieldtype = "Link"
-                f.options = "Attendance Reason"
+        for field in out:
+            if field.get("fieldname") == "reason":
+                field["fieldtype"] = "Link"
+                field["options"] = "Attendance Reason"
                 if allocated:
-                    f.documentList = allocated
+                    field["documentList"] = allocated
+                    field["linkFilters"] = {"name": ["in", [r["value"] for r in allocated]]}
                 else:
-                    f.documentList = []
-                    f.read_only = 1
-                    f.error_message = frappe._("No attendance reasons allocated to you — contact HR")
-                out[i] = f
+                    field["documentList"] = []
+                    field["read_only"] = 1
+                    field["error_message"] = frappe._("No attendance reasons allocated to you — contact HR")
                 break
 
     return out
