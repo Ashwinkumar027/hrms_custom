@@ -38,27 +38,37 @@
 		if (isManagerCheckPending) return;
 		isManagerCheckPending = true;
 
+		var csrf = window.csrf_token || (window.frappe && window.frappe.csrf_token) || "";
+
 		fetch("/api/method/hrms_custom.api.team_attendance.is_team_manager", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"X-Frappe-CSRF-Token": window.csrf_token || "",
+				"X-Frappe-CSRF-Token": csrf,
 			},
 		})
 			.then(function (res) {
+				if (!res.ok) {
+					throw new Error("HTTP " + res.status);
+				}
 				return res.json();
 			})
 			.then(function (data) {
 				isManagerCheckPending = false;
+				if (data && (data.exc || data.exc_type)) {
+					// Transient session or auth error, allow retry
+					return;
+				}
 				isManager = Boolean(data && data.message);
 				if (callback) callback(isManager);
 				if (isManager) {
 					ensureQuickLink();
 				}
 			})
-			.catch(function () {
+			.catch(function (err) {
 				isManagerCheckPending = false;
-				isManager = false;
+				// Do NOT latch isManager = false on transient error/CSRF race, allow retry on next scan
+				console.warn("[Team Attendance PWA] Manager check error, will retry on next tick:", err);
 			});
 	}
 
@@ -112,31 +122,43 @@
 		if (!isManager) return;
 		if (document.getElementById("quick-link-team-attendance")) return;
 
-		var headings = document.querySelectorAll("div.text-lg.font-medium.text-gray-900");
+		var headers = document.querySelectorAll("div, h2, h3, span");
+		var quickLinksHeader = null;
+		for (var i = 0; i < headers.length; i++) {
+			if ((headers[i].textContent || "").trim() === "Quick Links") {
+				quickLinksHeader = headers[i];
+				break;
+			}
+		}
+
 		var quickLinksBox = null;
-		for (var i = 0; i < headings.length; i++) {
-			if ((headings[i].textContent || "").trim() === "Quick Links") {
-				var nextEl = headings[i].nextElementSibling;
-				if (nextEl && nextEl.classList.contains("flex-col")) {
-					quickLinksBox = nextEl;
-					break;
-				}
+		if (quickLinksHeader) {
+			var nextEl = quickLinksHeader.nextElementSibling;
+			if (nextEl && nextEl.classList.contains("bg-white")) {
+				quickLinksBox = nextEl;
+			} else if (quickLinksHeader.parentElement) {
+				quickLinksBox = quickLinksHeader.parentElement.querySelector(".bg-white.rounded") || nextEl;
+			}
+		}
+
+		// Fallback: look for other quick link items in DOM
+		if (!quickLinksBox) {
+			var siblingLink = document.querySelector("#quick-link-compensatory-leave") || document.querySelector('a[href*="attendance-requests"]');
+			if (siblingLink && siblingLink.parentElement) {
+				quickLinksBox = siblingLink.parentElement;
 			}
 		}
 
 		if (!quickLinksBox) {
-			var attLink = document.querySelector('a[href*="attendance-requests"]');
-			if (attLink && attLink.parentElement) {
-				quickLinksBox = attLink.parentElement;
+			if (quickLinksHeader) {
+				console.warn("[Team Attendance PWA] Quick Links container could not be resolved from header", quickLinksHeader);
 			}
+			return;
 		}
 
-		if (!quickLinksBox) return;
-
-		var item = document.createElement("a");
+		var item = document.createElement("div");
 		item.id = "quick-link-team-attendance";
-		item.className = "flex flex-row flex-start p-4 items-center justify-between border-b cursor-pointer hover:bg-gray-50 transition active:bg-gray-100";
-		item.href = "#team-attendance";
+		item.className = "flex flex-row flex-start p-4 items-center justify-between border-b cursor-pointer transition-colors hover:bg-gray-50 active:bg-gray-100";
 
 		item.innerHTML = [
 			'<div class="flex flex-row items-center gap-3 grow pointer-events-none">',
