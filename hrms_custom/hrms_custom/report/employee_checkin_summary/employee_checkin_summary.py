@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import getdate
+from frappe.utils import add_to_date, getdate
 from hrms_custom.hrms_custom.report.consolidated_attendance_sheet.consolidated_attendance_sheet import (
     _get_downward_chain,
 )
@@ -106,13 +106,14 @@ def get_data(filters):
         "Employee Checkin",
         filters={
             "employee": ["in", list(employee_map.keys())],
-            "time": ["between", [str(start_date) + " 00:00:00", str(end_date) + " 23:59:59"]],
+            "time": ["between", [str(start_date) + " 00:00:00", str(add_to_date(end_date, days=1)) + " 23:59:59"]],
         },
         fields=[
             "employee",
             "log_type",
             "time",
             "shift",
+            "shift_start",
             "latitude",
             "longitude",
             "custom_auto_closed",
@@ -123,7 +124,10 @@ def get_data(filters):
 
     grouped = {}
     for log in logs:
-        key = (log.employee, getdate(log.time))
+        shift_date = getdate(log.shift_start) if log.shift_start else getdate(log.time)
+        if shift_date < start_date or shift_date > end_date:
+            continue
+        key = (log.employee, shift_date)
         if key not in grouped:
             grouped[key] = []
         grouped[key].append(log)
