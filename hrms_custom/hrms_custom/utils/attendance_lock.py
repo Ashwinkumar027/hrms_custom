@@ -74,10 +74,11 @@ def check_attendance_request_lock(doc, method=None):
     threshold = _get_lock_threshold()
     if threshold is None:
         return
+    if getattr(doc, "workflow_state", None) in ("Rejected", "Cancelled"):
+        return
     if getdate(doc.to_date) <= threshold or getdate(doc.from_date) <= threshold:
         frappe.throw(
-            _("Attendance Request cannot be submitted for dates on or before <b>{0}</b>. "
-              "That payroll period is locked. Please contact HR.").format(
-                  threshold.strftime("%d-%b-%Y")),
+            _("Past month's attendance request cannot be submitted in the current month. "
+              "That payroll period is locked. Please contact HR."),
             title=_("Payroll Period Locked"),
         )

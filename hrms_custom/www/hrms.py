@@ -214,7 +214,7 @@ GATE_JS = """
 ERROR_TOAST_JS = """
 <script>
 (function () {
-	var GENERIC_TOAST_PREFIX = /^Error (creating|updating|deleting) /;
+	var GENERIC_TOAST_PREFIX = /^Error (creating|updating|deleting|applying workflow action)/;
 	var GENERIC_TOAST_EXACT = [
 		"Approval failed!",
 		"Rejection failed!",
@@ -272,7 +272,7 @@ ERROR_TOAST_JS = """
 			var target = e.target && e.target.closest ? e.target.closest("button") : null;
 			if (!target) return;
 			var text = (target.textContent || "").trim();
-			if (text === "Save" || text === "Submit") {
+			if (text === "Save" || text === "Submit" || text === "Approve" || text === "Reject" || text === "Cancel") {
 				if (isRequestInFlight) {
 					e.preventDefault();
 					e.stopImmediatePropagation();

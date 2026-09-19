@@ -15,6 +15,8 @@ from hrms_custom.utils.email_utils import get_hr_sender
 
 class CustomAttendanceRequest(AttendanceRequest):
     def validate(self):
+        if getattr(self, "workflow_state", None) in ("Rejected", "Cancelled"):
+            return
         self._validate_single_date()
         self._validate_not_future_date()
         self._validate_holiday_request_type()

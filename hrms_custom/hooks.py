@@ -261,6 +261,7 @@ doc_events = {
         "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_leave_application_lock"
     },
     "Attendance Request": {
+        "validate": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_request_lock",
         "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_request_lock"
     },
     "Compensatory Leave Request": {
