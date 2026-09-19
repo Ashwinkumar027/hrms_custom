@@ -162,9 +162,9 @@ def get_data(filters):
         if status_filter and row_status != status_filter:
             continue
 
-        # Calculate working hours between first IN and very last OUT
+        # Calculate working hours between first IN and very last OUT (only for real checkouts, not auto-closed)
         working_hours = "-"
-        if first_in and last_out and last_out.time > first_in.time:
+        if first_in and last_out and not last_out.custom_auto_closed and last_out.time > first_in.time:
             diff = last_out.time - first_in.time
             total_secs = int(diff.total_seconds())
             hrs = total_secs // 3600
