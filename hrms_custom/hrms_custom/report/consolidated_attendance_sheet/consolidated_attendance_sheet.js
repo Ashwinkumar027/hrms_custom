@@ -227,21 +227,40 @@ function set_reqd_filter(fieldname, is_reqd) {
     filter.refresh();
 }
 function validate_date_range(report) {
-    let start_date = frappe.query_report.get_filter_value("start_date");
-    let end_date = frappe.query_report.get_filter_value("end_date");
+    let rep = report || frappe.query_report;
+    if (!rep) return;
+
+    // During route options initialization, filters are populated sequentially; wait until settled
+    if (rep._no_refresh) return;
+
+    let start_date = rep.get_filter_value("start_date");
+    let end_date = rep.get_filter_value("end_date");
     if (!(start_date && end_date)) return;
 
     let start = frappe.datetime.str_to_obj(start_date);
     let end = frappe.datetime.str_to_obj(end_date);
+    if (!start || !end) return;
+
     let milli_seconds_in_a_day = 24 * 60 * 60 * 1000;
     let day_diff = Math.floor((end - start) / milli_seconds_in_a_day);
-    if (day_diff > 90) {
-        frappe.throw({
-            message: __("Please set a date range less than 90 days."),
-            title: __("Date Range Exceeded"),
+
+    if (day_diff < 0) {
+        frappe.show_alert({
+            message: __("Start Date cannot be greater than End Date."),
+            indicator: "orange",
         });
+        return;
     }
-    report.refresh();
+
+    if (day_diff > 90) {
+        frappe.show_alert({
+            message: __("Please set a date range less than 90 days."),
+            indicator: "orange",
+        });
+        return;
+    }
+
+    rep.refresh();
 }
 function get_payroll_period_start() {
     let today = frappe.datetime.str_to_obj(frappe.datetime.get_today());
