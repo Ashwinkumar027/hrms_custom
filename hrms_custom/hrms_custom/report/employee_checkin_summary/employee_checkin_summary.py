@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import add_to_date, getdate
+from frappe.utils import add_days, add_to_date, format_date, getdate, today
 from hrms_custom.hrms_custom.report.consolidated_attendance_sheet.consolidated_attendance_sheet import (
     _get_downward_chain,
 )
@@ -8,6 +8,9 @@ from hrms_custom.hrms_custom.report.consolidated_attendance_sheet.consolidated_a
 
 def execute(filters=None):
     filters = filters or frappe._dict()
+    if filters.get("status") == "Not Checked In":
+        return execute_not_checked_in(filters)
+
     columns = get_columns()
     data = get_data(filters)
     message = _get_kpi_summary_html(data)
@@ -254,3 +257,175 @@ def _get_kpi_summary_html(data):
     </div>
     """
     return cards_html
+
+
+def get_not_checked_in_columns():
+    return [
+        {"label": _("Employee"), "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "width": 140},
+        {"label": _("Employee Name"), "fieldname": "employee_name", "fieldtype": "Data", "width": 160},
+        {"label": _("Date"), "fieldname": "log_date", "fieldtype": "Date", "width": 115, "align": "center"},
+        {"label": _("Day Status"), "fieldname": "day_status", "fieldtype": "Data", "width": 140, "align": "center"},
+        {"label": _("Company"), "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 160},
+        {"label": _("Department"), "fieldname": "department", "fieldtype": "Link", "options": "Department", "width": 140},
+        {"label": _("Branch"), "fieldname": "branch", "fieldtype": "Link", "options": "Branch", "width": 120},
+    ]
+
+
+def execute_not_checked_in(filters):
+    start_date = getdate(filters.get("start_date"))
+    end_date = getdate(filters.get("end_date"))
+
+    if not start_date or not end_date:
+        frappe.throw(_("Start Date and End Date are required."))
+
+    if start_date > end_date:
+        frappe.throw(_("Start Date cannot be greater than End Date."))
+
+    total_days = (end_date - start_date).days + 1
+    if total_days > 31:
+        frappe.throw(_("Date range cannot exceed 31 days."))
+
+    today_date = getdate(today())
+    if start_date > today_date:
+        frappe.throw(_("Start date is in the future."))
+
+    effective_end_date = min(end_date, today_date)
+    includes_today = (start_date <= today_date <= end_date)
+
+    columns = get_not_checked_in_columns()
+
+    # Reusing existing employee-selection code (respects existing filters)
+    employee_map = get_employees(filters)
+    if not employee_map:
+        start_str = format_date(start_date)
+        end_str = format_date(effective_end_date)
+        msg_text = f"0 missing check-in days across 0 employees from {start_str} to {end_str}."
+        if includes_today:
+            msg_text += " Includes today - some employees may still check in."
+        message = f"""<div style="font-size: 13px; font-weight: 500; color: #334155; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{msg_text}</div>"""
+        return columns, [], message, None
+
+    emp_names = list(employee_map.keys())
+
+    # 1. Batched query for Employee joining/relieving dates and holiday lists
+    emp_docs = frappe.get_all(
+        "Employee",
+        filters={"name": ["in", emp_names]},
+        fields=["name", "date_of_joining", "relieving_date", "holiday_list", "company"],
+    )
+    emp_details = {e.name: e for e in emp_docs}
+
+    # 2. Batched query for Company default holiday lists
+    companies = list({e.company for e in emp_docs if e.company})
+    company_hl_map = {}
+    if companies:
+        comp_docs = frappe.get_all(
+            "Company",
+            filters={"name": ["in", companies]},
+            fields=["name", "default_holiday_list"],
+        )
+        company_hl_map = {c.name: c.default_holiday_list for c in comp_docs if c.default_holiday_list}
+
+    # 3. Collect distinct holiday lists (excluding optional holiday lists)
+    holiday_lists = set()
+    for e in emp_docs:
+        hl = e.holiday_list or company_hl_map.get(e.company)
+        if hl and "optional" not in hl.lower():
+            holiday_lists.add(hl)
+
+    # 4. Batched query for holidays in date range
+    holiday_set = set()
+    if holiday_lists:
+        holidays = frappe.get_all(
+            "Holiday",
+            filters={
+                "parent": ["in", list(holiday_lists)],
+                "holiday_date": ["between", [start_date, effective_end_date]],
+            },
+            fields=["parent", "holiday_date"],
+        )
+        holiday_set = {(h.parent, getdate(h.holiday_date)) for h in holidays}
+
+    # 5. Batched query for Employee Checkins in date range
+    checkins = frappe.get_all(
+        "Employee Checkin",
+        filters={
+            "employee": ["in", emp_names],
+            "time": ["between", [f"{start_date} 00:00:00", f"{effective_end_date} 23:59:59"]],
+        },
+        fields=["employee", "time"],
+    )
+    checked_in_set = {(c.employee, getdate(c.time)) for c in checkins}
+
+    # 6. Batched query for submitted Attendance records in date range
+    attendances = frappe.get_all(
+        "Attendance",
+        filters={
+            "employee": ["in", emp_names],
+            "attendance_date": ["between", [start_date, effective_end_date]],
+            "docstatus": 1,
+        },
+        fields=["employee", "attendance_date", "status"],
+    )
+    att_status_map = {(a.employee, getdate(a.attendance_date)): a.status for a in attendances}
+
+    # 7. Generate list of dates in the range
+    date_list = []
+    curr_date = start_date
+    while curr_date <= effective_end_date:
+        date_list.append(curr_date)
+        curr_date = add_days(curr_date, 1)
+
+    # 8. Build rows in memory
+    data = []
+    for emp_id in emp_names:
+        emp = employee_map.get(emp_id)
+        emp_doc = emp_details.get(emp_id)
+        if not emp or not emp_doc:
+            continue
+
+        doj = getdate(emp_doc.date_of_joining) if emp_doc.date_of_joining else None
+        relieving = getdate(emp_doc.relieving_date) if emp_doc.relieving_date else None
+        hl = emp_doc.holiday_list or company_hl_map.get(emp_doc.company)
+
+        for d in date_list:
+            # Skip if employee not yet joined
+            if doj and doj > d:
+                continue
+            # Skip if employee relieved before date
+            if relieving and relieving < d:
+                continue
+
+            # Skip if holiday/week-off in employee's mandatory holiday list
+            if hl and "optional" not in hl.lower() and (hl, d) in holiday_set:
+                continue
+
+            # Skip if employee checked in on this calendar day
+            if (emp_id, d) in checked_in_set:
+                continue
+
+            day_status = att_status_map.get((emp_id, d), "No Attendance record")
+
+            data.append({
+                "employee": emp_id,
+                "employee_name": emp.employee_name,
+                "log_date": d,
+                "day_status": day_status,
+                "company": emp.company,
+                "department": emp.department,
+                "branch": emp.branch,
+            })
+
+    # Sort by Employee Name, then Date
+    data.sort(key=lambda r: (r.get("employee_name") or "", r.get("log_date")))
+
+    distinct_emps = {r["employee"] for r in data}
+    start_str = format_date(start_date)
+    end_str = format_date(effective_end_date)
+    msg_text = f"{len(data)} missing check-in days across {len(distinct_emps)} employees from {start_str} to {end_str}."
+    if includes_today:
+        msg_text += " Includes today - some employees may still check in."
+
+    message = f"""<div style="font-size: 13px; font-weight: 500; color: #334155; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{msg_text}</div>"""
+
+    return columns, data, message, None

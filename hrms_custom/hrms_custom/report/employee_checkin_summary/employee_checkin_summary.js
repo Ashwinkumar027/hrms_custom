@@ -18,7 +18,7 @@ frappe.query_reports["Employee Checkin Summary"] = {
             fieldname: "status",
             label: __("Status"),
             fieldtype: "Select",
-            options: ["", "Completed", "Missing Check-out", "Missing Check-in", "Auto Closed"],
+            options: ["", "Completed", "Missing Check-out", "Missing Check-in", "Auto Closed", "Not Checked In"],
         },
         {
             fieldname: "employee",
@@ -103,6 +103,23 @@ frappe.query_reports["Employee Checkin Summary"] = {
                     const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
                     value = `<a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #0284c7; text-decoration: none; font-weight: 500; font-size: 11px; display: inline-flex; align-items: center; gap: 3px;" title="Open in Google Maps (${raw})">📍 ${shortCoords}</a>`;
                 }
+            }
+        }
+
+        // 6. Day Status styling
+        if (column.fieldname === "day_status" && value) {
+            if (data.day_status === "On Leave") {
+                value = "<span style='background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10.5px;'>On Leave</span>";
+            } else if (data.day_status === "Present") {
+                value = "<span style='background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10.5px;'>Present</span>";
+            } else if (data.day_status === "Absent") {
+                value = "<span style='background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10.5px;'>Absent</span>";
+            } else if (data.day_status === "Half Day") {
+                value = "<span style='background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10.5px;'>Half Day</span>";
+            } else if (data.day_status === "Work From Home") {
+                value = "<span style='background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 10.5px;'>Work From Home</span>";
+            } else {
+                value = "<span style='color: #64748b; font-size: 11px;'>No Attendance record</span>";
             }
         }
 
