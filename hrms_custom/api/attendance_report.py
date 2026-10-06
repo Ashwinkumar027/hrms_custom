@@ -93,7 +93,7 @@ def get_checkin_log(employee, date):
     formatted_logs = []
     for l in all_logs:
         note = ""
-        if cint(l.custom_auto_closed):
+        if cint(l.custom_auto_closed) and l.log_type == "OUT":
             note = "Auto-closed by system (no real check-out)"
 
         formatted_logs.append({

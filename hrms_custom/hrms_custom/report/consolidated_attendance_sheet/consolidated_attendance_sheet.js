@@ -136,26 +136,7 @@ frappe.query_reports["Consolidated Attendance Sheet"] = {
         },
     ],
     onload: function (report) {
-        let rep = report || frappe.query_report;
-        if (rep && !rep.__checkin_click_bound) {
-            rep.__checkin_click_bound = true;
-            if (!$("head style#attendance-cell-style").length) {
-                $("head").append(
-                    "<style id='attendance-cell-style'>.attendance-date-cell:hover { text-decoration: underline dotted #64748b !important; }</style>"
-                );
-            }
-            rep.page.main.on("click", ".attendance-date-cell", function (e) {
-                e.preventDefault();
-                let $cell = $(this);
-                let employee = $cell.attr("data-employee");
-                let emp_name = $cell.attr("data-employee-name");
-                let date_ymd = $cell.attr("data-date");
-                let display_date = $cell.attr("data-display-date");
-                if (employee && date_ymd) {
-                    show_checkin_dialog(employee, emp_name, date_ymd, display_date);
-                }
-            });
-        }
+        bind_attendance_cell_click();
 
         return frappe.call({
             method: "hrms.hr.report.monthly_attendance_sheet.monthly_attendance_sheet.get_attendance_years",
@@ -357,7 +338,7 @@ function show_checkin_dialog(employee, emp_name, date_ymd, display_date) {
                         ? '<span style="background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10.5px;">IN</span>'
                         : '<span style="background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10.5px;">OUT</span>';
 
-                    let note_content = l.note
+                    let note_content = (l.log_type === "OUT" && l.note)
                         ? '<span style="color: #ea580c; font-weight: 500; font-size: 11px;">' + frappe.utils.escape_html(l.note) + '</span>'
                         : '<span style="color: #94a3b8;">-</span>';
 
@@ -417,3 +398,23 @@ function show_checkin_dialog(employee, emp_name, date_ymd, display_date) {
         },
     });
 }
+
+function bind_attendance_cell_click() {
+    if (!$("head style#attendance-cell-style").length) {
+        $("head").append(
+            "<style id='attendance-cell-style'>.attendance-date-cell:hover { text-decoration: underline dotted #64748b !important; }</style>"
+        );
+    }
+    $(document).off("click.attcell").on("click.attcell", ".attendance-date-cell", function (e) {
+        e.preventDefault();
+        let $cell = $(this);
+        let employee = $cell.attr("data-employee");
+        let emp_name = $cell.attr("data-employee-name");
+        let date_ymd = $cell.attr("data-date");
+        let display_date = $cell.attr("data-display-date");
+        if (employee && date_ymd) {
+            show_checkin_dialog(employee, emp_name, date_ymd, display_date);
+        }
+    });
+}
+bind_attendance_cell_click();
