@@ -382,7 +382,17 @@ def probation_action(employee, action, expiry=None, token=None):
         frappe.throw(f"Employee {employee} is not on probation or missing end date.")
         
     if getattr(emp, "final_confirmation_date", None):
-        frappe.throw(f"Employee {employee} is already confirmed.")
+        frappe.respond_as_web_page(
+            title="Already Confirmed",
+            html="""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2 style="color:#6c757d;">This employee is already confirmed</h2>
+                <p>A decision has already been recorded for this probation review.</p>
+            </div>
+            """,
+            http_status_code=200,
+        )
+        return
 
 
     manager_email = None
