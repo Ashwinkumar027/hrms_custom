@@ -410,6 +410,7 @@ def probation_action(employee, action, expiry=None, token=None):
 
     if action == "confirm":
         emp.final_confirmation_date = today()
+        emp.custom_probation_notified = 0
         emp.save(ignore_permissions=True)
         frappe.db.commit()
 
