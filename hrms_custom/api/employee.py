@@ -364,6 +364,19 @@ def probation_action(employee, action, expiry=None, token=None):
         frappe.throw("This link has expired", frappe.PermissionError)
         
     emp = frappe.get_doc("Employee", employee)
+
+    if not emp.custom_probation_notified:
+        frappe.respond_as_web_page(
+            title="Already Actioned",
+            html="""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2 style="color:#6c757d;">This review was already actioned</h2>
+                <p>A decision has already been recorded for this probation review.</p>
+            </div>
+            """,
+            http_status_code=200,
+        )
+        return
     
     if not getattr(emp, "custom_probation_end_date", None):
         frappe.throw(f"Employee {employee} is not on probation or missing end date.")
@@ -467,6 +480,8 @@ def probation_action(employee, action, expiry=None, token=None):
                 """
             )
 
+        frappe.db.commit()
+
         frappe.respond_as_web_page(
             title="Confirmed",
             html=f"""
@@ -554,6 +569,8 @@ def probation_action(employee, action, expiry=None, token=None):
                 </div>
                 """
             )
+
+        frappe.db.commit()
 
         frappe.respond_as_web_page(
             title="Extended",
