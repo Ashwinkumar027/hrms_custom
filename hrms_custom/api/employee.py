@@ -380,6 +380,21 @@ def probation_action(employee, action, expiry=None, token=None):
     
     if not getattr(emp, "custom_probation_end_date", None):
         frappe.throw(f"Employee {employee} is not on probation or missing end date.")
+
+    decision_key = f"probation_decision:{emp.name}:{emp.custom_probation_end_date}"
+    if frappe.db.exists("Comment", {"reference_doctype": "Employee", "reference_name": emp.name,
+                                    "comment_type": "Info", "content": decision_key}):
+        frappe.respond_as_web_page(
+            title="Already Actioned",
+            html="""
+            <div style="text-align:center;padding:60px;font-family:Arial;">
+                <h2 style="color:#6c757d;">This review was already actioned</h2>
+                <p>A decision has already been recorded for this probation review.</p>
+            </div>
+            """,
+            http_status_code=200,
+        )
+        return
         
     if getattr(emp, "final_confirmation_date", None):
         frappe.respond_as_web_page(
@@ -422,6 +437,7 @@ def probation_action(employee, action, expiry=None, token=None):
         emp.final_confirmation_date = today()
         emp.custom_probation_notified = 0
         emp.save(ignore_permissions=True)
+        emp.add_comment("Info", decision_key)
         frappe.db.commit()
 
         if manager_email:
@@ -511,6 +527,7 @@ def probation_action(employee, action, expiry=None, token=None):
         emp.custom_probation_end_date = new_end
         emp.custom_probation_notified = 0
         emp.save(ignore_permissions=True)
+        emp.add_comment("Info", decision_key)
         frappe.db.commit()
 
         if manager_email:
