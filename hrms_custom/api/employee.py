@@ -350,6 +350,7 @@ def get_probation_link(employee, action):
 
 @frappe.whitelist(allow_guest=True)
 def probation_action(employee, action, expiry=None, token=None):
+    frappe.flags.in_probation_action = True
     if not all([employee, action, expiry, token]):
         frappe.throw("Invalid Request", frappe.PermissionError)
         

@@ -2,6 +2,10 @@ import frappe
 from frappe import _
 
 def validate_probation_status(doc, method=None):
+    if getattr(doc.flags, "ignore_permissions", False) or getattr(frappe.flags, "in_probation_action", False):
+        if doc.final_confirmation_date and doc.get("custom_probation_status") != "Confirmed":
+            doc.custom_probation_status = "Confirmed"
+        return
     """
     Auto-sync and validate Probation Status on Employee:
     1. If final_confirmation_date is filled, auto-set custom_probation_status to 'Confirmed'.
