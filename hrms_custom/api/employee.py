@@ -363,6 +363,8 @@ def probation_action(employee, action, expiry=None, token=None):
     if int(time.time()) > int(expiry):
         frappe.throw("This link has expired", frappe.PermissionError)
         
+    # Prevent double-click race condition with row-level DB lock
+    frappe.db.sql("SELECT name FROM `tabEmployee` WHERE name = %s FOR UPDATE", (employee,))
     emp = frappe.get_doc("Employee", employee)
 
     if not emp.custom_probation_notified:
