@@ -5,6 +5,10 @@ app_description = "Customizations for HRMS"
 app_email = "ashwinkumark59@gmail.com"
 app_license = "mit"
 
+doctype_list_js = {
+    "Employee": "hrms_custom/public/js/employee_list.js",
+}
+
 doctype_js = {
     "Employee": "hrms_custom/public/js/employee.js",
     "Leave Application": "hrms_custom/public/js/leave_application.js",
@@ -247,6 +251,7 @@ before_job = ["hrms_custom.monkey_patches.apply"]
 
 doc_events = {
     "Employee": {
+        "validate": "hrms_custom.hrms_custom.utils.probation_utils.validate_probation_status",
         "after_insert": "hrms_custom.hrms_custom.utils.user_permissions.create_user_permission_for_employee",
         "on_update": "hrms_custom.hrms_custom.utils.user_permissions.create_user_permission_for_employee"
     },

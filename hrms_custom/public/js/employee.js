@@ -3,6 +3,20 @@
 
 frappe.ui.form.on("Employee", {
 	refresh(frm) {
+		// Probation Status permission: Only HR Manager and System Manager can edit
+		const can_edit_probation = frappe.user.has_role(["HR Manager", "System Manager", "Administrator"]);
+		frm.set_df_property("custom_probation_status", "read_only", can_edit_probation ? 0 : 1);
+
+		// Visual Indicator on Form Dashboard
+		if (!frm.is_new() && frm.doc.custom_probation_status) {
+			const status = frm.doc.custom_probation_status;
+			const is_confirmed = status === "Confirmed";
+			frm.dashboard.add_indicator(
+				__("Probation: {0}", [status]),
+				is_confirmed ? "green" : "orange"
+			);
+		}
+
 		if (!frm.is_new() && frappe.user.has_role(["HR Manager", "HR User", "System Manager"])) {
 			frm.add_custom_button(
 				__("Download Documents"),
@@ -11,6 +25,11 @@ frappe.ui.form.on("Employee", {
 			);
 		}
 	},
+	final_confirmation_date(frm) {
+		if (frm.doc.final_confirmation_date && frm.doc.custom_probation_status !== "Confirmed") {
+			frm.set_value("custom_probation_status", "Confirmed");
+		}
+	}
 });
 
 function show_download_dialog(frm) {

@@ -477,6 +477,7 @@ def probation_action(employee, action, expiry=None, token=None):
     if action == "confirm":
         emp.final_confirmation_date = today()
         emp.custom_probation_notified = 0
+        emp.custom_probation_status = "Confirmed"
         emp.save(ignore_permissions=True)
         emp.add_comment("Info", decision_key)
         frappe.db.commit()
@@ -553,6 +554,7 @@ def probation_action(employee, action, expiry=None, token=None):
         new_end = add_months(current_end, 2)
         emp.custom_probation_end_date = new_end
         emp.custom_probation_notified = 0
+        emp.custom_probation_status = "Not Confirmed"
         emp.save(ignore_permissions=True)
         emp.add_comment("Info", decision_key)
         frappe.db.commit()
