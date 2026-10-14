@@ -6,12 +6,12 @@ app_email = "ashwinkumark59@gmail.com"
 app_license = "mit"
 
 doctype_list_js = {
-    "Employee": "hrms_custom/public/js/employee_list.js",
+    "Employee": "public/js/employee_list.js",
 }
 
 doctype_js = {
-    "Employee": "hrms_custom/public/js/employee.js",
-    "Leave Application": "hrms_custom/public/js/leave_application.js",
+    "Employee": "public/js/employee.js",
+    "Leave Application": "public/js/leave_application.js",
 }
 
 fixtures = [
