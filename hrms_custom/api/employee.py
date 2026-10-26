@@ -427,33 +427,24 @@ def probation_action(employee, action, expiry=None, token=None):
             if manager_email and "@" not in manager_email:
                 manager_email = frappe.db.get_value("User", manager_email, "email")
 
-    # 2. Comprehensive HR Team Email Resolution
+    # 2. CC only HR Manager
     hr_recipients = set()
     hr_users = frappe.db.sql("""
         SELECT DISTINCT u.email
         FROM `tabUser` u
         JOIN `tabHas Role` hr ON hr.parent = u.name
-        WHERE hr.role IN ('HR Manager', 'HR User', 'HR')
+        WHERE hr.role = 'HR Manager'
           AND u.enabled = 1
           AND u.email != ''
+          AND u.email NOT LIKE '%@gmail.com'
     """, as_dict=True)
     for r in hr_users:
         if r.get("email") and "@" in str(r["email"]):
             hr_recipients.add(r["email"].strip())
 
-    try:
-        hr_settings = frappe.get_single("HR Settings")
-        for f in ("sender_email", "hiring_sender_email", "hr_email"):
-            val = getattr(hr_settings, f, None)
-            if val and "@" in str(val):
-                hr_recipients.add(str(val).strip())
-    except Exception:
-        pass
-
-    if emp.get("company") and frappe.db.exists("Company", emp.get("company")):
-        c_email = frappe.db.get_value("Company", emp.get("company"), "email")
-        if c_email and "@" in str(c_email):
-            hr_recipients.add(str(c_email).strip())
+    # Fallback to official HR mailbox if no specific HR Manager found
+    if not hr_recipients:
+        hr_recipients.add("hr@aionioncapital.com")
 
     cc_hr_list = list(hr_recipients)
 
@@ -483,14 +474,9 @@ def probation_action(employee, action, expiry=None, token=None):
         emp.add_comment("Info", decision_key)
         frappe.db.commit()
 
-        # Build unified recipient list: TO Employee, CC HR Team & Manager
+        # Recipient: TO Employee, CC: Only HR Manager
         to_recipients = [employee_email] if employee_email else cc_hr_list
-        cc_list = []
-        for em in cc_hr_list:
-            if em not in to_recipients and em not in cc_list:
-                cc_list.append(em)
-        if manager_email and manager_email not in to_recipients and manager_email not in cc_list:
-            cc_list.append(manager_email)
+        cc_list = [em for em in cc_hr_list if em not in to_recipients]
 
         confirm_subject = f"Congratulations! Probation Completed & Confirmed - {emp.employee_name}"
         confirm_message = f"""
@@ -560,14 +546,9 @@ def probation_action(employee, action, expiry=None, token=None):
         emp.add_comment("Info", decision_key)
         frappe.db.commit()
 
-        # Build unified recipient list: TO Employee, CC HR Team & Manager
+        # Recipient: TO Employee, CC: Only HR Manager
         to_recipients = [employee_email] if employee_email else cc_hr_list
-        cc_list = []
-        for em in cc_hr_list:
-            if em not in to_recipients and em not in cc_list:
-                cc_list.append(em)
-        if manager_email and manager_email not in to_recipients and manager_email not in cc_list:
-            cc_list.append(manager_email)
+        cc_list = [em for em in cc_hr_list if em not in to_recipients]
 
         formatted_end = new_end.strftime('%d-%m-%Y') if hasattr(new_end, 'strftime') else str(new_end)
         extend_subject = f"Probation Period Update - {emp.employee_name}"
