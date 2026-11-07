@@ -305,13 +305,15 @@ class CustomAttendanceRequest(AttendanceRequest):
     def _smart_create_or_regularize_attendance(self):
         """
         For 'Creates Attendance' type reasons (e.g. Regularization):
-          - If an Absent record already exists for a date → update it to Present.
+          - If an Absent or Half Day record already exists for a date (and is
+            not linked to a Leave Application or marked as this request's
+            half_day_date) → update it to Present (or Work From Home).
           - If no record exists yet (future / unprocessed date) → let parent
             create a fresh Present record via super().on_submit().
 
         This prevents the duplicate-attendance crash that occurs when Auto
-        Attendance has already run and marked the employee Absent before the
-        request is approved.
+        Attendance has already run and marked the employee Absent or Half Day
+        before the request is approved.
         """
         current = getdate(self.from_date)
         end = getdate(self.to_date)
@@ -326,13 +328,23 @@ class CustomAttendanceRequest(AttendanceRequest):
                     "attendance_date": current,
                     "docstatus": ["!=", 2],
                 },
-                ["name", "status"],
+                ["name", "status", "leave_application"],
                 as_dict=True,
             )
 
             if existing:
-                if existing.status == "Absent":
-                    update = {"status": "Present"}
+                is_half_day_date = (
+                    bool(self.get("half_day"))
+                    and self.get("half_day_date")
+                    and getdate(self.half_day_date) == current
+                )
+                if (
+                    existing.status in ("Absent", "Half Day")
+                    and not existing.leave_application
+                    and not is_half_day_date
+                ):
+                    new_status = "Work From Home" if self.reason == "Work From Home" else "Present"
+                    update = {"status": new_status, "leave_type": None}
 
                     if attendance_meta.has_field("custom_attendance_request"):
                         update["custom_attendance_request"] = self.name
@@ -347,12 +359,18 @@ class CustomAttendanceRequest(AttendanceRequest):
                     frappe.msgprint(
                         _(
                             "Attendance for <b>{0}</b> on <b>{1}</b> "
-                            "updated from <b>Absent → Present</b>."
-                        ).format(self.employee_name or self.employee, current),
+                            "updated from <b>{2} → {3}</b>."
+                        ).format(
+                            self.employee_name or self.employee,
+                            current,
+                            existing.status,
+                            new_status,
+                        ),
                         indicator="green",
                         title=_("Attendance Regularized"),
                     )
-                # If already Present / On Leave / etc. → leave untouched.
+                # If already Present / On Leave / linked to Leave Application / half_day_date → leave untouched.
+
 
             else:
                 # No record for this date yet; parent will create it.
@@ -360,11 +378,13 @@ class CustomAttendanceRequest(AttendanceRequest):
 
             current += timedelta(days=1)
 
+
         if has_unprocessed_dates:
             # super().on_submit() loops the full date range internally.
             # It will only encounter dates that have no existing record
-            # because we already handled all Absent ones above.
+            # because we already handled all Absent onesabove.
             super().on_submit()
+
 
     def _smart_cancel_attendance(self):
         """
@@ -373,6 +393,9 @@ class CustomAttendanceRequest(AttendanceRequest):
           - Records created fresh by super().on_submit() are cancelled via
             super().on_cancel().
         """
+        # TODO: This reverts to "Absent" even for rows that were "Half Day"
+        # before regularization. If the record pre-existed as Half Day,
+        # cancelling should ideally revert to Half Day instead of Absent.
         current = getdate(self.from_date)
         end = getdate(self.to_date)
         attendance_meta = frappe.get_meta("Attendance")

@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils import getdate, nowdate
 
+from hrms_custom.hrms_custom.utils.attendance_request_guard import has_full_day_request
+
 LOG_PREFIX = "[ForceAbsentMissingCheckout]"
 ABSENT_REASON = "Missing final checkout (auto-closed by scheduler)"
 
@@ -26,6 +28,8 @@ def execute():
     corrected = 0
 
     for att in candidates:
+        if has_full_day_request(att.name):
+            continue
         try:
             if _last_checkout_was_auto_closed(att.name):
                 if _force_absent(att):

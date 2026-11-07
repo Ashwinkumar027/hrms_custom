@@ -1,11 +1,14 @@
 from datetime import date
 import frappe
-from frappe.utils import getdate, get_datetime, nowdate, cint
+from frappe.utils import getdate, get_datetime, nowdate, cint, add_days, add_months
+
+from hrms_custom.hrms_custom.utils.attendance_request_guard import has_full_day_request
 
 DEFAULT_GRACE_DAYS       = 5
 DEFAULT_GRACE_TIME_LIMIT = 45   # minutes after shift start; used only if not configured on Shift Type
 LOP_LEAVE_TYPE           = "Loss of Pay"
 LOG_PREFIX               = "[LateLOP]"
+LOP_LAG_DAYS             = 2
 
 
 def process_late_deductions(period_start=None, period_end=None):
@@ -42,6 +45,18 @@ def process_late_deductions(period_start=None, period_end=None):
     _log(f"Done — created: {success_count} | within limit: {skip_count} | errors: {error_count}")
 
 
+def process_current_period():
+    """Daily run: process the CURRENT 26th-25th cycle up to LOP_LAG_DAYS ago.
+    The lag gives employees/approvers time to get a Late In permission approved
+    before the day becomes Half Day LOP. Idempotent via _already_lop()."""
+    today = getdate(nowdate())
+    start = today.replace(day=26) if today.day >= 26 else add_months(today, -1).replace(day=26)
+    end = add_months(start, 1).replace(day=25)
+    end = min(end, getdate(add_days(today, -LOP_LAG_DAYS)))
+    if end >= start:
+        process_late_deductions(start, end)
+
+
 def _process_employee(emp, period_start, period_end):
     """
     Rules (per Attendance record, status=Present, late_entry=1, docstatus=1):
@@ -76,6 +91,12 @@ def _process_employee(emp, period_start, period_end):
     created = 0
 
     for att in late_records:
+        if has_full_day_request(att.name):
+            continue
+
+        if frappe.db.get_value("Attendance", att.name, "custom_permission_regularized"):
+            continue
+
         if _already_lop(att.name):
             continue
 
