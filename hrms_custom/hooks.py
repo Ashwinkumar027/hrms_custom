@@ -264,6 +264,7 @@ doc_events = {
         "before_cancel": "hrms_custom.hrms_custom.utils.attendance_lock.check_attendance_lock"
     },
     "Leave Application": {
+        "validate": "hrms_custom.hrms_custom.utils.attendance_lock.check_leave_application_lock",
         "before_submit": "hrms_custom.hrms_custom.utils.attendance_lock.check_leave_application_lock"
     },
     "Attendance Request": {
