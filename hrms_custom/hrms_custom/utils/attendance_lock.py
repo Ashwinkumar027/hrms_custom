@@ -1,9 +1,11 @@
 """
 Locks direct Attendance edits for any date on/before the most recently
 closed payroll period (26th-25th), once that period's 26th 11:00 AM passes.
-HR Manager / HR User / System Manager are never blocked.
-Leave Application and Attendance Request are NOT blocked here — they use
-db_set/system writes that bypass this hook entirely (intentional).
+
+Leave Application: blocked on validate and before_submit for non-HR-Manager.
+Attendance Request: blocked on validate and before_submit for non-HR-Manager.
+Attendance: blocked on validate and before_cancel for non-HR-roles (HR Manager, HR User, System Manager).
+All three share the same _get_lock_threshold() helper.
 """
 from datetime import date, datetime
 import frappe
@@ -57,28 +59,61 @@ def _has_hr_role():
     return bool(set(frappe.get_roles(frappe.session.user)) & HR_ROLES)
 
 
+def _has_hr_manager_role():
+    return "HR Manager" in frappe.get_roles(frappe.session.user)
+
+
 def check_leave_application_lock(doc, method=None):
+    if _has_hr_manager_role():
+        return
+    if method == "validate" and getattr(doc, "status", None) in ("Rejected", "Cancelled"):
+        return
     threshold = _get_lock_threshold()
     if threshold is None:
         return
     if getdate(doc.to_date) <= threshold or getdate(doc.from_date) <= threshold:
-        frappe.throw(
-            _("Leave Application cannot be submitted for dates on or before <b>{0}</b>. "
-              "That payroll period is locked. Please contact HR.").format(
-                  threshold.strftime("%d-%b-%Y")),
-            title=_("Payroll Period Locked"),
-        )
+        threshold_str = threshold.strftime("%d-%b-%Y")
+        if getdate(doc.from_date) == getdate(doc.to_date):
+            date_str = getdate(doc.from_date).strftime("%d-%b-%Y")
+            msg = _(
+                "Leave Application for <b>{0}</b> cannot be submitted. "
+                "Dates on or before <b>{1}</b> are locked. "
+                "That payroll period is locked. Please contact HR."
+            ).format(date_str, threshold_str)
+        else:
+            from_str = getdate(doc.from_date).strftime("%d-%b-%Y")
+            to_str = getdate(doc.to_date).strftime("%d-%b-%Y")
+            msg = _(
+                "Leave Application for <b>{0}</b> to <b>{1}</b> cannot be submitted. "
+                "Dates on or before <b>{2}</b> are locked. "
+                "That payroll period is locked. Please contact HR."
+            ).format(from_str, to_str, threshold_str)
+        frappe.throw(msg, title=_("Payroll Period Locked"))
 
 
 def check_attendance_request_lock(doc, method=None):
+    if _has_hr_manager_role():
+        return
     threshold = _get_lock_threshold()
     if threshold is None:
         return
     if getattr(doc, "workflow_state", None) in ("Rejected", "Cancelled"):
         return
     if getdate(doc.to_date) <= threshold or getdate(doc.from_date) <= threshold:
-        frappe.throw(
-            _("Past month's attendance request cannot be submitted in the current month. "
-              "That payroll period is locked. Please contact HR."),
-            title=_("Payroll Period Locked"),
-        )
+        threshold_str = threshold.strftime("%d-%b-%Y")
+        if getdate(doc.from_date) == getdate(doc.to_date):
+            date_str = getdate(doc.from_date).strftime("%d-%b-%Y")
+            msg = _(
+                "Attendance Request for <b>{0}</b> cannot be submitted. "
+                "Dates on or before <b>{1}</b> are locked. "
+                "That payroll period is locked. Please contact HR."
+            ).format(date_str, threshold_str)
+        else:
+            from_str = getdate(doc.from_date).strftime("%d-%b-%Y")
+            to_str = getdate(doc.to_date).strftime("%d-%b-%Y")
+            msg = _(
+                "Attendance Request for <b>{0}</b> to <b>{1}</b> cannot be submitted. "
+                "Dates on or before <b>{2}</b> are locked. "
+                "That payroll period is locked. Please contact HR."
+            ).format(from_str, to_str, threshold_str)
+        frappe.throw(msg, title=_("Payroll Period Locked"))
