@@ -1006,3 +1006,27 @@ class TestAttendanceRequestLimit(IntegrationTestCase):
         self.assertEqual(p.workflow_state, "Cancelled")
         db_state = frappe.db.get_value("Attendance Request", p.name, "workflow_state")
         self.assertEqual(db_state, "Cancelled")
+
+    def test_24_editing_dates_of_pending_request_within_limit_succeeds(self):
+        """24. Changing dates on an existing Pending Approval request while within allocation limit succeeds.
+        Self-exclusion ("name != doc.name") ensures the document being edited does not count itself twice.
+        """
+        self._seed_attendance_request(self.test_emp, "Work From Home", CYCLE_DATE_1, docstatus=1)
+        p = self._seed_attendance_request(self.test_emp, "Work From Home", CYCLE_DATE_2, docstatus=0, workflow_state="Pending Approval")
+
+        # Assert precondition counts
+        self.assertEqual(frappe.db.count("Attendance Request", {"employee": self.test_emp, "docstatus": 1}), 1)
+        self.assertEqual(frappe.db.count("Attendance Request", {"employee": self.test_emp, "workflow_state": "Pending Approval"}), 1)
+
+        frappe.set_user(EMP_USER)
+        doc = frappe.get_doc("Attendance Request", p.name)
+        doc.from_date = CYCLE_DATE_3
+        doc.to_date = CYCLE_DATE_3
+        doc.save()
+
+        self.assertEqual(doc.name, p.name)
+        self.assertEqual(getdate(doc.from_date), getdate(CYCLE_DATE_3))
+        self.assertEqual(getdate(doc.to_date), getdate(CYCLE_DATE_3))
+        self.assertEqual(doc.workflow_state, "Pending Approval")
+        self.assertEqual(doc.docstatus, 0)
+
