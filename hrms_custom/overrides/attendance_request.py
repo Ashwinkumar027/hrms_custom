@@ -29,6 +29,50 @@ class CustomAttendanceRequest(AttendanceRequest):
             self._resolve_shift()
             super().validate()
 
+        self._validate_limit_at_apply()
+
+    def _validate_limit_at_apply(self):
+        if self.docstatus != 0:
+            return
+
+        if getattr(self, "workflow_state", None) in ("Rejected", "Cancelled"):
+            return
+
+        if not self.is_new():
+            relevant_fields = ("employee", "reason", "from_date", "to_date", "half_day")
+            if not any(self.has_value_changed(f) for f in relevant_fields):
+                return
+
+        reason_type = _get_reason_type_doc(self)
+        if not reason_type:
+            return
+
+        allocation = _get_allocation(self, reason_type.name)
+        if not allocation:
+            return
+
+        used, current = _count_period_usage(self, reason_type, allocation, include_pending=True)
+        limit = int(flt(allocation.monthly_limit))
+
+        if used + current > limit:
+            period_start_day = int(allocation.get("period_start_day") or 1)
+            window_start, window_end = _get_period_window(self.from_date, period_start_day)
+            frappe.throw(
+                title=_("Attendance Request Limit Exceeded"),
+                msg=_(
+                    "Limit exceeded for <b>{type_name}</b> for cycle <b>{start}</b> to <b>{end}</b>.<br>"
+                    "Allowed: {limit} | Already used/pending: {used} | Requested: {current} | Total would be: {total}"
+                ).format(
+                    type_name=reason_type.type_name,
+                    start=window_start.strftime("%d-%b-%Y"),
+                    end=window_end.strftime("%d-%b-%Y"),
+                    limit=limit,
+                    used=used,
+                    current=current,
+                    total=used + current,
+                ),
+            )
+
     def _validate_not_future_date(self):
         reason_type = _get_reason_type_doc(self)
         is_regularization = (
@@ -753,7 +797,7 @@ def _get_period_window(request_date, period_start_day):
     return period_start, period_end
 
 
-def _count_period_usage(doc, reason_type, allocation):
+def _count_period_usage(doc, reason_type, allocation, include_pending=False):
     period_start_day = int(allocation.get("period_start_day") or 1)
     window_start, window_end = _get_period_window(doc.from_date, period_start_day)
 
@@ -780,6 +824,21 @@ def _count_period_usage(doc, reason_type, allocation):
         },
         fields=["from_date", "to_date"],
     )
+
+    if include_pending:
+        pending = frappe.get_all(
+            "Attendance Request",
+            filters={
+                "employee": doc.employee,
+                "reason": ["in", all_reasons],
+                "from_date": ["between", [window_start, window_end]],
+                "docstatus": 0,
+                "workflow_state": "Pending Approval",
+                "name": ["!=", doc.name],
+            },
+            fields=["from_date", "to_date"],
+        )
+        existing.extend(pending)
 
     total_days = 0
     for req in existing:
