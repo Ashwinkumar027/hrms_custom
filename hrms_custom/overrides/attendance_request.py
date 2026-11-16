@@ -110,12 +110,15 @@ class CustomAttendanceRequest(AttendanceRequest):
             frappe.throw(_("Self-approval for Attendance Requests is not allowed"))
 
     def on_submit(self):
+        from hrms_custom.hrms_custom.utils.attendance_lock import bypass_attendance_lock_for_approval
+
         behavior = _get_attendance_behavior(self)
 
-        if behavior == "Tags Existing Attendance":
-            self._tag_existing_attendance()
-        else:
-            self._smart_create_or_regularize_attendance()
+        with bypass_attendance_lock_for_approval():
+            if behavior == "Tags Existing Attendance":
+                self._tag_existing_attendance()
+            else:
+                self._smart_create_or_regularize_attendance()
 
     def before_cancel(self):
         if self.docstatus == 1:
