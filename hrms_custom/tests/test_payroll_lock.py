@@ -474,8 +474,8 @@ class TestPayrollLock(IntegrationTestCase):
                 doc.insert()
                 self.assertTrue(bool(doc.name))
 
-    def test_leave_approval_non_hr_approver_setting_approved_is_blocked(self):
-        """For a locked-period leave, non-HR approver setting status='Approved' and saving is blocked at before_submit."""
+    def test_leave_approval_non_hr_approver_setting_approved_succeeds(self):
+        """For a locked-period leave, non-HR approver setting status='Approved' and saving succeeds and auto-submits to docstatus 1."""
         with patch("hrms_custom.hrms_custom.utils.attendance_lock.now_datetime", return_value=FROZEN_TIME):
             frappe.set_user("Administrator")
             doc = frappe.get_doc({
@@ -497,9 +497,10 @@ class TestPayrollLock(IntegrationTestCase):
             doc_to_approve.status = "Approved"
 
             with patch("frappe.sendmail"):
-                with self.assertRaises(frappe.ValidationError) as cm:
-                    doc_to_approve.save()
-                self.assertIn("That payroll period is locked", str(cm.exception))
+                doc_to_approve.save()
+            doc_to_approve.reload()
+            self.assertEqual(doc_to_approve.docstatus, 1)
+            self.assertEqual(doc_to_approve.status, "Approved")
 
     def test_leave_approval_hr_manager_setting_approved_succeeds_and_ends_docstatus_1(self):
         """HR Manager setting status='Approved' and saving succeeds and auto-submits to docstatus 1."""
@@ -555,8 +556,8 @@ class TestPayrollLock(IntegrationTestCase):
                 with self.assertRaises(frappe.PermissionError):
                     doc_to_approve.save()
 
-    def test_leave_approval_non_hr_approver_rejecting_is_blocked_at_before_submit(self):
-        """Non-HR approver rejecting attempts auto-submit and is blocked by before_submit hook."""
+    def test_leave_approval_non_hr_approver_rejecting_succeeds(self):
+        """Non-HR approver rejecting succeeds and auto-submits with status='Rejected'."""
         with patch("hrms_custom.hrms_custom.utils.attendance_lock.now_datetime", return_value=FROZEN_TIME):
             frappe.set_user("Administrator")
             doc = frappe.get_doc({
@@ -578,9 +579,10 @@ class TestPayrollLock(IntegrationTestCase):
             doc_to_reject.status = "Rejected"
 
             with patch("frappe.sendmail"):
-                with self.assertRaises(frappe.ValidationError) as cm:
-                    doc_to_reject.save()
-                self.assertIn("That payroll period is locked", str(cm.exception))
+                doc_to_reject.save()
+            doc_to_reject.reload()
+            self.assertEqual(doc_to_reject.docstatus, 1)
+            self.assertEqual(doc_to_reject.status, "Rejected")
 
     def test_leave_approval_hr_manager_rejecting_succeeds(self):
         """HR Manager rejecting succeeds and auto-submits with status='Rejected'."""
@@ -665,8 +667,8 @@ class TestPayrollLock(IntegrationTestCase):
             doc.insert()
             self.assertTrue(bool(doc.name))
 
-    def test_attendance_request_non_hr_approver_apply_workflow_approve_is_blocked(self):
-        """Non-HR approver executing apply_workflow('Approve') on locked-period request is blocked."""
+    def test_attendance_request_non_hr_approver_apply_workflow_approve_succeeds(self):
+        """Non-HR approver executing apply_workflow('Approve') on locked-period request succeeds."""
         with patch("hrms_custom.hrms_custom.utils.attendance_lock.now_datetime", return_value=FROZEN_TIME):
             frappe.set_user("Administrator")
             doc = frappe.get_doc({
@@ -680,9 +682,10 @@ class TestPayrollLock(IntegrationTestCase):
             doc.insert(ignore_permissions=True)
 
             frappe.set_user(APPR_USER)
-            with self.assertRaises(frappe.ValidationError) as cm:
-                frappe.model.workflow.apply_workflow(doc, "Approve")
-            self.assertIn("That payroll period is locked", str(cm.exception))
+            frappe.model.workflow.apply_workflow(doc, "Approve")
+            doc.reload()
+            self.assertEqual(doc.docstatus, 1)
+            self.assertEqual(doc.workflow_state, "Approved")
 
     def test_attendance_request_non_hr_approver_rejecting_in_locked_period_is_allowed(self):
         """Non-HR approver executing apply_workflow('Reject') on locked-period request is ALLOWED."""

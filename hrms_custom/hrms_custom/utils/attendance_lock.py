@@ -7,6 +7,7 @@ Attendance Request: blocked on validate and before_submit for non-HR-Manager.
 Attendance: blocked on validate and before_cancel for non-HR-roles (HR Manager, HR User, System Manager).
 All three share the same _get_lock_threshold() helper.
 """
+from contextlib import contextmanager
 from datetime import date, datetime
 import frappe
 from frappe import _
@@ -16,7 +17,20 @@ HR_ROLES = {"HR Manager", "HR User", "System Manager"}
 LOCK_HOUR = 11
 
 
+@contextmanager
+def bypass_attendance_lock_for_approval():
+    prev = getattr(frappe.flags, "in_attendance_approval", False)
+    frappe.flags.in_attendance_approval = True
+    try:
+        yield
+    finally:
+        frappe.flags.in_attendance_approval = prev
+
+
 def check_attendance_lock(doc, method=None):
+    if getattr(frappe.flags, "in_attendance_approval", False):
+        return
+
     if _has_hr_role():
         return
 
@@ -66,7 +80,17 @@ def _has_hr_manager_role():
 def check_leave_application_lock(doc, method=None):
     if _has_hr_manager_role():
         return
-    if method == "validate" and getattr(doc, "status", None) in ("Rejected", "Cancelled"):
+    if getattr(doc, "status", None) in ("Rejected", "Cancelled"):
+        return
+    if not (
+        doc.docstatus == 0
+        and (
+            doc.is_new()
+            or doc.has_value_changed("employee")
+            or doc.has_value_changed("from_date")
+            or doc.has_value_changed("to_date")
+        )
+    ):
         return
     threshold = _get_lock_threshold()
     if threshold is None:
@@ -94,10 +118,20 @@ def check_leave_application_lock(doc, method=None):
 def check_attendance_request_lock(doc, method=None):
     if _has_hr_manager_role():
         return
+    if getattr(doc, "workflow_state", None) in ("Rejected", "Cancelled"):
+        return
+    if not (
+        doc.docstatus == 0
+        and (
+            doc.is_new()
+            or doc.has_value_changed("employee")
+            or doc.has_value_changed("from_date")
+            or doc.has_value_changed("to_date")
+        )
+    ):
+        return
     threshold = _get_lock_threshold()
     if threshold is None:
-        return
-    if getattr(doc, "workflow_state", None) in ("Rejected", "Cancelled"):
         return
     if getdate(doc.to_date) <= threshold or getdate(doc.from_date) <= threshold:
         threshold_str = threshold.strftime("%d-%b-%Y")
