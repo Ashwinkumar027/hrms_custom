@@ -25,7 +25,12 @@ class EmployeeAgreement(Document):
 			)
 			if emp:
 				if not self.place and emp.branch:
-					city = frappe.db.get_value("Branch", emp.branch, "custom_agreement_city")
+					city = None
+					try:
+						if frappe.db.has_column("Branch", "custom_agreement_city"):
+							city = frappe.db.get_value("Branch", emp.branch, "custom_agreement_city")
+					except Exception:
+						pass
 					self.place = city or "Chennai"
 				if not self.custom_employee_ctc and emp.ctc:
 					self.custom_employee_ctc = emp.ctc
@@ -48,7 +53,7 @@ class EmployeeAgreement(Document):
 def get_agreement_context(employee=None, company=None, doc_name=None):
 	"""
 	Returns all resolved dynamic values for the employment agreement.
-	Reads branch city from Branch master (UI editable).
+	Reads branch city from Branch master (UI editable) with fallback.
 	"""
 	data = {
 		"place": "Chennai",
@@ -56,7 +61,7 @@ def get_agreement_context(employee=None, company=None, doc_name=None):
 		"company_name": "",
 		"company_address": "",
 		"company_pan": "",
-		"business_description": "financial and corporate services",
+		"business_description": "financial planning and corporate services",
 		"signatory_name": "",
 		"signatory_designation": "",
 		"signatory_signature": "",
@@ -93,18 +98,56 @@ def get_agreement_context(employee=None, company=None, doc_name=None):
 		if not company:
 			company = emp_doc.company
 
-		# Branch-to-City lookup from Branch master
+		# Branch-to-City lookup from Branch master with safe fallback
 		if emp_doc.branch:
-			b_vals = frappe.db.get_value(
-				"Branch", emp_doc.branch, ["custom_agreement_city", "custom_agreement_state"], as_dict=True
-			)
-			if b_vals:
-				city = (b_vals.custom_agreement_city or "").strip()
-				state = (b_vals.custom_agreement_state or "").strip()
-				if city:
-					if not (ea_doc and ea_doc.place):
-						data["place"] = city
-					data["principal_place"] = f"{city}, {state}" if state else f"{city}, India"
+			city = None
+			state = None
+			try:
+				if frappe.db.has_column("Branch", "custom_agreement_city"):
+					b_vals = frappe.db.get_value(
+						"Branch", emp_doc.branch, ["custom_agreement_city", "custom_agreement_state"], as_dict=True
+					)
+					if b_vals:
+						city = (b_vals.custom_agreement_city or "").strip()
+						state = (b_vals.custom_agreement_state or "").strip()
+			except Exception:
+				pass
+
+			# Smart fallback if column is missing in DB or empty
+			if not city:
+				b_name = (emp_doc.branch or "").lower()
+				if any(k in b_name for k in ["royapettah", "mylapore", "chennai", "puram"]):
+					city = "Chennai"
+					state = "Tamil Nadu, India"
+				elif "madurai" in b_name:
+					city = "Madurai"
+					state = "Tamil Nadu, India"
+				elif "bangalore" in b_name or "bengaluru" in b_name:
+					city = "Bangalore"
+					state = "Karnataka, India"
+				elif "coimbatore" in b_name:
+					city = "Coimbatore"
+					state = "Tamil Nadu, India"
+				elif "dubai" in b_name:
+					city = "Dubai"
+					state = "UAE"
+				elif "ahmedabad" in b_name:
+					city = "Ahmedabad"
+					state = "Gujarat, India"
+				elif "namakkal" in b_name:
+					city = "Namakkal"
+					state = "Tamil Nadu, India"
+				elif "trichy" in b_name:
+					city = "Trichy"
+					state = "Tamil Nadu, India"
+				else:
+					city = emp_doc.branch or "Chennai"
+					state = "Tamil Nadu, India"
+
+			if city:
+				if not (ea_doc and ea_doc.place):
+					data["place"] = city
+				data["principal_place"] = f"{city}, {state}" if state else f"{city}, India"
 
 		# Reporting manager
 		if emp_doc.reports_to:
