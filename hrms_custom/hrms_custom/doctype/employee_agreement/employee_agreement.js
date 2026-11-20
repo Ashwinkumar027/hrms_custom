@@ -238,7 +238,7 @@ function build_agreement_html(frm, ctx) {
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>BETWEEN:</b></p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>${company_name}</b>, a company incorporated under the <b>Companies Act, 2013</b>, having its registered office at ${company_address}<b> </b>and having PAN <b>${company_pan}</b> (hereinafter referred to as the "<b>Company</b>" or "<b>Employer</b>", which expression shall, unless the context otherwise requires, include its successors and permitted assigns);</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>AND</b></p>
-<p style="text-align:justify; margin: 0 0 9pt 0;"><b>${employee_name}</b>, S/o, D/o or W/o <b>${parent_spouse_name}</b>, aged about <b>${age}</b> years, residing at <b>${full_address}</b> (hereinafter referred to as the "<b>Employee</b>").</p>
+<p style="text-align:justify; margin: 0 0 9pt 0;"><b>${employee_name}</b>, ${relation} <b>${parent_spouse_name}</b>, aged about <b>${age}</b> years, residing at <b>${full_address}</b> (hereinafter referred to as the "<b>Employee</b>").</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;">The Employer and the Employee shall be collectively referred to as the "<b>Parties</b>" and individually as a "<b>Party</b>".</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>WHEREAS</b> the Company is engaged in the business of <b>${business_description}</b>;</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>WHEREAS</b> the Employee possesses the requisite qualifications, skills, experience and expertise for the said designation, and has represented the same to the Company;</p>
