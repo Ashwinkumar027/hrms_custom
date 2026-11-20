@@ -18,75 +18,72 @@ frappe.ui.form.on("Employee Agreement", {
 		}, __("")).addClass("btn-primary");
 	},
 
-	company(frm) {
-		render_agreement(frm);
+	employee(frm) {
+		if (frm.doc.employee) {
+			frappe.call({
+				method: "hrms_custom.hrms_custom.doctype.employee_agreement.employee_agreement.get_agreement_context",
+				args: {
+					employee: frm.doc.employee,
+					company: frm.doc.company,
+					doc_name: frm.doc.name,
+				},
+				callback: function (r) {
+					if (r && r.message) {
+						const ctx = r.message;
+						if (!frm.doc.place && ctx.place) frm.set_value("place", ctx.place);
+						if (!frm.doc.date) frm.set_value("date", frappe.datetime.get_today());
+						if (!frm.doc.father_name && ctx.parent_spouse_name) frm.set_value("father_name", ctx.parent_spouse_name);
+						if (!frm.doc.age && ctx.age) frm.set_value("age", parseInt(ctx.age, 10));
+						if (!frm.doc.full_address && ctx.full_address) frm.set_value("full_address", ctx.full_address);
+						if (!frm.doc.custom_employee_ctc && ctx.ctc_formatted && ctx.ctc_formatted !== "____") {
+							frm.set_value("custom_employee_ctc", flt(ctx.ctc_formatted.replace(/,/g, "")));
+						}
+						if (!frm.doc.custom_roles__responsibilities && ctx.roles_responsibilities) {
+							frm.set_value("custom_roles__responsibilities", ctx.roles_responsibilities);
+						}
+						render_agreement(frm);
+					}
+				},
+			});
+		} else {
+			render_agreement(frm);
+		}
 	},
-	designation(frm) {
-		render_agreement(frm);
-	},
-	aadhaar_name(frm) {
-		render_agreement(frm);
-	},
-	father_name(frm) {
-		render_agreement(frm);
-	},
-	age(frm) {
-		render_agreement(frm);
-	},
-	full_address(frm) {
-		render_agreement(frm);
-	},
-	date_of_joining(frm) {
-		render_agreement(frm);
-	},
-	ctc_amount(frm) {
-		render_agreement(frm);
-	},
-	ctc_in_words(frm) {
-		render_agreement(frm);
-	},
-	place(frm) {
-		render_agreement(frm);
-	},
-	custom_employee_ctc(frm) {
-		render_agreement(frm);
-	},
-	custom_roles__responsibilities(frm) {
-		render_agreement(frm);
-	},
+
+	company(frm) { render_agreement(frm); },
+	designation(frm) { render_agreement(frm); },
+	aadhaar_name(frm) { render_agreement(frm); },
+	father_name(frm) { render_agreement(frm); },
+	age(frm) { render_agreement(frm); },
+	full_address(frm) { render_agreement(frm); },
+	date_of_joining(frm) { render_agreement(frm); },
+	place(frm) { render_agreement(frm); },
+	date(frm) { render_agreement(frm); },
+	custom_employee_ctc(frm) { render_agreement(frm); },
+	custom_roles__responsibilities(frm) { render_agreement(frm); },
 });
 
 function render_agreement(frm) {
 	if (!frm.fields_dict.agreement_html) return;
 
-	if (!frm.doc.company) {
+	if (!frm.doc.company && !frm.doc.employee) {
 		frm.fields_dict.agreement_html.$wrapper.html(
-			'<div style="padding:12px; color:#888;">Select a Company to preview the agreement.</div>'
+			'<div style="padding:16px; color:#888;">Select an Employee or Company to preview the agreement.</div>'
 		);
 		return;
 	}
 
 	frappe.call({
-		method: "frappe.client.get_value",
+		method: "hrms_custom.hrms_custom.doctype.employee_agreement.employee_agreement.get_agreement_context",
 		args: {
-			doctype: "Offer Letter Print Settings",
-			filters: { company: frm.doc.company },
-			fieldname: [
-				"registered_address",
-				"compliance_email",
-				"cin_number",
-				"sebi_registration_no",
-				"amfi_registration_no",
-				"company_logo",
-			],
+			employee: frm.doc.employee,
+			company: frm.doc.company,
+			doc_name: frm.doc.name,
 		},
 		callback: function (r) {
-			const settings = (r && r.message) || {};
-			frappe.db.get_value("Company", frm.doc.company, "company_name").then((res) => {
-				const company_name = (res.message && res.message.company_name) || frm.doc.company;
-				const html = build_agreement_html(frm, company_name, settings);
-				frm.fields_dict.agreement_html.$wrapper.html(html);
-			});
+			const ctx = (r && r.message) || {};
+			const html = build_agreement_html(frm, ctx);
+			frm.fields_dict.agreement_html.$wrapper.html(html);
 		},
 	});
 }
@@ -99,179 +96,252 @@ function fmt_date(d) {
 	return d ? frappe.datetime.str_to_user(d) : "____";
 }
 
-function build_agreement_html(frm, company_name, settings) {
+function build_agreement_html(frm, ctx) {
 	const d = frm.doc;
+	const company_name = esc(ctx.company_name || d.company);
+	const company_address = esc(ctx.company_address);
+	const company_pan = esc(ctx.company_pan);
+	const business_description = esc(ctx.business_description || "financial planning and corporate services");
+	const logo = ctx.company_logo || "";
+	const cin = esc(ctx.cin_number);
+	const sebi = esc(ctx.sebi_registration_no);
+	const amfi = esc(ctx.amfi_registration_no);
+	const email = esc(ctx.compliance_email);
+
+	const employee_name = esc(d.aadhaar_name || d.employee_name);
+	const parent_spouse_name = esc(d.father_name || ctx.parent_spouse_name);
+	const relation = esc(ctx.relation || "S/o, D/o or W/o");
+	const age = esc(d.age || ctx.age);
+	const full_address = esc(d.full_address || ctx.full_address);
 	const designation = esc(d.designation);
-	const aadhaar_name = esc(d.aadhaar_name);
-	const father_name = esc(d.father_name);
-	const age = esc(d.age);
-	const full_address = esc(d.full_address);
-	const place = esc(d.place || "Chennai");
 	const doj = fmt_date(d.date_of_joining);
-	const ctc = d.custom_employee_ctc ? format_currency(d.custom_employee_ctc, frappe.defaults.get_default("currency")) : "____";
-	const address = settings.registered_address || "";
-	const email = settings.compliance_email || "";
-	const cin = settings.cin_number || "";
-	const sebi = settings.sebi_registration_no || "";
-	const amfi = settings.amfi_registration_no || "";
-	const logo = settings.company_logo || "";
+	const execution_date = d.date ? fmt_date(d.date) : (ctx.execution_date || "____");
+	const place = esc(d.place || ctx.place || "Chennai");
+	const principal_place = esc(ctx.principal_place || (place + ", Tamil Nadu, India"));
+	const reporting_manager = esc(ctx.reporting_manager || "the Board");
+
+	let ctc_num = "____";
+	let ctc_words = "____";
+	if (d.custom_employee_ctc) {
+		ctc_num = format_currency(d.custom_employee_ctc, frappe.defaults.get_default("currency"));
+		ctc_words = ctx.ctc_in_words || "";
+	} else if (ctx.ctc_formatted && ctx.ctc_formatted !== "____") {
+		ctc_num = "INR " + ctx.ctc_formatted;
+		ctc_words = ctx.ctc_in_words || "";
+	}
+
+	const ctc_display = ctc_words && ctc_words !== "____" 
+		? `${ctc_num} (${ctc_words})` 
+		: ctc_num;
+
+	const roles = d.custom_roles__responsibilities || ctx.roles_responsibilities || `
+		<p class="ea-sub">• Identify client needs, offer tailored solutions, and ensure customer satisfaction and retention.<br>
+		• Meet business performance metrics through effective client engagement.<br>
+		• Maintain operational records, adhere to regulatory standards, and collaborate with internal teams.</p>
+	`;
+
+	const sig_name = esc(ctx.signatory_name);
+	const sig_desig = esc(ctx.signatory_designation);
+	const sig_img = ctx.signatory_signature || "";
+
+	let emp_sig_html = `<div style="height:40px;"></div>`;
+	if (d.employee_signature && !d.employee_signature.includes("signature-placeholder")) {
+		emp_sig_html = `<img src="${d.employee_signature}" style="height:40px; object-fit:contain;"><br>`;
+	} else if (d.employee_signature_upload) {
+		emp_sig_html = `<img src="${d.employee_signature_upload}" style="height:40px; object-fit:contain;"><br>`;
+	}
 
 	return `
 	<style>
-		.ea-preview { font-family: Tahoma, Arial, sans-serif; font-size: 12.5px; line-height: 1.5; color: #222;
-			border: 1px solid #d1d8dd; border-radius: 6px; padding: 20px 24px; max-height: 520px; overflow-y: auto; background: #fff; }
-		.ea-preview p { margin: 0 0 10px 0; text-align: justify; }
-		.ea-preview .ea-hdr { text-align: center; margin-bottom: 14px; }
-		.ea-preview .ea-hdr img { height: 45px; margin-bottom: 4px; }
-		.ea-preview .ea-hdr .cname { font-weight: bold; font-size: 13px; }
-		.ea-preview .ea-hdr .caddr { font-size: 10px; color: #555; margin-top: 4px; }
-		.ea-preview .ea-title { text-align: center; font-weight: bold; font-size: 14px; text-decoration: underline; margin: 10px 0 16px; }
-		.ea-preview table.desig { border-collapse: collapse; width: 60%; margin: 10px auto; font-size: 12px; }
-		.ea-preview table.desig td { border: 1px solid #999; padding: 4px 8px; text-align: center; }
-		.ea-preview .sub { margin-left: 18px; }
+		.ea-preview { font-family: 'Times New Roman', Tahoma, Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #111;
+			border: 1px solid #d1d8dd; border-radius: 6px; padding: 25px 30px; max-height: 560px; overflow-y: auto; background: #fff; }
+		.ea-preview p { margin: 0 0 12px 0; text-align: justify; }
+		.ea-preview .ea-hdr { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #333; padding-bottom: 12px; }
+		.ea-preview .ea-hdr img { height: 50px; margin-bottom: 6px; }
+		.ea-preview .ea-hdr .cname { font-weight: bold; font-size: 15px; letter-spacing: 0.5px; }
+		.ea-preview .ea-hdr .caddr { font-size: 11px; color: #444; margin-top: 4px; line-height: 1.4; }
+		.ea-preview .ea-title { text-align: center; font-weight: bold; font-size: 16px; text-decoration: underline; margin: 15px 0 20px; }
+		.ea-preview table.ea-table { border-collapse: collapse; width: 80%; margin: 12px auto; font-size: 12px; }
+		.ea-preview table.ea-table th, .ea-preview table.ea-table td { border: 1px solid #333; padding: 6px 12px; text-align: center; }
+		.ea-preview table.ea-table th { background: #f2f2f2; font-weight: bold; }
+		.ea-preview .ea-sec { font-weight: bold; margin-top: 18px; margin-bottom: 6px; text-transform: uppercase; font-size: 13.5px; }
+		.ea-preview .ea-sub { margin-left: 20px; margin-bottom: 6px; }
+		.ea-preview .ea-sub2 { margin-left: 40px; margin-bottom: 4px; }
+		.ea-preview .ea-sig { width: 100%; margin-top: 35px; border-collapse: collapse; }
+		.ea-preview .ea-sig td { vertical-align: top; width: 50%; padding: 10px; border: none; }
 	</style>
+
 	<div class="ea-preview">
 		<div class="ea-hdr">
-			${logo ? `<img src="${logo}">` : ""}
-			<div class="cname">${frappe.utils.escape_html(company_name).toUpperCase()}</div>
+			${logo ? `<img src="${logo}"><br>` : ""}
+			<div class="cname">${company_name.toUpperCase()}</div>
 			<div class="caddr">
-				${address ? frappe.utils.escape_html(address) + "<br>" : ""}
-				${sebi ? "SEBI REGISTRATION NO : " + frappe.utils.escape_html(sebi) + " &nbsp; " : ""}
-				${cin ? "CIN: " + frappe.utils.escape_html(cin) : ""}<br>
-				${email ? frappe.utils.escape_html(email).toUpperCase() + " &nbsp; " : ""}
-				${amfi ? "AMFI NO : " + frappe.utils.escape_html(amfi) : ""}
+				${company_address ? company_address + "<br>" : ""}
+				${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp; " : ""}
+				${sebi !== "____" ? "<b>SEBI REG:</b> " + sebi + " &nbsp; " : ""}
+				${amfi !== "____" ? "<b>AMFI NO:</b> " + amfi + "<br>" : ""}
+				${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp; " : ""}
+				${email !== "____" ? "<b>EMAIL:</b> " + email : ""}
 			</div>
 		</div>
 
 		<div class="ea-title">EMPLOYMENT AGREEMENT</div>
 
-		<p>This Employment Agreement is made and entered into upon the parties below mentioned at ${place} on this the ${doj}, BETWEEN, M/s ${frappe.utils.escape_html(company_name)}${address ? ", " + frappe.utils.escape_html(address) : ""}.</p>
+		<p>This Employment Agreement (the <b>&ldquo;Agreement&rdquo;</b>) is made and entered into at <b>${place}</b> on <b>${execution_date}</b> (the <b>&ldquo;Execution Date&rdquo;</b>),</p>
 
-		<p><b>AND</b> ${aadhaar_name}, S/O ${father_name}, aged about ${age} years, residing at ${full_address}.</p>
+		<p><b>BETWEEN:</b></p>
 
-		<p>The Employer and the Employee shall be collectively referred to as Parties and individually as Party.</p>
+		<p><b>${company_name}</b>, a company incorporated under the Companies Act, 2013, having its registered office at ${company_address} and having PAN <b>${company_pan}</b> (hereinafter referred to as the <b>&ldquo;Company&rdquo;</b> or <b>&ldquo;Employer&rdquo;</b>, which expression shall, unless the context otherwise requires, include its successors and permitted assigns);</p>
 
-		<p>WHEREAS, the Employer is engaged in the business of financial planning.</p>
+		<p><b>AND</b></p>
 
-		<p>WHEREAS, the Employee has agreed to terminate his/her previous terms of engagement either with any other employer or with the Employer, if any.</p>
+		<p><b>${employee_name}</b>, ${relation} <b>${parent_spouse_name}</b>, aged about <b>${age}</b> years, residing at <b>${full_address}</b> (hereinafter referred to as the <b>&ldquo;Employee&rdquo;</b>).</p>
 
-		<p>WHEREAS, in supersession of the previous terms of engagement of the Employee, the Employer wishes to employ the Employee on the terms and conditions agreed upon in this Agreement.</p>
+		<p>The Employer and the Employee shall be collectively referred to as the <b>&ldquo;Parties&rdquo;</b> and individually as a <b>&ldquo;Party&rdquo;</b>.</p>
 
-		<p>WHEREAS, the Employer has offered and the Employee has accepted the position with the Employer as a &ldquo;${designation}&rdquo;, On the terms and conditions as agreed upon in this Agreement.</p>
+		<p>WHEREAS the Company is engaged in the business of ${business_description};</p>
 
-		<p><b>NOW THEREFORE IN CONSIDERATION OF THE PROMISES AND MUTUAL COVENANTS SET FORTH HEREIN, THE PARTIES HERETO, INTENDING TO BE LEGALLY BOUND, HEREBY COVANENT AND AGREE AS FOLLOWS:</b></p>
+		<p>WHEREAS the Employee possesses the requisite qualifications, skills, experience and expertise for the said designation, and has represented the same to the Company;</p>
 
-		<p>1. The Employer appoint the Employee as the &ldquo;${designation}&rdquo;, Employer and the employee agrees to be employed with the Employer a &ldquo;${designation}&rdquo;, the Effective Date and thereby be bound by the terms and conditions agreed upon under this Agreement.</p>
+		<p>WHEREAS the Company has employed the Employee as <b>&ldquo;${designation}&rdquo;</b> from <b>${doj}</b> (Effective Date), and the Employee has agreed to accept such employment, on the terms and conditions set forth herein;</p>
 
-		<p>2. The Employee's principal place of employment shall be in Chennai, Tamil Nadu, India. The Employee may be required to relocate to other locations within India or abroad and during the term of the Employee's employment under this Agreement the Employee shall undertake to such travel from time to time as may be necessary in the interests of the Employer's business.</p>
+		<p>WHEREAS, in supersession of any and all previous terms of engagement of the Employee, whether with the Company or any other entity, the Parties wish to record the terms of the Employee's employment under this Agreement.</p>
 
-		<p>3. The term of the Employee's employment with the Employer shall commence on the Effective Date and shall be valid from the date thereof. In view of the training costs incurred by the employer in training the employee and subject to Clause 14 (Termination) of this Agreement, the Employee agrees to remain employed with the Employer for a period of at least 2 years from the Effective Date ${doj}, (Hereinafter 'Term'). Otherwise, in addition to the damages mentioned in other clauses of this agreement, the employee shall pay a sum equal towards the training costs to the employer.</p>
+		<p><b>NOW THEREFORE, IN CONSIDERATION OF THE MUTUAL PROMISES, COVENANTS AND AGREEMENTS SET FORTH HEREIN, AND FOR OTHER GOOD AND VALUABLE CONSIDERATION, THE RECEIPT AND SUFFICIENCY OF WHICH ARE HEREBY ACKNOWLEDGED, THE PARTIES, INTENDING TO BE LEGALLY BOUND, AGREE AS FOLLOWS:</b></p>
 
-		<p>4. The Employee shall provide the Employer with his/her Bank account or other financial details along with other relevant details such as Parents, Spouse, and Siblings etc., as and when requested by the Employer.</p>
+		<div class="ea-sec">1. DEFINITIONS AND INTERPRETATION</div>
+		<p>In this Agreement, unless the context otherwise requires:</p>
+		<p class="ea-sub"><b>&ldquo;Applicable Law&rdquo;</b> means any statute, law, regulation, ordinance, rule, judgment, notification, order, decree, bye-law, permit, licence, direction or guideline of any Governmental Authority applicable to the Parties;</p>
+		<p class="ea-sub"><b>&ldquo;Board&rdquo;</b> means the board of directors of the Company or any duly authorised committee thereof;</p>
+		<p class="ea-sub"><b>&ldquo;Confidential Information&rdquo;</b> has the meaning ascribed to it in Clause 10;</p>
+		<p class="ea-sub"><b>&ldquo;Governmental Authority&rdquo;</b> means any government or political subdivision thereof, any court, tribunal, regulatory or self-regulatory authority, or any other governmental or statutory body having jurisdiction over the Parties;</p>
+		<p class="ea-sub"><b>&ldquo;Work Product&rdquo;</b> has the meaning ascribed to it in Clause 12.</p>
+		<p>Headings are for convenience only and shall not affect the interpretation of this Agreement. References to the singular include the plural and vice versa; references to any gender include all genders; and references to a Clause are to a Clause of this Agreement.</p>
 
-		<p>5. The Parties acknowledge that the employment of the Employee shall vary between the following levels established by the Employer</p>
+		<div class="ea-sec">2. APPOINTMENT AND DESIGNATION</div>
+		<p>2.1 The Company hereby appoints the Employee as <b>&ldquo;${designation}&rdquo;</b>, and the Employee hereby accepts such appointment, subject to the terms and conditions of this Agreement.</p>
+		<p>2.2 The Employee shall report to <b>${reporting_manager}</b> or such other person(s) as may be designated by the Board from time to time.</p>
 
-		<table class="desig">
-			<tr><td><b>LEVELS</b></td><td><b>DESIGNATIONS</b></td></tr>
-			<tr><td>L1A</td><td>Junior Associate</td></tr>
-			<tr><td>L1B</td><td>Senior Associate</td></tr>
-			<tr><td>L2A</td><td>Junior Executive</td></tr>
-			<tr><td>L2B</td><td>Senior Executive</td></tr>
-			<tr><td>L3A</td><td>Team Leader</td></tr>
-			<tr><td>L3B</td><td>Assistant Manager</td></tr>
-			<tr><td>L4A</td><td>Manager</td></tr>
-			<tr><td>L4B</td><td>Senior Manager</td></tr>
-			<tr><td>L5A</td><td>Director</td></tr>
+		<div class="ea-sec">3. PLACE OF EMPLOYMENT</div>
+		<p>3.1 The Employee's principal place of employment shall be <b>${principal_place}</b>.</p>
+		<p>3.2 The Employee may be required to travel to other locations within India or abroad, and may be required to relocate, as may be necessary in the interests of the Company's business, at the Company's discretion.</p>
+
+		<div class="ea-sec">4. TERM AND PROBATION</div>
+		<p>4.1 The term of employment shall commence on the Effective Date and shall continue unless terminated in accordance with the provisions of this Agreement.</p>
+		<p>4.2 The Employee shall be subject to a probation period based on the applicable employee level, as specified in the Probation Period Schedule below. During the probation period, the Employee may resign by providing written notice in accordance with the grade-wise notice period specified under Clause 15.4 of this Agreement. The Company reserves the right to terminate the Employee's employment during the probation period, without assigning any reason, without providing prior notice or payment in lieu of notice.</p>
+
+		<table class="ea-table">
+			<tr><th>Employee Level</th><th>Probation Period</th></tr>
+			<tr><td>L1A – L2B</td><td>6 Months</td></tr>
+			<tr><td>L3A – L4B</td><td>3 Months</td></tr>
+			<tr><td>L5A & Above</td><td>2 Months</td></tr>
 		</table>
 
-		<p>6. The employee shall report to the assigned manager upon commencement of employment and will be under the overall supervision and control of the Employer's Board of Directors.</p>
+		<p>4.3 Upon satisfactory completion of the applicable probation period, the Employee's services shall be confirmed in writing by the Company. The Company reserves the right to extend the probation period by up to three (3) months, based on the Employee's performance and suitability, subject to applicable law.</p>
+		<p>4.4 During the Probation Period, the Employee shall not be entitled to any Performance-Linked Incentive under this Agreement.</p>
+		<p>4.5 In view of the training costs, proprietary knowledge and client and business relationships to which the Employee will be exposed, the Employee agrees to remain employed with the Company for a minimum period of 1 year(s) from the date of confirmation of services (the <b>&ldquo;Lock-in Period&rdquo;</b>).</p>
 
-		<p>7. The Employee agrees to comply with the various policies, rules and regulations of the Employer as maybe updated from time to time unilaterally by the Employer.</p>
+		<div class="ea-sec">5. DUTIES AND RESPONSIBILITIES</div>
+		<p>5.1 The Employee shall devote the Employee's full time, attention, skill and best efforts exclusively to the business and affairs of the Company. The Employee shall faithfully, efficiently, competently and diligently perform all duties and exercise such powers as may from time to time be assigned to or vested in the Employee.</p>
+		<p>5.2 Without limiting the generality of the foregoing, the Employee's responsibilities shall include, but not be limited to:</p>
+		<div style="margin-left:15px; margin-bottom:10px;">${roles}</div>
+		<p class="ea-sub">and such other duties as may be assigned by the Company from time to time.</p>
 
-		<p>8. The Employee shall work full time for the organization, devoting his/her time and attention and skill to the duties of his/her office and shall faithfully, efficiently, competently and diligently perform duties and exercise such powers as may from time to time be assigned to or vested in him and shall comply with all lawful directions given to him by or under the authority of the Board of Directors of the Employer and use his/her best endeavors to promote and extend the business of the Employer.</p>
+		<div class="ea-sec">6. COMPENSATION AND BENEFITS</div>
+		<p>6.1 <b>Fixed Compensation:</b> In consideration of the Employee's services, the Company shall pay the Employee an annual fixed compensation of <b>INR ${ctc_display}</b>, inclusive of all statutory contributions and subject to applicable tax deductions, payable in monthly instalments in accordance with the Company's payroll cycle.</p>
+		<p>6.2 <b>Performance-Linked Incentive:</b> In addition to the Fixed Compensation, the Employee may be eligible for a performance-linked incentive (the <b>&ldquo;Performance Incentive&rdquo;</b>), subject to the following:</p>
+		<p class="ea-sub">(a) <b>Quantum:</b> as determined by the Company, based on such performance metrics as may be notified by the Company from time to time;</p>
+		<p class="ea-sub">(b) <b>Performance Period:</b> each financial year (1 April to 31 March), or such other period as may be determined by the Company;</p>
+		<p class="ea-sub">(c) <b>Conditions:</b> the Performance Incentive shall be subject to the following conditions:</p>
+		<p class="ea-sub2">(i) the Employee must be in active, confirmed employment with the Company on the date of disbursement, and must not have tendered resignation or been served a notice of termination;</p>
+		<p class="ea-sub2">(ii) the Employee must not be in breach of any material obligation under this Agreement;</p>
+		<p class="ea-sub2">(iii) the Performance Incentive shall be subject to applicable tax deductions and statutory contributions;</p>
+		<p class="ea-sub2">(iv) the Company reserves the right to claw back all or part of the Performance Incentive in the event of any material misrepresentation, fraud or wilful breach by the Employee, for a period of twenty-four (24) months from the date of each disbursement; and</p>
+		<p class="ea-sub2">(v) the Performance Incentive shall be pro-rated for any performance period during which the Employee was not employed for the entire period.</p>
+		<p class="ea-sub">(d) <b>No Entitlement:</b> for the avoidance of doubt, the Performance Incentive is discretionary and contingent upon the conditions set out above. No right to the Performance Incentive shall accrue unless and until all conditions are satisfied and the payment is actually made.</p>
+		<p>6.3 The Employee shall be entitled to such other benefits as may be available under the Company's policies and Applicable Law, as in effect from time to time.</p>
+		<p>6.4 The Employee's compensation is strictly confidential. The Employee shall not disclose, discuss or share details of the Employee's compensation with any person, whether within or outside the organisation, other than the Company's authorised personnel or the Employee's immediate family and professional advisers bound by confidentiality.</p>
 
-		<p>9. The Employee shall act diligently and to the best of his/her ability discharge of his/her duties and subject to any restricts or limitations imposed by the concerned officer or policy of the Employer in this regard. The Employee's responsibilities will include but not limited to the following;</p>
-		${d.custom_roles__responsibilities ? `<div class="sub">${d.custom_roles__responsibilities}</div>` : `
-		<p class="sub">a. Identify client needs, offer tailored solutions, and ensure customer satisfaction and retention.<br>
-		b. Meet sales targets through upselling, cross-selling, and effective client engagement.<br>
-		c. Maintain CRM records, resolve issues, and collaborate with internal teams.</p>
-		`}
+		<div class="ea-sec">7. COMPANY POLICIES</div>
+		<p>7.1 The Employee's employment is subject to the Company's policies as may be issued and amended by the Board or management from time to time.</p>
+		<p>7.2 The Employee shall be entitled to leaves in accordance with the Company's leave policy and shall adhere to the process for availing such leaves.</p>
+		<p>7.3 The Company shall reimburse all reasonable travel, accommodation and other expenses incurred by the Employee on the Company's business, in accordance with the Company's policies.</p>
+		<p>7.4 The Employee shall mandatorily undergo, complete and comply with all training programmes, compliance courses and assessments prescribed by the Company from time to time, including but not limited to Prevention of Sexual Harassment (POSH), Code of Conduct, Anti-Bribery and Anti-Corruption, Information Security, Data Protection and other statutory, regulatory or internal compliance requirements applicable to the Employee.</p>
+		<p>7.5 The Employee will be provided with such equipment (including a laptop, if applicable) as is necessary for the performance of the Employee's duties. On resignation or termination, the Employee shall return all such equipment.</p>
+		<p>7.6 In the event the Employee is sent for any training programme at the Company's expense, the Employee shall provide an undertaking to remain in employment with the Company for such period after such training as may be reasonably required by the Company.</p>
 
-		<p>10. During the term of this Agreement, the Employee shall not directly or indirectly engage himself in any other business, occupation or employment whatsoever, without the approval of the Employer.</p>
+		<div class="ea-sec">8. REPRESENTATIONS AND WARRANTIES</div>
+		<p>The Employee represents and warrants to the Company that all information furnished by the Employee to the Company is true, accurate and complete in all material respects, and the engagement shall not violate any agreement or restrictive covenant with any third party. The Employee shall faithfully and diligently perform all assigned duties.</p>
 
-		<p>11. In consideration of the Employee's services to the Employer, the Employer shall pay to the Employee during the term of this Agreement, a CTC of ${ctc} Per Annum, subject to deduction of tax at the source.</p>
+		<div class="ea-sec">9. CONFLICT OF INTEREST AND MATERIAL BENEFIT</div>
+		<p>The Employee shall not directly or indirectly receive, accept, solicit or derive any financial or non-financial benefit, commission, fee, gift or consideration from any third party in connection with the Employee's role at the Company, unless expressly authorised in writing by the Board. The Employee shall promptly disclose any actual or potential conflict of interest.</p>
 
-		<p>12. Save and except as otherwise provided in this Agreement or as may be decided by the Board of Directors of the Employer from time to time, the Employee shall be entitled to all such benefits that may be available to him as per law and as per the polices of the Employer for its employees as in effect from time to time.</p>
+		<div class="ea-sec">10. CONFIDENTIALITY</div>
+		<p>The Employee acknowledges that during employment, the Employee will have access to Confidential Information. The Employee shall hold all Confidential Information in strict confidence and shall not disclose, communicate, reproduce or distribute any Confidential Information during or after employment, except as strictly necessary in the discharge of duties with prior written consent. The obligations shall survive the termination of this Agreement.</p>
 
-		<p>13. The Employer shall have the right to terminate this Agreement at any time with immediate effect by providing notice for any one or more of the following reasons:</p>
-		<p class="sub">
-		a. If the Employee is absent without permitted leave for a period of 7 days consecutively.<br>
-		b. If the Employee is found guilty of any act or omission adversely affecting the goodwill, reputation, credit, operations or business of the Employer or commission of any crime involving material dishonesty or moral turpitude, in the opinion of the Employer.<br>
-		c. Employee is found guilty of any dishonesty, fraud, breach of statutory duties, breach of confidentiality obligations, pilferage and theft, attending work under the influence of alcohol, drugs or other intoxicating substances, breach of the Employer's rules and policies, disobedience of reasonable orders from the superiors or the Board of Directors of the Employer, causing actual or threating to cause physical harm or damage to property or any other act of misconduct, in the opinion of the Employer.
-		</p>
+		<div class="ea-sec">11. NON-COMPETE AND NON-SOLICITATION</div>
+		<p>11.1 During employment, the Employee shall not directly or indirectly engage in any other business or occupation without prior written approval of the Board.</p>
+		<p>11.2 For twelve (12) months following termination, the Employee shall not solicit or canvass business from any client, customer or counterparty of the Company.</p>
+		<p>11.3 For twenty-four (24) months following termination, the Employee shall not solicit, encourage or induce any employee or consultant to terminate their relationship with the Company, nor induce any client or lead to terminate or divert business away from the Company.</p>
 
-		<p>14. The Employee may voluntarily resign from his/her employment at any time by giving prior written notice to the Employer or payment of his/her gross salary in lieu thereof without assigning reason, subject to the following conditions in this clause. However, the Employer may at its sole discretion waive all or part of the notice. The following notice period shall be applicable to the Employee as per their levels:</p>
-		<p class="sub">
-		a. 30-day notice period for L1A and L1B;<br>
-		b. 60-day notice period for L2A to L3B;<br>
-		c. and 90-day notice period for L4A to L5A
-		</p>
-		<p>The notice period might change according to the company policy, which will be communicated to the employee upon implementation of the same.</p>
+		<div class="ea-sec">12. INTELLECTUAL PROPERTY</div>
+		<p>All Work Product conceived, created, developed or contributed to by the Employee during the course of employment shall be the sole and exclusive property of the Company. The Employee irrevocably assigns all rights, title and interest in Work Product to the Company.</p>
 
-		<p>15. In the event of termination of this Agreement due to the Employee's death or disability, the Employee shall be entitled to the basic salary prorated to the date of termination. All other obligations of the Employer towards the Employee pursuant to this Agreement shall automatically terminate and extinguish.</p>
+		<div class="ea-sec">13. DATA PROTECTION</div>
+		<p>The Employee shall comply with all applicable data protection and privacy laws, including the Digital Personal Data Protection Act, 2023. The Employee shall complete Information Security training within fifteen (15) days from the Date of Joining.</p>
 
-		<p>16. In the event of termination of this Agreement pursuant to clause 11, the employee will be responsible for paying either three months' gross salary or an amount equivalent to the damages incurred, whichever is greater.</p>
+		<div class="ea-sec">14. NON-DISPARAGEMENT</div>
+		<p>During and after employment, the Employee shall not make any statements that are derogatory, misleading or harmful to the Company, its directors, officers or employees.</p>
 
-		<p>17. The age of retirement of the Employee from the services of the Employer shall be 58 years. The Employer at its sole discretion may extend the age of retirement subject to the approval of the Board of Directors of the Employer. If the Employee shall at any time be prevented from ill-health or accident or any disability from performing his/her duties hereunder, he shall if inform the Employer and supply it with such details that the Employee is unable by reason of health or accident or disability for a period of 30 days or more in any period of 12 consecutive calendar months, to perform his/her duties hereunder, the Employer may or may not forthwith terminate this agreement.</p>
+		<div class="ea-sec">15. TERMINATION</div>
+		<p>15.1 <b>Termination for Cause:</b> The Company may terminate with immediate effect, without notice or payment in lieu, for misconduct, fraud, breach of policies, unauthorized absence for 7+ consecutive days, or breach of confidentiality/conflict of interest.</p>
+		<p>15.2 <b>Termination without Cause:</b> Upon confirmation, the Company may terminate by providing fifteen (15) days' prior written notice or payment of 15 days' gross salary in lieu thereof.</p>
+		<p>15.3 <b>Resignation:</b> The Employee may resign by providing prior written notice in accordance with the schedule below:</p>
 
-		<p>18. Notwithstanding anything to the contrary herein contained the Employer shall be entitled to terminate this Agreement at any time by giving the Employee 1 months' notice in writing or payment of his/her gross salary in lieu thereof without assigning reason.</p>
+		<table class="ea-table">
+			<tr><th>Employee Grade</th><th>During Probation</th><th>After Confirmation</th></tr>
+			<tr><td>L1A – L2B</td><td>1 Month</td><td>1 Month</td></tr>
+			<tr><td>L3A – L4B</td><td>1 Month</td><td>2 Months</td></tr>
+			<tr><td>L5A & Above</td><td>1 Month</td><td>3 Months</td></tr>
+		</table>
 
-		<p>19. Upon termination of this Agreement for any reason, the Employee shall hand over charge to such person nominated for that purpose by the Organisation and shall deliver to such person such papers, documents and other property of the Employer as may be in his/her possession, custody, control or power, including but not limited to any phones, computers, vehicles, etc provided by the Employer.</p>
+		<p>15.4 <b>Death or Disability:</b> Employment terminates automatically with salary prorated to date of termination.</p>
+		<p>15.5 <b>Consequences:</b> Handover charge, return all property, devices and documents, and delete all confidential data.</p>
 
-		<p>20. The Employee shall not during the continuation of this Agreement or thereafter, divulge or make use of any trade secret or confidential information concerning the business of the Employee or any of its dealings, transactions and affairs or any information concerning any of its suppliers, agents, distributors or customers which the Employee possesses or comes into possession while in the employment of the Employer or which he may make or discover while in the service of the Employer. All data, documents, plans, drawings, photographs, reports, statements, correspondence etc, and technical information, know-how and instructions as well as business details or commercial policies that pass to the Employee or which come to the Employee's knowledge shall be treated as confidential information and the Employee shall be bound to keep secret all such confidential information and shall not disclose, communicate, reproduce, or distribute the same or copies thereof to anyone except in the course of the rightful discharge of his/her duties as the Employee of the Employer.</p>
+		<div class="ea-sec">16. INDEMNITY</div>
+		<p>The Employee shall indemnify and hold harmless the Company, directors, officers and employees from any losses, liabilities or damages arising from breach of agreement, fraud, gross negligence or violation of Applicable Law.</p>
 
-		<p>21. The Employee shall not at any time hereafter in any way make known or divulge to any person, firm or body corporate any of the methods, systems or other information of any kind in relation to the affairs of the Employer whether such information is or was acquired by him before the execution of this Agreement or in the course of his/her employment with the Employer or otherwise.</p>
+		<div class="ea-sec">17. FORCE MAJEURE</div>
+		<p>Neither Party shall be liable for delay or failure caused by events beyond reasonable control.</p>
 
-		<p>22. The Employee acknowledges that is in the course of his/her employment with the Employer likely from time to time obtain knowledge of trade secrets, Intellectual Properties and other confidential information of the Employer and its affiliates and to have dealings with its existing and future or potential customers and suppliers.
-		the Employee acknowledges the importance and commercial significance of the covenants under this clause and admits and acknowledges that he has various other technologies and information which if deployed by him elsewhere or for a third party during the course of his/her employment or after he ceases to be an employee or ceases to be associated with the Employer would result in him competing against the Employer. Hence the Employee warrants and undertakes to the Employer that he shall not for the duration of employment with the organisation and for a period of 12 months after the date on which he ceases to be employed by the Employer, either personally or through an agent, or through a partnership or as a shareholder, joint venture, collaborator, consultant, advisor, principal contractor or sub-contractor, director, trustee, committee member or office bearer or in any other manner whatsoever, whether for profit or otherwise;</p>
-		<p class="sub">
-		a. Be concerned in any business directly or indirectly manufacturing, operating, selling or distributing products or services which compete with any business carried then on by the Employer.<br>
-		b. Except on behalf of the Employer, canvass or solicit business or custom for products of a similar type to those being manufactured or dealt in or for service similar to those being provided by the Employer from or to any person who is an existing, future or potential customer of the Employer.
-		</p>
+		<div class="ea-sec">18. GENERAL PROVISIONS</div>
+		<p>18.1 <b>Governing Law:</b> Governed by and construed in accordance with the laws of India.</p>
+		<p>18.2 <b>Jurisdiction:</b> Courts at Chennai shall have exclusive jurisdiction.</p>
+		<p>18.3 <b>Dispute Resolution:</b> Good-faith negotiation, followed by binding arbitration under the Arbitration and Conciliation Act, 1996 with seat and venue at Chennai.</p>
+		<p>18.4 <b>Entire Agreement:</b> Supersedes all prior agreements. Amendments must be in writing and signed by both Parties.</p>
 
-		<p>23. For 24 months following the termination of the Employee's employment the Employee shall not</p>
-		<p class="sub">
-		a. solicit, encourage, or induce any employee, marketing agent or consultant of the Employer to terminate his/her employment, agency, or consultancy with the Employer or any prospective employee with whom the Employer has had discussions or negotiations within six months prior to the Employee's termination of employment, not to establish a relationship with the Employer.<br>
-		b. Induce or attempt to induce any current customer to terminate its relationship with the Employer or induce any potential customer with whom the Employer has had discussions or negotiations within the six months prior to the Employee's termination of employment, not to establish a relationship with the Employer.<br>
-		c. Induce or attempt to induce any current lead or induce any potential lead with whom the Employer has had or is willing to have discussions or negotiations, not to establish a relationship with the Employer.
-		</p>
+		<p style="margin-top:25px;"><b>IN WITNESS WHEREOF, the Parties have executed this Agreement on the date and at the place first above written.</b></p>
 
-		<p>24. The Employee agrees that any material breach or threatened breach of these clauses may not be sufficiently remedied solely by monetary damages, and that in addition to any other remedies, the Employee is entitled to institute criminal action against the Employee apart from also being entitled to seek injunctive relief against the Employee in a forum of competent jurisdiction for any such breach.</p>
-
-		<p>25. The Employee agrees and acknowledges that the restrictions contained in Clause 18 to 21 are deemed to be reasonable in all circumstances for the protection of the legitimate interests of the Employer.</p>
-
-		<p>26. If any provision of this Agreement is invalid and unenforceable according to the laws of any jurisdiction where the obligations herein are to be performed, the remaining provisions of this Agreement shall remain in force to carry out the intention of the Parties and the invalidity or the unenforceability of any of the provisions herein shall not affect the validity or the enforceability of other provisions. Further, the Parties shall endeavour to replace such invalid terms or provisions with valid terms and provisions.</p>
-
-		<p>27. The Parties hereto agree that this Agreement herein, and any dispute or claim arising out of or in connection with it or its subject matter or formation shall be governed by and construed in accordance with the laws of India.</p>
-
-		<p>28. The Parties herein agree that the Courts of Chennai shall have exclusive jurisdiction to settle any dispute or claim whatsoever that arises out of or in connection with this Agreement and its subject or formation of this Agreement herein.</p>
-
-		<p>29. If any claim or controversy arises out of this Agreement, the parties shall first make a good faith attempt to resolve the matter through the management. In the event such good faith negotiation fails to settle any dispute within thirty (30) days from notice of such dispute, the dispute shall be settled by binding arbitration by a single arbitrator mutually agreed and appointed by the Parties. The proceedings shall take place at Chennai in accordance with the Indian Arbitration and Conciliation Act, 1996 and would be conducted in English. Nothing herein shall be deemed to limit either Party's right to seek injunctive relief in any court of competent jurisdiction. The parties hereto agree to submit to the exclusive jurisdiction of the Courts at Chennai for matters incidental to the arbitration proceedings.</p>
-
-		<p>30. This Agreement may be executed in any number of counterparts, each of which shall be deemed to be an original as against both Parties whose signature appears thereon, and all of such shall together constitute one and the same instrument.</p>
-
-		<p>31. Except as expressly provided under this Agreement, the forbearance or delay of either Party in exercising any rights hereunder shall not be deemed to be a waiver or release of any other rights which may subsequently arise unless expressly set forth in writing by such Party. Waiver of a breach of the Agreement shall not be deemed to be a waiver of any similar breaches before or after such breach.</p>
-
-		<p>32. This Agreement shall contain the entire agreement and understanding between the Parties hereto with respect to the subject matter hereof.</p>
-
-		<p style="margin-top:14px;"><b>IN WITNESS WHEREOF</b> the parties hereunto have executed this Agreement by affixing their respective signature on the date and place above mentioned in the presence of the following witness.</p>
-
-		<p style="margin-top:10px; font-weight:bold; color:#555;">Please scroll up and review all clauses above, then sign below to accept this Employment Agreement.</p>
+		<table class="ea-sig">
+			<tr>
+				<td>
+					<b>For and on behalf of the COMPANY:</b><br><br>
+					${sig_img ? `<img src="${sig_img}" style="height:42px; object-fit:contain;"><br>` : `<div style="height:42px;"></div>`}
+					_______________________________<br>
+					<b>Authorised Signatory</b><br>
+					${sig_name !== "____" ? sig_name + "<br>" : ""}
+					${sig_desig !== "____" ? sig_desig : ""}
+				</td>
+				<td>
+					<b>EMPLOYEE:</b><br><br>
+					${emp_sig_html}
+					_______________________________<br>
+					<b>${employee_name}</b><br>
+					Date: ${execution_date}<br>
+					Place: ${place}
+				</td>
+			</tr>
+		</table>
 	</div>
 	`;
 }
-
-
-
-
-
