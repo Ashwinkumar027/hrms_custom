@@ -18,7 +18,7 @@ def execute():
             "status": ["in", ["Present", "Half Day"]],
             "custom_absent_due_to_missing_checkout": ["!=", 1],
         },
-        fields=["name", "employee", "employee_name", "attendance_date"],
+        fields=["name", "employee", "employee_name", "attendance_date", "leave_application"],
     )
 
     if not candidates:
@@ -30,6 +30,20 @@ def execute():
     for att in candidates:
         if has_full_day_request(att.name):
             continue
+        if att.get("leave_application"):
+            la = frappe.db.get_value(
+                "Leave Application",
+                att.leave_application,
+                ["docstatus", "status", "from_date", "to_date"],
+                as_dict=True,
+            )
+            if (
+                la
+                and la.docstatus == 1
+                and la.status == "Approved"
+                and getdate(la.from_date) <= getdate(att.attendance_date) <= getdate(la.to_date)
+            ):
+                continue
         try:
             if _last_checkout_was_auto_closed(att.name):
                 if _force_absent(att):
