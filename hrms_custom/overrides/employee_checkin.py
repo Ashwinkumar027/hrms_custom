@@ -35,7 +35,91 @@ class MultiLocationEmployeeCheckin(EmployeeCheckin):
     def validate(self):
         self.validate_shift_assigned()
         super().validate()
+        self.validate_duplicate_in()
         self.block_late_checkout()
+
+    def validate_duplicate_in(self):
+        if not self.is_new():
+            return
+        if self.log_type != "IN":
+            return
+        if not self.employee:
+            return
+        if self.device_id:
+            return
+        if getattr(self, "custom_auto_closed", 0):
+            return
+        if frappe.flags.in_import or getattr(self.flags, "in_import", False):
+            return
+
+        # Session user must equal the employee's own user (never Administrator or HR proxy)
+        if not frappe.session.user or frappe.session.user == "Administrator":
+            return
+        emp_user = frappe.db.get_value("Employee", self.employee, "user_id")
+        if not emp_user or frappe.session.user != emp_user:
+            return
+
+        # Shift must be resolvable and strictly based on log type
+        if not self.shift or not self.shift_start:
+            return
+        determine = frappe.db.get_value("Shift Type", self.shift, "determine_check_in_and_check_out")
+        if determine != "Strictly based on Log Type in Employee Checkin":
+            return
+
+        # Log time must be within 10 minutes of now (never backfilled)
+        time_diff = abs((frappe.utils.now_datetime() - get_datetime(self.time)).total_seconds())
+        if time_diff > 600:
+            return
+
+        # Row lock on Employee to serialize concurrent check-ins
+        frappe.db.sql("SELECT name FROM `tabEmployee` WHERE name=%s FOR UPDATE", self.employee)
+
+        # Query previous logs in this shift instance
+        doc_name = self.name or ""
+        previous_logs = frappe.db.sql(
+            """
+            SELECT name, log_type, time, custom_auto_closed
+            FROM `tabEmployee Checkin`
+            WHERE employee = %s
+              AND shift = %s
+              AND shift_start = %s
+              AND time <= %s
+              AND (name != %s OR %s = '')
+            ORDER BY time DESC, creation DESC, name DESC
+            FOR UPDATE
+            """,
+            (self.employee, self.shift, self.shift_start, self.time, doc_name, doc_name),
+            as_dict=True,
+        )
+
+        last_real_log = None
+        for log in previous_logs:
+            if log.log_type == "OUT" and log.get("custom_auto_closed"):
+                continue
+            last_real_log = log
+            break
+
+        if not last_real_log or last_real_log.log_type != "IN":
+            return
+
+        gap = (get_datetime(self.time) - get_datetime(last_real_log.time)).total_seconds()
+        if gap < 300:
+            frappe.throw(
+                _("Duplicate check-in detected. Please wait before checking in again."),
+                title=_("Duplicate Check-in"),
+            )
+        else:
+            self.log_type = "OUT"
+            self.flags.converted_by_duplicate_in_guard = True
+
+    def after_insert(self):
+        if hasattr(super(), "after_insert"):
+            super().after_insert()
+        if getattr(self.flags, "converted_by_duplicate_in_guard", False):
+            self.add_comment(
+                "Comment",
+                _("log_type changed from IN to OUT by duplicate-IN guard; original value: IN"),
+            )
 
     def block_late_checkout(self):
         if frappe.db.get_single_value("HR Settings", "custom_disable_checkout_window_guard"):
