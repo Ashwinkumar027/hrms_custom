@@ -69,10 +69,11 @@ class TestMissingAttendanceEmail(IntegrationTestCase):
     def setUp(self):
         super().setUp()
         frappe.set_user("Administrator")
+        frappe.db.savepoint("mae_test")
         self._cleanup()
 
     def tearDown(self):
-        self._cleanup()
+        frappe.db.rollback(save_point="mae_test")
         super().tearDown()
 
     def _cleanup(self):
@@ -241,6 +242,7 @@ class TestMissingAttendanceEmail(IntegrationTestCase):
             "status": "Not Sent",
         })
         eq.insert(ignore_permissions=True)
+        frappe.db.set_value("Email Queue", eq.name, "creation", "2026-10-13 10:00:00", update_modified=False)
 
         with patch("hrms_custom.hrms_custom.utils.missing_attendance_email.today", return_value="2026-10-13"):
             res = mae.send_missing_attendance_emails(attendance_date=att_date, dry_run=True, employee=TEST_EMPLOYEE)
@@ -389,3 +391,69 @@ class TestMissingAttendanceEmail(IntegrationTestCase):
         info_calls = [c[0][0] for c in mock_logger.info.call_args_list if c[0]]
         forensic_calls = [msg for msg in info_calls if TEST_EMPLOYEE in msg and att_date in msg and "attendance_rows" in msg]
         self.assertGreaterEqual(len(forensic_calls), 1, "R5 forensic log must be called with employee, date, and attendance_rows")
+
+    # New Test A: Dedupe still works when get_hr_sender returns None
+    def test_11_dedupe_works_when_hr_sender_is_none(self):
+        att_date = "2026-10-12"
+        frappe.db.set_value(
+            "Shift Type",
+            TEST_SHIFT,
+            {
+                "enable_auto_attendance": 1,
+                "last_sync_of_checkin": "2026-10-13 08:00:00",
+            },
+            update_modified=False,
+        )
+
+        emp_doc = frappe.get_doc("Employee", TEST_EMPLOYEE)
+        subj = mae._get_subject(emp_doc, att_date)
+
+        eq = frappe.get_doc({
+            "doctype": "Email Queue",
+            "reference_doctype": "Employee",
+            "reference_name": TEST_EMPLOYEE,
+            "message": f"Subject: {subj}\n\nDear Local Test,\nNo attendance record was found",
+            "status": "Sent",
+        })
+        eq.insert(ignore_permissions=True)
+
+        with patch("hrms_custom.hrms_custom.utils.missing_attendance_email.get_hr_sender", return_value=None), \
+             patch("hrms_custom.hrms_custom.utils.missing_attendance_email.today", return_value="2026-10-13"):
+            res = mae.send_missing_attendance_emails(attendance_date=att_date, dry_run=True, employee=TEST_EMPLOYEE)
+
+        self.assertEqual(res["queued"], 0)
+        self.assertEqual(res["skipped"], 1)
+
+    # New Test B: Prior Missing Attendance Reminder with DIFFERENT sender text still blocks second email
+    def test_12_dedupe_blocks_second_email_even_with_different_sender(self):
+        att_date = "2026-10-12"
+        frappe.db.set_value(
+            "Shift Type",
+            TEST_SHIFT,
+            {
+                "enable_auto_attendance": 1,
+                "last_sync_of_checkin": "2026-10-13 08:00:00",
+            },
+            update_modified=False,
+        )
+
+        emp_doc = frappe.get_doc("Employee", TEST_EMPLOYEE)
+        subj = mae._get_subject(emp_doc, att_date)
+
+        # Existing reminder queued with a different sender
+        eq = frappe.get_doc({
+            "doctype": "Email Queue",
+            "reference_doctype": "Employee",
+            "reference_name": TEST_EMPLOYEE,
+            "sender": "other@example.com",
+            "message": f"Subject: {subj}\n\nDear Local Test,\nNo attendance record was found",
+            "status": "Sent",
+        })
+        eq.insert(ignore_permissions=True)
+
+        with patch("hrms_custom.hrms_custom.utils.missing_attendance_email.get_hr_sender", return_value="no-reply-hr@example.com"), \
+             patch("hrms_custom.hrms_custom.utils.missing_attendance_email.today", return_value="2026-10-13"):
+            res = mae.send_missing_attendance_emails(attendance_date=att_date, dry_run=True, employee=TEST_EMPLOYEE)
+
+        self.assertEqual(res["queued"], 0)
+        self.assertEqual(res["skipped"], 1)

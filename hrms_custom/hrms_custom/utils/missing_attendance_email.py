@@ -333,7 +333,6 @@ def _get_subject(employee, attendance_date):
 def _already_queued(employee, attendance_date):
     subject = _get_subject(employee, attendance_date)
     emp_name = employee.name if hasattr(employee, "name") else (employee.get("name") if isinstance(employee, dict) else str(employee))
-    hr_sender = get_hr_sender()
 
     escaped_subject = (
         subject.replace("\\", "\\\\")
@@ -347,8 +346,6 @@ def _already_queued(employee, attendance_date):
         "reference_name": emp_name,
         "message": ["like", pattern],
     }
-    if hr_sender:
-        filters["sender"] = hr_sender
 
     return bool(frappe.db.exists("Email Queue", filters))
 
