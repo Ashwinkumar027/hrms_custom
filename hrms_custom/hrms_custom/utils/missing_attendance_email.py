@@ -1,4 +1,5 @@
-from frappe.utils import add_days, formatdate, getdate, today
+from datetime import datetime, timedelta, time
+from frappe.utils import add_days, formatdate, getdate, today, to_timedelta, get_datetime
 
 import frappe
 from hrms_custom.utils.email_utils import get_hr_sender
@@ -14,12 +15,23 @@ def send_missing_attendance_emails_for_yesterday():
         )
         return {"skipped_reason": "disabled_in_hr_settings"}
 
-    attendance_date = getdate(add_days(today(), -1))
-    return send_missing_attendance_emails(attendance_date=attendance_date)
+    yesterday = getdate(add_days(today(), -1))
+    day_before = getdate(add_days(today(), -2))
+
+    res_yesterday = send_missing_attendance_emails(attendance_date=yesterday, defer_unprocessed=True)
+    res_day_before = send_missing_attendance_emails(attendance_date=day_before, defer_unprocessed=False)
+
+    return {
+        "yesterday": res_yesterday,
+        "day_before": res_day_before,
+    }
 
 
-def send_missing_attendance_emails(attendance_date=None, dry_run=False, employee=None):
+def send_missing_attendance_emails(attendance_date=None, dry_run=False, employee=None, defer_unprocessed=None):
     attendance_date = getdate(attendance_date or add_days(today(), -1))
+    if defer_unprocessed is None:
+        defer_unprocessed = (attendance_date == getdate(add_days(today(), -1)))
+
     result = {
         "attendance_date": str(attendance_date),
         "dry_run": bool(dry_run),
@@ -27,6 +39,7 @@ def send_missing_attendance_emails(attendance_date=None, dry_run=False, employee
         "checked": 0,
         "queued": 0,
         "skipped": 0,
+        "deferred": 0,
         "employees": [],
     }
 
@@ -76,13 +89,20 @@ def send_missing_attendance_emails(attendance_date=None, dry_run=False, employee
             result["skipped"] += 1
             continue
 
+        # R1: Deferral for unprocessed shifts (scheduled yesterday run only)
+        if defer_unprocessed:
+            shift_type_name = _get_active_shift_type(employee.name, attendance_date)
+            if shift_type_name and _is_shift_unprocessed(shift_type_name, attendance_date):
+                result["deferred"] += 1
+                continue
+
         recipient = _get_employee_email(employee)
         if not recipient:
             result["skipped"] += 1
             continue
 
         subject = _get_subject(employee, attendance_date)
-        if _already_queued(employee.name):
+        if _already_queued(employee, attendance_date):
             result["skipped"] += 1
             continue
 
@@ -96,6 +116,7 @@ def send_missing_attendance_emails(attendance_date=None, dry_run=False, employee
         )
 
         if not dry_run:
+            _log_attendance_forensic(employee.name, attendance_date)
             _send_missing_attendance_email(employee, recipient, attendance_date, subject)
 
         result["queued"] += 1
@@ -128,6 +149,18 @@ def _has_valid_attendance(employee, attendance_date):
     )
 
 
+def _is_marked_absent(employee, attendance_date):
+    return frappe.db.exists(
+        "Attendance",
+        {
+            "employee": employee,
+            "attendance_date": attendance_date,
+            "docstatus": ["!=", 2],
+            "status": "Absent",
+        },
+    )
+
+
 def _has_active_shift_assignment(employee, attendance_date):
     rows = frappe.get_all(
         "Shift Assignment",
@@ -144,6 +177,68 @@ def _has_active_shift_assignment(employee, attendance_date):
         limit_page_length=1,
     )
     return bool(rows)
+
+
+def _get_active_shift_type(employee, attendance_date):
+    rows = frappe.get_all(
+        "Shift Assignment",
+        filters={
+            "employee": employee,
+            "docstatus": 1,
+            "status": "Active",
+            "start_date": ["<=", attendance_date],
+        },
+        or_filters=[
+            ["end_date", ">=", attendance_date],
+            ["end_date", "is", "not set"],
+        ],
+        fields=["shift_type"],
+        limit_page_length=1,
+    )
+    return rows[0].shift_type if rows and rows[0].shift_type else None
+
+
+def compute_actual_shift_end(attendance_date, start_time, end_time, allow_check_out_after_shift_end_time=0):
+    start_delta = to_timedelta(start_time)
+    end_delta = to_timedelta(end_time)
+    att_date = getdate(attendance_date)
+
+    if end_delta <= start_delta:
+        end_date = add_days(att_date, 1)
+    else:
+        end_date = att_date
+
+    base_dt = datetime.combine(end_date, time(0, 0)) + end_delta
+    return base_dt + timedelta(minutes=int(allow_check_out_after_shift_end_time or 0))
+
+
+def _is_shift_unprocessed(shift_type_name, attendance_date):
+    shift = frappe.db.get_value(
+        "Shift Type",
+        shift_type_name,
+        [
+            "enable_auto_attendance",
+            "start_time",
+            "end_time",
+            "allow_check_out_after_shift_end_time",
+            "last_sync_of_checkin",
+        ],
+        as_dict=True,
+    )
+    if not shift or not shift.enable_auto_attendance:
+        return False
+
+    actual_end = compute_actual_shift_end(
+        attendance_date,
+        shift.start_time,
+        shift.end_time,
+        shift.allow_check_out_after_shift_end_time,
+    )
+
+    if not shift.last_sync_of_checkin:
+        return True
+
+    return get_datetime(shift.last_sync_of_checkin) < actual_end
 
 
 def _has_approved_leave(employee, attendance_date):
@@ -226,24 +321,36 @@ def _get_employee_email(employee):
         or frappe.db.get_value("User", employee.user_id, "email")
     )
 
+
 def _get_subject(employee, attendance_date):
+    emp_name = employee.name if hasattr(employee, "name") else (employee.get("name") if isinstance(employee, dict) else str(employee))
     return "Missing Attendance Reminder - {0} - {1}".format(
-        employee.name,
+        emp_name,
         attendance_date,
     )
 
 
-def _already_queued(employee_name):
-    return bool(
-        frappe.db.exists(
-            "Email Queue",
-            {
-                "reference_doctype": "Employee",
-                "reference_name": employee_name,
-                "creation": ["between", [today() + " 00:00:00", today() + " 23:59:59"]],
-            },
-        )
+def _already_queued(employee, attendance_date):
+    subject = _get_subject(employee, attendance_date)
+    emp_name = employee.name if hasattr(employee, "name") else (employee.get("name") if isinstance(employee, dict) else str(employee))
+    hr_sender = get_hr_sender()
+
+    escaped_subject = (
+        subject.replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_")
     )
+    pattern = f"%{escaped_subject}%"
+
+    filters = {
+        "reference_doctype": "Employee",
+        "reference_name": emp_name,
+        "message": ["like", pattern],
+    }
+    if hr_sender:
+        filters["sender"] = hr_sender
+
+    return bool(frappe.db.exists("Email Queue", filters))
 
 
 def _get_checkin_summary(employee, attendance_date):
@@ -295,6 +402,17 @@ def _get_manager_email(employee):
     )
 
 
+def _log_attendance_forensic(employee_name, attendance_date):
+    attendance_rows = frappe.get_all(
+        "Attendance",
+        filters={"employee": employee_name, "attendance_date": attendance_date},
+        fields=["name", "status", "docstatus", "modified"],
+    )
+    frappe.logger("hrms_custom").info(
+        f"Missing attendance email queued: employee={employee_name}, attendance_date={attendance_date}, attendance_rows={attendance_rows}"
+    )
+
+
 def _send_missing_attendance_email(employee, recipient, attendance_date, subject):
     formatted_date = formatdate(attendance_date)
     checkin_summary = _get_checkin_summary(employee.name, attendance_date)
@@ -306,6 +424,10 @@ def _send_missing_attendance_email(employee, recipient, attendance_date, subject
             "<p>You checked in on <b>{0}</b> at {1}, but no checkout was recorded. "
             "This day could not be counted as Present.</p>"
         ).format(formatted_date, checkin_time)
+    elif _is_marked_absent(employee.name, attendance_date):
+        body_line = (
+            "<p>Your attendance for <b>{0}</b> is marked Absent.</p>"
+        ).format(formatted_date)
     else:
         body_line = (
             "<p>No attendance record was found for <b>{0}</b>.</p>"
