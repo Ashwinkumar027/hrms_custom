@@ -291,8 +291,9 @@ function setup_field_rules(frm) {
 }
 
 function check_missing_fields_alert(frm) {
+	frm.dashboard.clear_headline();
+
 	if (frm.doc.docstatus === 1) {
-		frm.dashboard.clear_headline();
 		return;
 	}
 
