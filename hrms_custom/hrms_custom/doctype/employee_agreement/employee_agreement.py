@@ -170,13 +170,11 @@ def sync_print_format():
 	if frappe.db.exists("Employee Agreement", "4gl88ltr88"):
 		frappe.db.set_value("Employee Agreement", "4gl88ltr88", "custom_employee_ctc", 450000.0)
 
-	# 4. Make sure Quanticus_Logo.pdf.png is marked public in tabFile
-	logo_files = frappe.get_all("File", filters={"file_name": ["like", "%Quanticus_Logo%"]}, fields=["name", "is_private", "file_url"])
-	for lf in logo_files:
-		if lf.is_private:
-			fdoc = frappe.get_doc("File", lf.name)
-			fdoc.is_private = 0
-			fdoc.save(ignore_permissions=True)
+	# 4. Make sure Quanticus_Logo.pdf.png is marked public in tabFile without triggering File move conflict
+	try:
+		frappe.db.sql("UPDATE `tabFile` SET `is_private` = 0 WHERE `file_name` LIKE '%Quanticus_Logo%'")
+	except Exception:
+		pass
 
 	frappe.db.commit()
 
@@ -276,13 +274,7 @@ def get_agreement_context(employee=None, company=None, doc_name=None):
 	Returns all resolved dynamic values for the employment agreement.
 	Reads branch city from Branch master (UI editable) with fallback.
 	"""
-	# Auto-sync print format to latest 9-page template if not synced yet
-	try:
-		curr_html = frappe.db.get_value("Print Format", "Employee Agreement - Print", "html") or ""
-		if "font-size: 10.5pt" not in curr_html or "height: 275mm" in curr_html:
-			sync_print_format()
-	except Exception:
-		pass
+	# Dynamic context resolution for employee agreement
 
 	data = {
 		"place": "Chennai",
