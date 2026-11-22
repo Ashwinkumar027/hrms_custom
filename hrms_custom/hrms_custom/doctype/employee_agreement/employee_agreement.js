@@ -106,6 +106,45 @@ frappe.ui.form.on("Employee Agreement", {
 	date(frm) { render_agreement(frm); },
 	custom_employee_ctc(frm) { render_agreement(frm); },
 	custom_roles__responsibilities(frm) { render_agreement(frm); },
+
+	validate(frm) {
+		const has_draw = Boolean(frm.doc.employee_signature && frm.doc.employee_signature.trim());
+		const has_upload = Boolean(frm.doc.employee_signature_upload && frm.doc.employee_signature_upload.trim());
+
+		if (!has_draw && !has_upload) {
+			frappe.msgprint({
+				title: __("Signature Required"),
+				indicator: "red",
+				message: __("Please provide your signature before saving — either <b>draw your signature</b> on the pad or <b>upload a signature image</b>.")
+			});
+			frappe.validated = false;
+			return false;
+		}
+
+		if (has_draw && has_upload) {
+			frappe.msgprint({
+				title: __("Only One Signature Allowed"),
+				indicator: "red",
+				message: __("Please provide only one signature format — either drawn or uploaded, not both.")
+			});
+			frappe.validated = false;
+			return false;
+		}
+	},
+
+	employee_signature(frm) {
+		if (frm.doc.employee_signature && frm.doc.employee_signature_upload) {
+			frm.set_value("employee_signature_upload", "");
+		}
+		render_agreement(frm);
+	},
+
+	employee_signature_upload(frm) {
+		if (frm.doc.employee_signature_upload && frm.doc.employee_signature) {
+			frm.set_value("employee_signature", "");
+		}
+		render_agreement(frm);
+	},
 });
 
 function render_agreement(frm) {

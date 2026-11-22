@@ -7,7 +7,15 @@ from hrms_custom.hrms_custom.utils.signature_utils import merge_or_allow_insert
 
 class EmployeeAgreement(Document):
 	def validate(self):
-		if self.employee_signature and self.employee_signature_upload:
+		has_draw = bool(self.employee_signature and str(self.employee_signature).strip())
+		has_upload = bool(self.employee_signature_upload and str(self.employee_signature_upload).strip())
+
+		if not has_draw and not has_upload:
+			frappe.throw(
+				_("Please provide your signature — either draw your signature on the pad or upload a signature image before saving.")
+			)
+
+		if has_draw and has_upload:
 			frappe.throw(
 				_("Please provide only one signature — either draw or upload, not both.")
 			)
