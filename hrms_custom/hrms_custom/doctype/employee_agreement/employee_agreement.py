@@ -142,9 +142,7 @@ def sync_print_format():
 	and automatically populates missing company/settings fields in database.
 	"""
 	import os
-	path = "/mnt/c/Users/ashwinkumar.k_quanti/.gemini/antigravity/scratch/full_9pages_jinja.html"
-	if not os.path.exists(path):
-		path = frappe.get_app_path("hrms_custom", "fixtures", "print_format.json")
+	path = frappe.get_app_path("hrms_custom", "fixtures", "print_format.json")
 
 	# Ensure agreement_version column exists on tabEmployee Agreement
 	try:
