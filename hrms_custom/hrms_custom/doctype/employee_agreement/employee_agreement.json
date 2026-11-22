@@ -70,10 +70,11 @@
    "label": "Date of Joining"
   },
   {
+   "fetch_from": "employee.employee_name",
    "fieldname": "aadhaar_name",
    "fieldtype": "Data",
    "label": "Name (as per Aadhaar)",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "father_name",

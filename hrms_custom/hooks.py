@@ -205,10 +205,12 @@ permission_query_conditions = {
     "Employee": "hrms_custom.permissions.employee.get_permission_query_conditions",
     "TA Reimbursement Claim": "hrms_custom.permissions.ta_reimbursement_claim.get_permission_query_conditions",
     "Attendance": "hrms_custom.permissions.attendance.get_permission_query_conditions",
+    "Employee Agreement": "hrms_custom.permissions.employee_agreement.get_permission_query_conditions",
 }
 
 has_permission = {
     "TA Reimbursement Claim": "hrms_custom.permissions.ta_reimbursement_claim.has_permission",
+    "Employee Agreement": "hrms_custom.permissions.employee_agreement.has_permission",
 }
 
 scheduler_events = {

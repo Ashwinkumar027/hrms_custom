@@ -1,21 +1,65 @@
 frappe.ui.form.on("Employee Agreement", {
+	onload(frm) {
+		if (frm.is_new()) {
+			const is_hr = frappe.user_roles.some(r => ["HR Manager", "HR User", "System Manager", "Administrator"].includes(r));
+			if (!is_hr) {
+				frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name", "company", "designation", "date_of_joining"], (r) => {
+					if (r && r.name) {
+						frm.set_value("employee", r.name);
+						if (!frm.doc.aadhaar_name && r.employee_name) {
+							frm.set_value("aadhaar_name", r.employee_name);
+						}
+						frm.set_df_property("employee", "read_only", 1);
+						frm.set_df_property("company", "read_only", 1);
+						frm.set_df_property("designation", "read_only", 1);
+						frm.set_df_property("date_of_joining", "read_only", 1);
+						frm.set_df_property("aadhaar_name", "read_only", 1);
+						frm.set_df_property("father_name", "read_only", 1);
+						frm.set_df_property("age", "read_only", 1);
+						frm.set_df_property("full_address", "read_only", 1);
+						frm.set_df_property("custom_employee_ctc", "read_only", 1);
+						frm.set_df_property("custom_roles__responsibilities", "read_only", 1);
+					} else {
+						frm.set_df_property("employee", "read_only", 1);
+						frappe.msgprint({
+							title: __("No Linked Employee Profile"),
+							indicator: "orange",
+							message: __("Your user account (<b>{0}</b>) is not linked to any Employee profile in HRMS.<br><br>Please contact HR/Administrator to set your User ID in your Employee profile before submitting your agreement.", [frappe.session.user])
+						});
+					}
+				});
+			}
+		}
+	},
+
 	refresh(frm) {
+		const is_hr = frappe.user_roles.some(r => ["HR Manager", "HR User", "System Manager", "Administrator"].includes(r));
+		if (frm.is_new() && !is_hr && !frm.doc.employee) {
+			frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name", (r) => {
+				if (r && r.name) {
+					frm.set_value("employee", r.name);
+					frm.set_df_property("employee", "read_only", 1);
+				}
+			});
+		} else if (!is_hr && frm.doc.employee) {
+			frm.set_df_property("employee", "read_only", 1);
+		}
+
 		render_agreement(frm);
 
-		frm.add_custom_button(__("Download PDF"), function () {
-			frappe.db.get_value("Print Format", "Employee Agreement - Print", "pdf_generator", (r) => {
-				const pdf_generator = r.pdf_generator || "wkhtmltopdf";
+		if (!frm.is_new()) {
+			frm.add_custom_button(__("Download PDF"), function () {
 				const url = frappe.urllib.get_full_url(
 					"/api/method/frappe.utils.print_format.download_pdf"
 					+ "?doctype=" + encodeURIComponent("Employee Agreement")
 					+ "&name=" + encodeURIComponent(frm.doc.name)
 					+ "&format=" + encodeURIComponent("Employee Agreement - Print")
 					+ "&no_letterhead=0"
-					+ "&pdf_generator=" + encodeURIComponent(pdf_generator)
+					+ "&pdf_generator=chrome"
 				);
 				window.open(url, "_blank");
-			});
-		}, __("")).addClass("btn-primary");
+			}).addClass("btn-primary");
+		}
 	},
 
 	employee(frm) {
@@ -32,6 +76,7 @@ frappe.ui.form.on("Employee Agreement", {
 						const ctx = r.message;
 						if (!frm.doc.place && ctx.place) frm.set_value("place", ctx.place);
 						if (!frm.doc.date) frm.set_value("date", frappe.datetime.get_today());
+						if (!frm.doc.aadhaar_name && frm.doc.employee_name) frm.set_value("aadhaar_name", frm.doc.employee_name);
 						if (!frm.doc.father_name && ctx.parent_spouse_name) frm.set_value("father_name", ctx.parent_spouse_name);
 						if (!frm.doc.age && ctx.age) frm.set_value("age", parseInt(ctx.age, 10));
 						if (!frm.doc.full_address && ctx.full_address) frm.set_value("full_address", ctx.full_address);
@@ -228,7 +273,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>
@@ -264,7 +308,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>
@@ -297,7 +340,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>
@@ -331,7 +373,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>
@@ -360,7 +401,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>
@@ -391,7 +431,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>
@@ -422,7 +461,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>
@@ -451,7 +489,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>
@@ -481,7 +518,6 @@ function build_agreement_html(frm, ctx) {
 				<div class="ea-caddr">
 					${company_address ? company_address + " &nbsp;|&nbsp; " : ""}
 					${company_pan !== "____" ? "<b>PAN:</b> " + company_pan + " &nbsp;|&nbsp; " : ""}
-					${cin !== "____" ? "<b>CIN:</b> " + cin + " &nbsp;|&nbsp; " : ""}
 					${email !== "____" ? "<b>Email:</b> " + email : ""}
 				</div>
 			</div>

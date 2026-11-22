@@ -132,6 +132,25 @@
    "fieldname": "business_description",
    "fieldtype": "Small Text",
    "label": "Business Description"
+  },
+  {
+   "fieldname": "agreement_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Agreement Settings"
+  },
+  {
+   "default": "0",
+   "description": "Maximum agreements an employee can submit. Set to 0 or leave empty for Unlimited.",
+   "fieldname": "max_agreement_submissions",
+   "fieldtype": "Int",
+   "label": "Max Agreement Submissions Per Employee"
+  },
+  {
+   "default": "v2 - 2026 Standard (9-Page)",
+   "description": "Active agreement version tag applied to new submissions.",
+   "fieldname": "active_agreement_version",
+   "fieldtype": "Data",
+   "label": "Active Agreement Version"
   }
  ],
  "grid_page_length": 50,

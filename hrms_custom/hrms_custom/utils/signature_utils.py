@@ -20,14 +20,34 @@ def get_signature_image(doc, draw_field, upload_field):
     return doc.get(draw_field) or doc.get(upload_field) or None
 def merge_or_allow_insert(doc, route):
     """
-    Called from before_insert(). If a tracked record already exists for this
-    employee+doctype, merge the new submission's data into it instead of
-    creating a duplicate, then redirect the browser there.
-    Returns True if it handled a merge (caller should stop further insert).
+    Called from before_insert(). If a tracked record already exists in Draft for this
+    employee+doctype, merge into it. If already submitted, preserve it and allow new insert.
+    Enforces dynamic submission limit configured in Offer Letter Print Settings.
     """
     if not getattr(doc, "employee", None):
         return False
 
+    # 1. Fetch dynamic max limit from Offer Letter Print Settings for company
+    company = doc.get("company")
+    if not company:
+        company = frappe.db.get_value("Employee", doc.employee, "company")
+
+    max_limit = 0
+    if company and frappe.db.exists("Offer Letter Print Settings", company):
+        try:
+            max_limit = frappe.db.get_value("Offer Letter Print Settings", company, "max_agreement_submissions") or 0
+            max_limit = int(max_limit)
+        except Exception:
+            max_limit = 0
+
+    # 2. Check submitted agreements count
+    submitted_count = frappe.db.count(doc.doctype, {"employee": doc.employee, "docstatus": 1})
+    if max_limit > 0 and submitted_count >= max_limit:
+        frappe.throw(
+            f"You have already submitted the maximum allowed number of agreements ({max_limit}). Please contact HR."
+        )
+
+    # 3. Check tracking for existing record
     tracker = frappe.db.get_value(
         "Form Fill Tracker",
         {"employee": doc.employee, "form_doctype": doc.doctype},
@@ -38,8 +58,10 @@ def merge_or_allow_insert(doc, route):
     if not tracker or not tracker.record_name or not frappe.db.exists(doc.doctype, tracker.record_name):
         return False
 
-    if tracker.fill_count >= 2:
-        frappe.throw("You have already submitted this form the maximum number of times (2). Please contact HR.")
+    existing_status = frappe.db.get_value(doc.doctype, tracker.record_name, "docstatus")
+    # NEVER overwrite an already submitted agreement (docstatus == 1)! Preserve old historical records.
+    if existing_status == 1:
+        return False
 
     existing = frappe.get_doc(doc.doctype, tracker.record_name)
     for df in doc.meta.fields:
@@ -51,8 +73,10 @@ def merge_or_allow_insert(doc, route):
     existing.save()
     frappe.db.commit()
 
-    frappe.local.response["type"] = "redirect"
-    frappe.local.response["location"] = f"/{route}/{existing.name}"
-    frappe.local.flags.redirect_location = frappe.local.response["location"]
+    if route:
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"/{route}/{existing.name}"
+        frappe.local.flags.redirect_location = frappe.local.response["location"]
+        raise frappe.Redirect
 
-    raise frappe.Redirect
+    return True
