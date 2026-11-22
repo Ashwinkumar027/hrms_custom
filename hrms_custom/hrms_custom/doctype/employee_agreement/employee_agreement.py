@@ -436,3 +436,53 @@ def get_agreement_context(employee=None, company=None, doc_name=None):
 			data["amfi_registration_no"] = settings.amfi_registration_no or ""
 
 	return data
+
+
+@frappe.whitelist()
+def download_all_agreements_zip():
+	"""
+	Generates and bundles all existing Employee Agreements into a single downloadable .zip archive.
+	"""
+	import io
+	import zipfile
+
+	# Role check: HR and Administrators only
+	user_roles = frappe.get_roles()
+	allowed = ["HR Manager", "HR User", "System Manager", "Administrator"]
+	if not any(r in user_roles for r in allowed):
+		frappe.throw(_("Not permitted to export employee agreements."), frappe.PermissionError)
+
+	agreements = frappe.get_all(
+		"Employee Agreement",
+		fields=["name", "employee", "employee_name", "company", "docstatus"],
+		order_by="creation asc"
+	)
+
+	if not agreements:
+		frappe.throw(_("No Employee Agreements found to export."))
+
+	zip_buffer = io.BytesIO()
+	with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+		for ag in agreements:
+			try:
+				status_str = "Submitted" if ag.docstatus == 1 else "Draft" if ag.docstatus == 0 else "Cancelled"
+				emp_code = ag.employee or "NoEmp"
+				emp_name = (ag.employee_name or "Employee").replace(" ", "_").replace("/", "_")
+				fname = f"{emp_code}_{emp_name}_{ag.name}_{status_str}.pdf"
+
+				pdf_bytes = frappe.get_print(
+					"Employee Agreement",
+					ag.name,
+					"Employee Agreement - Print",
+					as_pdf=True,
+					pdf_generator="chrome"
+				)
+				zip_file.writestr(fname, pdf_bytes)
+			except Exception as e:
+				err_msg = f"Failed to generate PDF for {ag.name}: {str(e)}"
+				zip_file.writestr(f"ERROR_{ag.name}.txt", err_msg)
+
+	frappe.response["filename"] = f"All_Employee_Agreements_{today()}.zip"
+	frappe.response["filecontent"] = zip_buffer.getvalue()
+	frappe.response["type"] = "download"
+
