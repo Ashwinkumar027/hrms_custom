@@ -61,10 +61,10 @@ class EmployeeAgreement(Document):
 					self.age = td.year - dob.year - ((td.month, td.day) < (dob.month, dob.day))
 				if not self.full_address:
 					self.full_address = emp.current_address or emp.permanent_address or ""
-				if not getattr(self, "reporting_manager", None) and emp.get("reports_to"):
-					m_vals = frappe.db.get_value("Employee", emp.reports_to, ["employee_name", "designation"], as_dict=True)
-					if m_vals and m_vals.employee_name:
-						self.reporting_manager = f"{m_vals.employee_name} ({m_vals.designation})" if m_vals.designation else m_vals.employee_name
+				if not getattr(self, "reporting_manager", None):
+					mgr = get_reporting_manager(self.employee)
+					if mgr and mgr != "the Board":
+						self.reporting_manager = mgr
 
 		# Strict validations when submitting (docstatus == 1)
 		if self.docstatus == 1:
@@ -339,6 +339,23 @@ def sync_print_format():
 
 	return {"status": "error", "message": "Template file not found"}
 
+@frappe.whitelist()
+def get_reporting_manager(employee):
+	"""
+	Returns the reporting manager name (and designation) from the Employee master.
+	Bypasses client-side permission restrictions so employees can always view their manager.
+	"""
+	if not employee:
+		return "the Board"
+	reports_to = frappe.db.get_value("Employee", employee, "reports_to")
+	if not reports_to:
+		return "the Board"
+	m_vals = frappe.db.get_value("Employee", reports_to, ["employee_name", "designation"], as_dict=True)
+	if m_vals and m_vals.employee_name:
+		return f"{m_vals.employee_name} ({m_vals.designation})" if m_vals.designation else m_vals.employee_name
+	return "the Board"
+
+
 @frappe.whitelist(allow_guest=True)
 def get_agreement_context(employee=None, company=None, doc_name=None):
 	"""
@@ -444,12 +461,10 @@ def get_agreement_context(employee=None, company=None, doc_name=None):
 		# Reporting manager
 		if ea_doc and getattr(ea_doc, "reporting_manager", None):
 			data["reporting_manager"] = ea_doc.reporting_manager
-		elif emp_doc.reports_to:
-			m_vals = frappe.db.get_value(
-				"Employee", emp_doc.reports_to, ["employee_name", "designation"], as_dict=True
-			)
-			if m_vals and m_vals.employee_name:
-				data["reporting_manager"] = f"{m_vals.employee_name} ({m_vals.designation})" if m_vals.designation else m_vals.employee_name
+		else:
+			mgr = get_reporting_manager(employee)
+			if mgr:
+				data["reporting_manager"] = mgr
 
 		# CTC formatting
 		ctc_val = flt(ea_doc.custom_employee_ctc if (ea_doc and ea_doc.custom_employee_ctc) else emp_doc.ctc)

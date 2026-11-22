@@ -22,6 +22,9 @@ frappe.ui.form.on("Employee Agreement", {
 				}
 			});
 		} else {
+			if (frm.doc.employee && !frm.doc.reporting_manager) {
+				fetch_and_set_reporting_manager(frm);
+			}
 			setup_field_rules(frm);
 			check_missing_fields_alert(frm);
 		}
@@ -220,18 +223,15 @@ frappe.ui.form.on("Employee Agreement", {
 
 function fetch_and_set_reporting_manager(frm) {
 	if (!frm.doc.employee) return;
-	frappe.db.get_value("Employee", frm.doc.employee, "reports_to", (res) => {
-		if (res && res.reports_to) {
-			frappe.db.get_value("Employee", res.reports_to, ["employee_name", "designation"], (m_res) => {
-				if (m_res && m_res.employee_name) {
-					const mgr_label = m_res.designation 
-						? `${m_res.employee_name} (${m_res.designation})` 
-						: m_res.employee_name;
-					frm.set_value("reporting_manager", mgr_label);
-				}
-			});
-		} else {
-			frm.set_value("reporting_manager", "the Board");
+	frappe.call({
+		method: "hrms_custom.hrms_custom.doctype.employee_agreement.employee_agreement.get_reporting_manager",
+		args: {
+			employee: frm.doc.employee
+		},
+		callback: function (r) {
+			if (r && r.message && r.message !== "the Board") {
+				frm.set_value("reporting_manager", r.message);
+			}
 		}
 	});
 }
