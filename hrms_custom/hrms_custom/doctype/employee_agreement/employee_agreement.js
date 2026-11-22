@@ -38,6 +38,10 @@ frappe.ui.form.on("Employee Agreement", {
 			});
 		}
 
+		if (frm.doc.employee && !frm.doc.reporting_manager) {
+			fetch_and_set_reporting_manager(frm);
+		}
+
 		setup_field_rules(frm);
 		check_missing_fields_alert(frm);
 		render_agreement(frm);
@@ -59,6 +63,7 @@ frappe.ui.form.on("Employee Agreement", {
 
 	employee(frm) {
 		if (frm.doc.employee) {
+			fetch_and_set_reporting_manager(frm);
 			frappe.call({
 				method: "hrms_custom.hrms_custom.doctype.employee_agreement.employee_agreement.get_agreement_context",
 				args: {
@@ -211,6 +216,25 @@ frappe.ui.form.on("Employee Agreement", {
 		render_agreement(frm);
 	},
 });
+
+
+function fetch_and_set_reporting_manager(frm) {
+	if (!frm.doc.employee) return;
+	frappe.db.get_value("Employee", frm.doc.employee, "reports_to", (res) => {
+		if (res && res.reports_to) {
+			frappe.db.get_value("Employee", res.reports_to, ["employee_name", "designation"], (m_res) => {
+				if (m_res && m_res.employee_name) {
+					const mgr_label = m_res.designation 
+						? `${m_res.employee_name} (${m_res.designation})` 
+						: m_res.employee_name;
+					frm.set_value("reporting_manager", mgr_label);
+				}
+			});
+		} else {
+			frm.set_value("reporting_manager", "the Board");
+		}
+	});
+}
 
 function setup_field_rules(frm) {
 	const is_hr = frappe.user_roles.some(r => ["HR Manager", "HR User", "System Manager", "Administrator"].includes(r));
