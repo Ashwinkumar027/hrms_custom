@@ -1,34 +1,29 @@
 frappe.ui.form.on("Employee Agreement", {
 	onload(frm) {
-		if (frm.is_new()) {
-			const is_hr = frappe.user_roles.some(r => ["HR Manager", "HR User", "System Manager", "Administrator"].includes(r));
-			if (!is_hr) {
-				frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name", "company", "designation", "date_of_joining"], (r) => {
-					if (r && r.name) {
-						frm.set_value("employee", r.name);
-						if (!frm.doc.aadhaar_name && r.employee_name) {
-							frm.set_value("aadhaar_name", r.employee_name);
-						}
-						frm.set_df_property("employee", "read_only", 1);
-						frm.set_df_property("company", "read_only", 1);
-						frm.set_df_property("designation", "read_only", 1);
-						frm.set_df_property("date_of_joining", "read_only", 1);
-						frm.set_df_property("aadhaar_name", "read_only", 1);
-						frm.set_df_property("father_name", "read_only", 1);
-						frm.set_df_property("age", "read_only", 1);
-						frm.set_df_property("full_address", "read_only", 1);
-						frm.set_df_property("custom_employee_ctc", "read_only", 1);
-						frm.set_df_property("custom_roles__responsibilities", "read_only", 1);
-					} else {
-						frm.set_df_property("employee", "read_only", 1);
-						frappe.msgprint({
-							title: __("No Linked Employee Profile"),
-							indicator: "orange",
-							message: __("Your user account (<b>{0}</b>) is not linked to any Employee profile in HRMS.<br><br>Please contact HR/Administrator to set your User ID in your Employee profile before submitting your agreement.", [frappe.session.user])
-						});
+		const is_hr = frappe.user_roles.some(r => ["HR Manager", "HR User", "System Manager", "Administrator"].includes(r));
+		if (frm.is_new() && !is_hr) {
+			frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name", "company", "designation", "date_of_joining"], (r) => {
+				if (r && r.name) {
+					frm.set_value("employee", r.name);
+					if (r.company) frm.set_value("company", r.company);
+					if (r.designation) frm.set_value("designation", r.designation);
+					if (r.date_of_joining) frm.set_value("date_of_joining", r.date_of_joining);
+					if (!frm.doc.aadhaar_name && r.employee_name) {
+						frm.set_value("aadhaar_name", r.employee_name);
 					}
-				});
-			}
+					frm.trigger("employee");
+				} else {
+					frm.set_df_property("employee", "read_only", 1);
+					frappe.msgprint({
+						title: __("No Linked Employee Profile"),
+						indicator: "orange",
+						message: __("Your user account (<b>{0}</b>) is not linked to any Employee profile in HRMS.<br><br>Please contact HR/Administrator to set your User ID in your Employee profile before submitting your agreement.", [frappe.session.user])
+					});
+				}
+			});
+		} else {
+			setup_field_rules(frm);
+			check_missing_fields_alert(frm);
 		}
 	},
 
@@ -38,13 +33,13 @@ frappe.ui.form.on("Employee Agreement", {
 			frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name", (r) => {
 				if (r && r.name) {
 					frm.set_value("employee", r.name);
-					frm.set_df_property("employee", "read_only", 1);
+					frm.trigger("employee");
 				}
 			});
-		} else if (!is_hr && frm.doc.employee) {
-			frm.set_df_property("employee", "read_only", 1);
 		}
 
+		setup_field_rules(frm);
+		check_missing_fields_alert(frm);
 		render_agreement(frm);
 
 		if (!frm.is_new()) {
@@ -74,37 +69,68 @@ frappe.ui.form.on("Employee Agreement", {
 				callback: function (r) {
 					if (r && r.message) {
 						const ctx = r.message;
+						frm.__master_empty_fields = frm.__master_empty_fields || {};
+						if (!ctx.parent_spouse_name || ctx.parent_spouse_name === "____") {
+							frm.__master_empty_fields.father_name = true;
+						}
+						if (!ctx.full_address || ctx.full_address === "____") {
+							frm.__master_empty_fields.full_address = true;
+						}
+
 						if (!frm.doc.place && ctx.place) frm.set_value("place", ctx.place);
 						if (!frm.doc.date) frm.set_value("date", frappe.datetime.get_today());
 						if (!frm.doc.aadhaar_name && frm.doc.employee_name) frm.set_value("aadhaar_name", frm.doc.employee_name);
-						if (!frm.doc.father_name && ctx.parent_spouse_name) frm.set_value("father_name", ctx.parent_spouse_name);
-						if (!frm.doc.age && ctx.age) frm.set_value("age", parseInt(ctx.age, 10));
-						if (!frm.doc.full_address && ctx.full_address) frm.set_value("full_address", ctx.full_address);
+						if (!frm.doc.father_name && ctx.parent_spouse_name && ctx.parent_spouse_name !== "____") {
+							frm.set_value("father_name", ctx.parent_spouse_name);
+						}
+						if (!frm.doc.age && ctx.age && ctx.age !== "____") {
+							frm.set_value("age", parseInt(ctx.age, 10));
+						}
+						if (!frm.doc.full_address && ctx.full_address && ctx.full_address !== "____") {
+							frm.set_value("full_address", ctx.full_address);
+						}
+						if (!frm.doc.reporting_manager && ctx.reporting_manager && ctx.reporting_manager !== "the Board") {
+							frm.set_value("reporting_manager", ctx.reporting_manager);
+						}
 						if (!frm.doc.custom_employee_ctc && ctx.ctc_formatted && ctx.ctc_formatted !== "____") {
 							frm.set_value("custom_employee_ctc", flt(ctx.ctc_formatted.replace(/,/g, "")));
 						}
 						if (!frm.doc.custom_roles__responsibilities && ctx.roles_responsibilities) {
 							frm.set_value("custom_roles__responsibilities", ctx.roles_responsibilities);
 						}
+						setup_field_rules(frm);
+						check_missing_fields_alert(frm);
 						render_agreement(frm);
 					}
 				},
 			});
 		} else {
+			setup_field_rules(frm);
+			check_missing_fields_alert(frm);
 			render_agreement(frm);
 		}
 	},
 
 	company(frm) { render_agreement(frm); },
-	designation(frm) { render_agreement(frm); },
+	designation(frm) { check_missing_fields_alert(frm); render_agreement(frm); },
+	reporting_manager(frm) { render_agreement(frm); },
 	aadhaar_name(frm) { render_agreement(frm); },
-	father_name(frm) { render_agreement(frm); },
+	father_name(frm) {
+		check_missing_fields_alert(frm);
+		render_agreement(frm);
+	},
 	age(frm) { render_agreement(frm); },
-	full_address(frm) { render_agreement(frm); },
+	full_address(frm) {
+		check_missing_fields_alert(frm);
+		render_agreement(frm);
+	},
 	date_of_joining(frm) { render_agreement(frm); },
 	place(frm) { render_agreement(frm); },
 	date(frm) { render_agreement(frm); },
-	custom_employee_ctc(frm) { render_agreement(frm); },
+	custom_employee_ctc(frm) {
+		check_missing_fields_alert(frm);
+		render_agreement(frm);
+	},
 	custom_roles__responsibilities(frm) { render_agreement(frm); },
 
 	validate(frm) {
@@ -132,6 +158,45 @@ frappe.ui.form.on("Employee Agreement", {
 		}
 	},
 
+	before_submit(frm) {
+		if (!frm.doc.father_name || !String(frm.doc.father_name).trim()) {
+			frappe.msgprint({
+				title: __("Father's Name Required"),
+				indicator: "red",
+				message: __("Please enter your <b>Father's / Spouse's Name</b> in the personal details section before submitting your agreement.")
+			});
+			frappe.validated = false;
+			return false;
+		}
+		if (!frm.doc.full_address || !String(frm.doc.full_address).trim()) {
+			frappe.msgprint({
+				title: __("Residential Address Required"),
+				indicator: "red",
+				message: __("Please enter your <b>Full Residential Address</b> in the address section before submitting your agreement.")
+			});
+			frappe.validated = false;
+			return false;
+		}
+		if (!frm.doc.custom_employee_ctc || flt(frm.doc.custom_employee_ctc) <= 0) {
+			frappe.msgprint({
+				title: __("Annual CTC Missing"),
+				indicator: "red",
+				message: __("Your <b>Annual CTC</b> is not set in your Employee profile. Legally binding employment agreements cannot be submitted without compensation details. Please contact HR before submitting.")
+			});
+			frappe.validated = false;
+			return false;
+		}
+		if (!frm.doc.designation) {
+			frappe.msgprint({
+				title: __("Designation Missing"),
+				indicator: "red",
+				message: __("Your <b>Designation</b> is missing. Please contact HR to update your designation before submitting.")
+			});
+			frappe.validated = false;
+			return false;
+		}
+	},
+
 	employee_signature(frm) {
 		if (frm.doc.employee_signature && frm.doc.employee_signature_upload) {
 			frm.set_value("employee_signature_upload", "");
@@ -146,6 +211,101 @@ frappe.ui.form.on("Employee Agreement", {
 		render_agreement(frm);
 	},
 });
+
+function setup_field_rules(frm) {
+	const is_hr = frappe.user_roles.some(r => ["HR Manager", "HR User", "System Manager", "Administrator"].includes(r));
+	const is_submitted = frm.doc.docstatus === 1;
+
+	// Strictly Read-Only Corporate & Financial Fields (Employees cannot alter salary/designation)
+	const corporate_fields = [
+		"employee", "employee_name", "company", "designation",
+		"reporting_manager", "date_of_joining", "age",
+		"custom_employee_ctc", "custom_roles__responsibilities"
+	];
+	corporate_fields.forEach(f => {
+		if (frm.fields_dict[f]) {
+			frm.set_df_property(f, "read_only", (!is_hr || is_submitted) ? 1 : 0);
+		}
+	});
+
+	// Personal / Self-Service Fields (Hybrid Lock)
+	// If HR or empty in master -> Unlocked for self-entry
+	// If submitted -> Strictly locked
+	const personal_fields = ["father_name", "full_address", "aadhaar_name"];
+	personal_fields.forEach(f => {
+		if (frm.fields_dict[f]) {
+			if (is_submitted) {
+				frm.set_df_property(f, "read_only", 1);
+			} else if (is_hr) {
+				frm.set_df_property(f, "read_only", 0);
+			} else {
+				frm.__master_empty_fields = frm.__master_empty_fields || {};
+				const was_master_empty = Boolean(frm.__master_empty_fields[f]);
+				const cur_val = frm.doc[f];
+				const has_val = cur_val !== undefined && cur_val !== null && String(cur_val).trim() !== "" && String(cur_val).trim() !== "____";
+
+				if (was_master_empty || !has_val) {
+					frm.set_df_property(f, "read_only", 0);
+				} else {
+					frm.set_df_property(f, "read_only", 1);
+				}
+
+				if (f === "father_name") {
+					frm.set_df_property(f, "placeholder", __("Enter Father's Name / Spouse's Name"));
+				} else if (f === "full_address") {
+					frm.set_df_property(f, "placeholder", __("Enter complete residential address"));
+				} else if (f === "aadhaar_name") {
+					frm.set_df_property(f, "placeholder", __("Enter Name as per Aadhaar"));
+				}
+			}
+		}
+	});
+
+	if (frm.fields_dict.place) frm.set_df_property("place", "read_only", is_submitted ? 1 : 0);
+	if (frm.fields_dict.date) frm.set_df_property("date", "read_only", is_submitted ? 1 : 0);
+	if (frm.fields_dict.witness_name) frm.set_df_property("witness_name", "read_only", is_submitted ? 1 : 0);
+}
+
+function check_missing_fields_alert(frm) {
+	if (frm.doc.docstatus === 1) {
+		frm.dashboard.clear_headline();
+		return;
+	}
+
+	const missing_hr = [];
+	const missing_emp = [];
+
+	if (!frm.doc.custom_employee_ctc || flt(frm.doc.custom_employee_ctc) <= 0) {
+		missing_hr.push(__("Annual CTC"));
+	}
+	if (!frm.doc.designation) {
+		missing_hr.push(__("Designation"));
+	}
+	if (!frm.doc.father_name || !String(frm.doc.father_name).trim()) {
+		missing_emp.push(__("Father's / Spouse's Name"));
+	}
+	if (!frm.doc.full_address || !String(frm.doc.full_address).trim()) {
+		missing_emp.push(__("Full Residential Address"));
+	}
+
+	let html = "";
+	if (missing_hr.length > 0) {
+		html += `<div style="font-size: 13px; line-height: 1.5; color: #b45309; font-weight: 500;">
+			⚠️ <b>${__("Action Required with HR")}:</b> ${missing_hr.join(", ")} ${__("is missing from your Employee record. Please request HR to configure this before submitting.")}
+		</div>`;
+	}
+	if (missing_emp.length > 0) {
+		html += `<div style="font-size: 13px; line-height: 1.5; color: #1d4ed8; font-weight: 500; ${missing_hr.length ? 'margin-top:4px;' : ''}">
+			✍️ <b>${__("Personal Details Required")}:</b> ${__("Please complete your")} <b>${missing_emp.join(" & ")}</b> ${__("in the unlocked fields below.")}
+		</div>`;
+	}
+
+	if (html) {
+		frm.dashboard.set_headline_alert(html, missing_hr.length > 0 ? "orange" : "blue");
+	} else {
+		frm.dashboard.clear_headline();
+	}
+}
 
 function render_agreement(frm) {
 	if (!frm.fields_dict.agreement_html) return;
@@ -194,7 +354,11 @@ function build_agreement_html(frm, ctx) {
 
 	const employee_name = esc(d.aadhaar_name || d.employee_name);
 	const parent_spouse_name = esc(d.father_name || ctx.parent_spouse_name);
-	const relation = esc(ctx.relation || "S/o, D/o or W/o");
+	let relation = esc(ctx.relation || "S/o, D/o or W/o");
+	if (d.father_name && (!ctx.parent_spouse_name || ctx.parent_spouse_name === "____")) {
+		const gender = (ctx.gender || "").toLowerCase();
+		relation = gender === "female" ? "D/o" : "S/o";
+	}
 	const age = esc(d.age || ctx.age);
 	const full_address = esc(d.full_address || ctx.full_address);
 	const designation = esc(d.designation);
@@ -202,7 +366,7 @@ function build_agreement_html(frm, ctx) {
 	const execution_date = d.date ? fmt_date(d.date) : (ctx.execution_date || "____");
 	const place = esc(d.place || ctx.place || "Chennai");
 	const principal_place = esc(ctx.principal_place || (place + ", Tamil Nadu, India"));
-	const reporting_manager = esc(ctx.reporting_manager || "the Board");
+	const reporting_manager = esc(d.reporting_manager || ctx.reporting_manager || "the Board");
 
 	let ctc_num = "____";
 	let ctc_words = "____";

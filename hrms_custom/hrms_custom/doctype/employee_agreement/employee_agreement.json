@@ -9,6 +9,7 @@
   "employee_name",
   "company",
   "designation",
+  "reporting_manager",
   "column_break_1",
   "date_of_joining",
   "aadhaar_name",
@@ -60,6 +61,12 @@
    "options": "Designation"
   },
   {
+   "fieldname": "reporting_manager",
+   "fieldtype": "Data",
+   "label": "Reporting Manager",
+   "read_only": 1
+  },
+  {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
   },
@@ -99,7 +106,7 @@
   {
    "fieldname": "section_break_agreement",
    "fieldtype": "Section Break",
-   "label": "Employment Agreement \u2014 Please Read Before Signing"
+   "label": "Employment Agreement — Please Read Before Signing"
   },
   {
    "fieldname": "agreement_html",

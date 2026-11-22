@@ -37,7 +37,7 @@ class EmployeeAgreement(Document):
 			emp = frappe.db.get_value(
 				"Employee",
 				self.employee,
-				["branch", "ctc", "custom_roles_responsibilities", "date_of_birth", "current_address", "permanent_address", "custom_father_name", "custom_spouse_name", "gender"],
+				["branch", "ctc", "custom_roles_responsibilities", "date_of_birth", "current_address", "permanent_address", "custom_father_name", "custom_spouse_name", "gender", "reports_to"],
 				as_dict=True
 			)
 			if emp:
@@ -61,6 +61,62 @@ class EmployeeAgreement(Document):
 					self.age = td.year - dob.year - ((td.month, td.day) < (dob.month, dob.day))
 				if not self.full_address:
 					self.full_address = emp.current_address or emp.permanent_address or ""
+				if not getattr(self, "reporting_manager", None) and emp.get("reports_to"):
+					m_vals = frappe.db.get_value("Employee", emp.reports_to, ["employee_name", "designation"], as_dict=True)
+					if m_vals and m_vals.employee_name:
+						self.reporting_manager = f"{m_vals.employee_name} ({m_vals.designation})" if m_vals.designation else m_vals.employee_name
+
+		# Strict validations when submitting (docstatus == 1)
+		if self.docstatus == 1:
+			if not self.father_name or not str(self.father_name).strip():
+				frappe.throw(_("Father's Name (or Spouse's Name) is mandatory to submit your agreement. Please enter it in the form before submitting."))
+			if not self.full_address or not str(self.full_address).strip():
+				frappe.throw(_("Full Residential Address is mandatory to submit your agreement. Please enter your address in the form before submitting."))
+			if not self.custom_employee_ctc or flt(self.custom_employee_ctc) <= 0:
+				frappe.throw(_("Annual CTC is not configured in your profile. Please contact HR to update your compensation before submitting."))
+			if not self.designation:
+				frappe.throw(_("Designation is not set. Please contact HR to update your designation before submitting."))
+
+		# Sync back missing personal fields to Employee master
+		self.sync_to_employee_master()
+
+	def on_submit(self):
+		self.sync_to_employee_master()
+
+	def sync_to_employee_master(self):
+		"""
+		If employee entered missing personal details (Father Name or Residential Address),
+		automatically save these back to tabEmployee master so HRMS stays synchronized.
+		"""
+		if not self.employee or not frappe.db.exists("Employee", self.employee):
+			return
+
+		try:
+			emp = frappe.get_doc("Employee", self.employee)
+			updated = False
+
+			clean_father = (self.father_name or "").strip()
+			if clean_father and not emp.get("custom_father_name"):
+				emp.set("custom_father_name", clean_father)
+				updated = True
+
+			clean_addr = (self.full_address or "").strip()
+			if clean_addr and not emp.get("current_address"):
+				emp.set("current_address", clean_addr)
+				updated = True
+
+			clean_roles = getattr(self, "custom_roles__responsibilities", None)
+			if clean_roles and hasattr(emp, "custom_roles_responsibilities") and not emp.get("custom_roles_responsibilities"):
+				emp.set("custom_roles_responsibilities", clean_roles.strip())
+				updated = True
+
+			if updated:
+				emp.flags.ignore_permissions = True
+				emp.flags.ignore_validate = True
+				emp.flags.ignore_mandatory = True
+				emp.save()
+		except Exception as e:
+			frappe.log_error(f"Error syncing agreement details back to Employee {self.employee}: {str(e)}", "Employee Agreement Sync")
 
 	def before_insert(self):
 		company = self.company or frappe.db.get_value("Employee", self.employee, "company")
@@ -101,6 +157,23 @@ def sync_print_format():
 	try:
 		if not frappe.db.has_column("Offer Letter Print Settings", "max_agreement_submissions"):
 			frappe.db.sql("ALTER TABLE `tabOffer Letter Print Settings` ADD COLUMN `max_agreement_submissions` INT(11) DEFAULT 0")
+	except Exception:
+		pass
+
+		# Ensure reporting_manager column exists on tabEmployee Agreement
+	try:
+		if not frappe.db.has_column("Employee Agreement", "reporting_manager"):
+			frappe.db.sql("ALTER TABLE `tabEmployee Agreement` ADD COLUMN `reporting_manager` VARCHAR(255) DEFAULT NULL")
+	except Exception:
+		pass
+
+	# Ensure Property Setter for field_order includes reporting_manager
+	try:
+		frappe.db.sql("""
+			UPDATE `tabProperty Setter`
+			SET `value` = '["employee", "employee_name", "company", "designation", "reporting_manager", "column_break_1", "date_of_joining", "aadhaar_name", "father_name", "age", "section_break_1", "full_address", "column_break_sdyv", "custom_employee_ctc", "custom_roles__responsibilities", "section_break_agreement", "agreement_html", "section_break_sign", "employee_signature", "employee_signature_upload", "date", "place", "witness_name", "amended_from"]'
+			WHERE `name` = 'Employee Agreement-main-field_order'
+		""")
 	except Exception:
 		pass
 
@@ -371,7 +444,9 @@ def get_agreement_context(employee=None, company=None, doc_name=None):
 				data["principal_place"] = f"{city}, {state}" if state else f"{city}, India"
 
 		# Reporting manager
-		if emp_doc.reports_to:
+		if ea_doc and getattr(ea_doc, "reporting_manager", None):
+			data["reporting_manager"] = ea_doc.reporting_manager
+		elif emp_doc.reports_to:
 			m_vals = frappe.db.get_value(
 				"Employee", emp_doc.reports_to, ["employee_name", "designation"], as_dict=True
 			)
@@ -391,8 +466,9 @@ def get_agreement_context(employee=None, company=None, doc_name=None):
 		data["roles_responsibilities"] = roles or ""
 
 		# Parent / Spouse name & Relation
+		data["gender"] = emp_doc.gender or ""
 		spouse = getattr(emp_doc, "custom_spouse_name", None)
-		father = getattr(emp_doc, "custom_father_name", None) or (ea_doc.father_name if ea_doc else None)
+		father = (ea_doc.father_name if ea_doc and ea_doc.father_name else None) or getattr(emp_doc, "custom_father_name", None)
 		gender = (emp_doc.gender or "").lower()
 
 		if spouse:

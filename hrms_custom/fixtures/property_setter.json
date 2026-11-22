@@ -2301,7 +2301,7 @@
   "property": "field_order",
   "property_type": "Data",
   "row_name": null,
-  "value": "[\"employee\", \"employee_name\", \"company\", \"designation\", \"column_break_1\", \"date_of_joining\", \"aadhaar_name\", \"father_name\", \"age\", \"section_break_1\", \"full_address\", \"column_break_sdyv\", \"custom_employee_ctc\", \"custom_roles__responsibilities\", \"section_break_agreement\", \"agreement_html\", \"section_break_sign\", \"employee_signature\", \"employee_signature_upload\", \"date\", \"place\", \"witness_name\", \"amended_from\"]"
+  "value": "[\"employee\", \"employee_name\", \"company\", \"designation\", \"reporting_manager\", \"column_break_1\", \"date_of_joining\", \"aadhaar_name\", \"father_name\", \"age\", \"section_break_1\", \"full_address\", \"column_break_sdyv\", \"custom_employee_ctc\", \"custom_roles__responsibilities\", \"section_break_agreement\", \"agreement_html\", \"section_break_sign\", \"employee_signature\", \"employee_signature_upload\", \"date\", \"place\", \"witness_name\", \"amended_from\"]"
  },
  {
   "default_value": null,
