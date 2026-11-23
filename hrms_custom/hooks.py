@@ -226,8 +226,7 @@ scheduler_events = {
         ]
     },
     "daily": [
-        "hrms_custom.hrms_custom.utils.document_alerts.send_document_alerts",
-        "hrms_custom.hrms_custom.utils.late_lop_processor.process_current_period"
+        "hrms_custom.hrms_custom.utils.document_alerts.send_document_alerts"
     ],
     "monthly": [
         "hrms_custom.hrms_custom.utils.late_lop_processor.process_late_deductions"
