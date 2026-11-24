@@ -55,7 +55,7 @@ class EmployeeAgreement(Document):
 					self.custom_roles__responsibilities = emp.custom_roles_responsibilities
 				if not self.father_name:
 					self.father_name = emp.custom_father_name or emp.custom_spouse_name or ""
-				if not self.age and emp.date_of_birth:
+				if emp.date_of_birth:
 					dob = getdate(emp.date_of_birth)
 					td = getdate(nowdate())
 					self.age = td.year - dob.year - ((td.month, td.day) < (dob.month, dob.day))
@@ -494,14 +494,14 @@ def get_agreement_context(employee=None, company=None, doc_name=None):
 			data["parent_spouse_name"] = "____"
 			data["relation"] = "S/o, D/o or W/o"
 
-		# Age calculation
-		if ea_doc and ea_doc.age:
-			data["age"] = str(ea_doc.age)
-		elif emp_doc.date_of_birth:
+		# Age calculation - strictly from date_of_birth
+		if emp_doc.date_of_birth:
 			dob = getdate(emp_doc.date_of_birth)
 			td = getdate(nowdate())
 			age_val = td.year - dob.year - ((td.month, td.day) < (dob.month, dob.day))
 			data["age"] = str(age_val)
+		elif ea_doc and ea_doc.age:
+			data["age"] = str(ea_doc.age)
 
 		# Address
 		data["full_address"] = (ea_doc.full_address if (ea_doc and ea_doc.full_address) else None) or emp_doc.current_address or emp_doc.permanent_address or ""

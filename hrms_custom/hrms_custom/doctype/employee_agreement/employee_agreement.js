@@ -91,7 +91,7 @@ frappe.ui.form.on("Employee Agreement", {
 						if (!frm.doc.father_name && ctx.parent_spouse_name && ctx.parent_spouse_name !== "____") {
 							frm.set_value("father_name", ctx.parent_spouse_name);
 						}
-						if (!frm.doc.age && ctx.age && ctx.age !== "____") {
+						if (ctx.age && ctx.age !== "____") {
 							frm.set_value("age", parseInt(ctx.age, 10));
 						}
 						if (!frm.doc.full_address && ctx.full_address && ctx.full_address !== "____") {
@@ -408,6 +408,22 @@ function build_agreement_html(frm, ctx) {
 		: ctc_num;
 
 	const sig_name = esc(ctx.signatory_name);
+	const raw_roles = (d.custom_roles__responsibilities || ctx.roles_responsibilities || "").trim();
+	const clean_roles = raw_roles.replace(/<[^>]*>/g, "").trim();
+	let roles_html = "";
+	if (clean_roles && clean_roles !== "." && clean_roles.length > 3) {
+		if (raw_roles.includes("<p") || raw_roles.includes("<div") || raw_roles.includes("<ul") || raw_roles.includes("<ol") || raw_roles.includes("<li")) {
+			roles_html = raw_roles;
+		} else {
+			roles_html = raw_roles.split("\n").filter(l => l.trim()).map(l => `<p style="text-align:justify; margin: 0 0 9pt 0;">${frappe.utils.escape_html(l.trim())}</p>`).join("");
+		}
+	} else {
+		roles_html = `
+<p style="text-align:justify; margin: 0 0 9pt 0;">Meet sales targets and performance metrics through active client engagement;</p>
+<p style="text-align:justify; margin: 0 0 9pt 0;">Meet sales targets and performance metrics through active client engagement;</p>
+<p style="text-align:justify; margin: 0 0 9pt 0;">Identify client needs, offer tailored solutions, and ensure customer satisfaction; and</p>`;
+	}
+
 	const sig_desig = esc(ctx.signatory_designation);
 	const sig_img = ctx.signatory_signature || "";
 
@@ -514,7 +530,7 @@ function build_agreement_html(frm, ctx) {
 <p style="text-align:justify; margin: 0 0 9pt 0;">The Employer and the Employee shall be collectively referred to as the "<b>Parties</b>" and individually as a "<b>Party</b>".</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>WHEREAS</b> the Company is engaged in the business of <b>${business_description}</b>;</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>WHEREAS</b> the Employee possesses the requisite qualifications, skills, experience and expertise for the said designation, and has represented the same to the Company;</p>
-<p style="text-align:justify; margin: 0 0 9pt 0;"><b>WHEREA</b>S the Company has employed the Employee as <b>${designation}</b><b> </b>from<b> ${execution_date} (Effective Date)</b>, and the Employee has agreed to accept such employment, on the terms and conditions set forth herein;</p>
+<p style="text-align:justify; margin: 0 0 9pt 0;"><b>WHEREAS</b> the Company has employed the Employee as <b>${designation}</b> from <b>${doj || execution_date} (Effective Date)</b>, and the Employee has agreed to accept such employment, on the terms and conditions set forth herein;</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>WHEREAS</b>, in supersession of any and all previous terms of engagement of the Employee, whether with the Company or any other entity, the Parties wish to record the terms of the Employee's employment under this Agreement.</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>NOW THEREFORE, IN CONSIDERATION OF THE MUTUAL PROMISES, COVENANTS AND AGREEMENTS SET FORTH HEREIN, AND FOR OTHER GOOD AND VALUABLE CONSIDERATION, THE RECEIPT AND SUFFICIENCY OF WHICH ARE HEREBY ACKNOWLEDGED, THE PARTIES, INTENDING TO BE LEGALLY BOUND, AGREE AS FOLLOWS:</b></p>
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>DEFINITIONS AND INTERPRETATION</b></p>
@@ -554,9 +570,7 @@ function build_agreement_html(frm, ctx) {
 <p style="text-align:justify; margin: 0 0 9pt 0;"><b>DUTIES AND RESPONSIBILITIES</b></p>
 <p style="text-align:justify; margin: 0 0 9pt 0;">The Employee shall devote the Employee's full time, attention, skill and best efforts exclusively to the business and affairs of the Company. The Employee shall faithfully, efficiently, competently and diligently perform all duties and exercise such powers as may from time to time be assigned to or vested in the Employee.</p>
 <p style="text-align:justify; margin: 0 0 9pt 0;">Without limiting the generality of the foregoing, the Employee's responsibilities shall include, but not be limited to:</p>
-<p style="text-align:justify; margin: 0 0 9pt 0;">Meet sales targets and performance metrics through active client engagement;</p>
-<p style="text-align:justify; margin: 0 0 9pt 0;">Meet sales targets and performance metrics through active client engagement;</p>
-<p style="text-align:justify; margin: 0 0 9pt 0;">Identify client needs, offer tailored solutions, and ensure customer satisfaction; and</p>
+${roles_html}
 		</div>
 
 
