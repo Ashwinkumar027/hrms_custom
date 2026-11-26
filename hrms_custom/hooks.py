@@ -219,7 +219,8 @@ scheduler_events = {
             "hrms_custom.hrms_custom.utils.upcoming_holiday_notification.send_upcoming_holiday_notifications"
         ],
         "30 2 * * *": [
-            "hrms_custom.hrms_custom.utils.missing_attendance_email.send_missing_attendance_emails_for_yesterday"
+            "hrms_custom.hrms_custom.utils.missing_attendance_email.send_missing_attendance_emails_for_yesterday",
+            "hrms_custom.employee_tree.repair_if_broken"
         ],
         "0 3 * * *": [
             "hrms_custom.hrms_custom.utils.lop_summary_email.send_lop_summary_emails"
@@ -255,7 +256,10 @@ doc_events = {
     "Employee": {
         "validate": "hrms_custom.hrms_custom.utils.probation_utils.validate_probation_status",
         "after_insert": "hrms_custom.hrms_custom.utils.user_permissions.create_user_permission_for_employee",
-        "on_update": "hrms_custom.hrms_custom.utils.user_permissions.create_user_permission_for_employee"
+        "on_update": [
+            "hrms_custom.hrms_custom.utils.user_permissions.create_user_permission_for_employee",
+            "hrms_custom.employee_tree.log_if_tree_broken"
+        ]
     },
     "Salary Slip": {
         "before_save": "hrms_custom.hrms_custom.utils.salary_slip_tracker.log_salary_component_changes"
