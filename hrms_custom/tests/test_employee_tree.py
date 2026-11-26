@@ -83,9 +83,13 @@ class TestEmployeeTree(IntegrationTestCase):
 		frappe.set_user("Administrator")
 		rebuild_tree("Employee")
 		frappe.cache.delete_key("user_permissions")
+		for emp in [self.director_emp, self.mgr_emp, self.sub_emp]:
+			frappe.cache.delete_value(f"employee_tree_broken:{emp}")
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
+		for emp in [self.director_emp, self.mgr_emp, self.sub_emp]:
+			frappe.cache.delete_value(f"employee_tree_broken:{emp}")
 		super().tearDown()
 
 	@classmethod
@@ -331,3 +335,27 @@ class TestEmployeeTree(IntegrationTestCase):
 		log_if_tree_broken(sub_doc)
 		after_logs = frappe.db.count("Error Log", {"method": "Employee tree broken after save"})
 		self.assertEqual(after_logs, before_logs + 1)
+
+	def test_log_if_tree_broken_rate_limits_to_once_per_24_hours(self):
+		from hrms_custom.employee_tree import log_if_tree_broken
+
+		sub_doc = frappe.get_doc("Employee", self.sub_emp)
+		mgr_rgt = frappe.db.get_value("Employee", self.mgr_emp, "rgt")
+		frappe.db.sql(
+			"UPDATE `tabEmployee` SET lft = %s, rgt = %s WHERE name = %s",
+			(mgr_rgt, mgr_rgt + 1, self.sub_emp),
+		)
+		sub_doc.reload()
+
+		cache_key = f"employee_tree_broken:{self.sub_emp}"
+		frappe.cache.delete_value(cache_key)
+
+		before_logs = frappe.db.count("Error Log", {"method": "Employee tree broken after save"})
+		log_if_tree_broken(sub_doc)
+		log_if_tree_broken(sub_doc)
+		after_logs = frappe.db.count("Error Log", {"method": "Employee tree broken after save"})
+		self.assertEqual(after_logs, before_logs + 1)
+
+		ttl = frappe.cache.ttl(frappe.cache.make_key(cache_key))
+		self.assertGreater(ttl, 0)
+		self.assertLessEqual(ttl, 86400)

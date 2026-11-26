@@ -122,8 +122,15 @@ def repair_if_broken() -> dict:
 
 
 def log_if_tree_broken(doc, method=None) -> None:
-	"""Employee on_update hook to log the writer if saving leaves the tree broken."""
+	"""Employee on_update hook to log the writer if saving leaves the tree broken.
+
+	Rate-limited via Redis cache to at most one Error Log per employee every 24 hours.
+	"""
 	if not getattr(doc, "reports_to", None):
+		return
+
+	cache_key = f"employee_tree_broken:{doc.name}"
+	if frappe.cache.get_value(cache_key, expires=True):
 		return
 
 	emp_vals = frappe.db.get_value("Employee", doc.name, ["lft", "rgt"], as_dict=True)
@@ -144,6 +151,7 @@ def log_if_tree_broken(doc, method=None) -> None:
 	if not is_broken:
 		return
 
+	frappe.cache.set_value(cache_key, 1, expires_in_sec=86400)
 	frappe.log_error(
 		title="Employee tree broken after save",
 		message=frappe.as_json(
