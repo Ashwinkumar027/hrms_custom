@@ -2,11 +2,16 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, get_fullname
 
-from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
+from hrms.hr.doctype.leave_application.leave_application import (
+	LeaveApplication,
+	get_employee_leave_approver,
+)
 
 
 class CustomLeaveApplication(LeaveApplication):
 	def notify(self, args):
+		if frappe.are_emails_muted():
+			return
 		args = frappe._dict(args)
 		# args -> message, message_to, subject
 		if cint(self.follow_via_email):
@@ -41,6 +46,10 @@ class CustomLeaveApplication(LeaveApplication):
 		super().before_cancel()
 
 	def validate(self):
+		if self.is_new() and self.employee and not self.leave_approver:
+			approver = get_employee_leave_approver(self.employee)
+			if approver:
+				self.leave_approver = approver
 		super().validate()
 		self._validate_self_approval_hardening()
 		self._validate_optional_leave_full_days()
